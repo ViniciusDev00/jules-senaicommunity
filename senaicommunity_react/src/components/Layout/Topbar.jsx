@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'; // Hooks já estavam aqui
 import { Link } from 'react-router-dom';
+import { useWebSocket } from '../../contexts/WebSocketContext.jsx';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // Ícone do Sol/Lua já está importado de ThemeToggle, mas podemos precisar deles aqui
 import {
@@ -13,7 +14,25 @@ import {
 import './Topbar.css'; // Carrega o CSS atualizado
 
 const Topbar = ({ onLogout, currentUser }) => {
+    const { stompClient, isConnected } = useWebSocket();
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    useEffect(() => {
+        if (isConnected && stompClient && currentUser) {
+            const subscription = stompClient.subscribe(`/user/${currentUser.id}/topic/notificacoes`, (message) => {
+                const newNotification = JSON.parse(message.body);
+                setNotifications((prev) => [newNotification, ...prev]);
+                setUnreadCount((prev) => prev + 1);
+            });
+
+            return () => {
+                subscription.unsubscribe();
+            };
+        }
+    }, [isConnected, stompClient, currentUser]);
 
     // ✅ 2. Lógica do Tema MOVIDA para cá
     const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
@@ -54,11 +73,32 @@ const Topbar = ({ onLogout, currentUser }) => {
                 </Link>
                 <Link to="/mensagens" className="nav-icon" data-tooltip="Mensagens">
                     <FontAwesomeIcon icon={faCommentDots} />
-                    <span className="badge">3</span> {/* Manter ou buscar dinamicamente */}
+                    {/* <span className="badge">3</span> */} {/* Placeholder a ser removido ou dinamizado */}
                 </Link>
-                <div className="nav-icon" data-tooltip="Notificações" id="notifications-icon">
-                    <FontAwesomeIcon icon={faBell} />
-                    {/* Badge de notificações */}
+                <div className="nav-icon notifications-container" data-tooltip="Notificações">
+                    <div onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setUnreadCount(0); }}>
+                        <FontAwesomeIcon icon={faBell} />
+                        {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                    </div>
+                    {isNotificationsOpen && (
+                        <div className="notifications-dropdown">
+                            <div className="notifications-header">
+                                <h3>Notificações</h3>
+                            </div>
+                            <div className="notifications-list">
+                                {notifications.length > 0 ? (
+                                    notifications.map((notif, index) => (
+                                        <div className="notification-item" key={index}>
+                                            <p>{notif.mensagem}</p>
+                                            <span className="notification-time">{new Date(notif.data).toLocaleString()}</span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="no-notifications">Nenhuma notificação nova.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ✅ 3. Botão ThemeToggle ADICIONADO AQUI DENTRO */}

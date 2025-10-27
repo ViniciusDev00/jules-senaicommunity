@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import { useWebSocket } from '../../contexts/WebSocketContext.jsx';
 import Topbar from '../../components/Layout/Topbar';
 import Sidebar from '../../components/Layout/Sidebar';
 import './Vagas.css'; // Vamos carregar o NOVO CSS
@@ -162,6 +163,7 @@ const Vagas = ({ onLogout }) => {
     const [vagas, setVagas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
+    const { stompClient, isConnected } = useWebSocket();
     // ✅ NOVO ESTADO: Controla o modal de detalhes
     const [vagaSelecionada, setVagaSelecionada] = useState(null);
     const [filters, setFilters] = useState({
@@ -196,6 +198,19 @@ const Vagas = ({ onLogout }) => {
         };
         fetchData();
     }, [onLogout]);
+
+    useEffect(() => {
+        if (isConnected && stompClient) {
+            const subscription = stompClient.subscribe('/topic/vagas', (message) => {
+                const novaVaga = JSON.parse(message.body);
+                setVagas((prevVagas) => [novaVaga, ...prevVagas]);
+            });
+
+            return () => {
+                subscription.unsubscribe();
+            };
+        }
+    }, [isConnected, stompClient]);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
