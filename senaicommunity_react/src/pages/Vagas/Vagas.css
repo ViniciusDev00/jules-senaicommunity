@@ -8,6 +8,7 @@
     margin-bottom: 1.5rem;
     border: 1px solid var(--border-color);
 }
+<<<<<<< HEAD
 .vagas-header h1 {
     color: var(--text-primary);
     margin-bottom: 0.5rem;
@@ -16,13 +17,27 @@
 }
 .vagas-header p {
     color: var(--text-secondary);
+=======
+.vagas-header h1 { 
+    color: var(--text-primary); 
+    margin-bottom: 0.5rem; 
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+.vagas-header p { 
+    color: var(--text-secondary); 
+>>>>>>> main
     font-size: 1rem;
 }
 
 /* --- Container de Filtros --- */
 .filters-container {
     display: flex;
+<<<<<<< HEAD
     flex-wrap: wrap;
+=======
+    flex-wrap: wrap; 
+>>>>>>> main
     gap: 1rem;
     padding: 1.5rem;
     background-color: var(--bg-secondary);
@@ -34,9 +49,15 @@
 .search-vaga svg { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
 .search-vaga input, .filters select {
     width: 100%; padding: 0.85rem; background-color: var(--bg-tertiary);
+<<<<<<< HEAD
     border: 1px solid var(--border-color); border-radius: 8px;
     color: var(--text-primary); font-size: 0.9375rem; transition: var(--transition);
     appearance: none;
+=======
+    border: 1px solid var(--border-color); border-radius: 8px; 
+    color: var(--text-primary); font-size: 0.9375rem; transition: var(--transition);
+    appearance: none; 
+>>>>>>> main
 }
 .search-vaga input { padding-left: 2.75rem; }
 .search-vaga input:focus, .filters select:focus {
@@ -44,8 +65,13 @@
     background-color: var(--bg-primary); box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
 }
 .filters { display: flex; flex-wrap: wrap; gap: 1rem; flex: 3; }
+<<<<<<< HEAD
 .filters select {
     flex: 1; min-width: 150px; padding-right: 2.5rem;
+=======
+.filters select { 
+    flex: 1; min-width: 150px; padding-right: 2.5rem; 
+>>>>>>> main
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w30.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238b949e' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
     background-repeat: no-repeat; background-position: right 0.75rem center;
     background-size: 16px 12px;
@@ -64,7 +90,11 @@
     border: 1px solid var(--border-color); padding: 1.5rem; transition: var(--transition);
     display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
+<<<<<<< HEAD
 .vaga-card:hover {
+=======
+.vaga-card:hover { 
+>>>>>>> main
     transform: translateY(-5px); border-color: var(--accent-primary);
     box-shadow: 0 8px 12px rgba(0,0,0,0.15);
 }
@@ -78,13 +108,18 @@
 .save-vaga-btn { background: none; border: none; color: var(--text-secondary); font-size: 1.1rem; cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: var(--transition); }
 .save-vaga-btn:hover { color: var(--accent-primary); background-color: var(--bg-tertiary); }
 
+<<<<<<< HEAD
 .vaga-descricao {
+=======
+.vaga-descricao { 
+>>>>>>> main
     font-size: 0.9375rem; line-height: 1.6; color: var(--text-secondary);
     margin-bottom: 1rem; overflow: hidden; text-overflow: ellipsis;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
 }
 
 .vaga-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+<<<<<<< HEAD
 .tag {
     background-color: var(--bg-tertiary); color: var(--text-secondary);
     padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.75rem;
@@ -101,6 +136,24 @@
     background-color: var(--accent-primary); color: #fff; border: none;
     padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600;
     cursor: pointer; transition: var(--transition);
+=======
+.tag { 
+    background-color: var(--bg-tertiary); color: var(--text-secondary); 
+    padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.75rem; 
+    font-weight: 500; text-transform: capitalize; border: 1px solid var(--border-color);
+}
+
+.vaga-card-footer { 
+    display: flex; justify-content: space-between; align-items: center; 
+    border-top: 1px solid var(--border-color); padding-top: 1rem;
+    margin-top: auto; 
+}
+.vaga-publicado { font-size: 0.8125rem; color: var(--text-tertiary); display: flex; align-items: center; gap: 0.5rem; }
+.vaga-candidatar-btn { 
+    background-color: var(--accent-primary); color: #fff; border: none; 
+    padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; 
+    cursor: pointer; transition: var(--transition); 
+>>>>>>> main
 }
 .vaga-candidatar-btn:hover { background-color: var(--accent-secondary); transform: scale(1.03); }
 
@@ -108,36 +161,61 @@
 .sem-vagas, .loading-state {
     text-align: center; padding: 4rem 2rem; color: var(--text-secondary);
     background-color: var(--bg-secondary); border-radius: var(--card-radius);
+<<<<<<< HEAD
     border: 1px dashed var(--border-color); grid-column: 1 / -1;
+=======
+    border: 1px dashed var(--border-color); grid-column: 1 / -1; 
+>>>>>>> main
 }
 .sem-vagas h3 { color: var(--text-primary); font-size: 1.25rem; margin-bottom: 0.5rem; }
 
 
 /* --- ESTILOS DO MODAL DE DETALHES DE VAGA --- */
 /* Reutilizando estilos base do modal (que devem vir do Projetos.css ou global) */
+<<<<<<< HEAD
 .modal-overlay.visible {
     /* Esta regra deve existir no seu global.css ou Projetos.css. Recriando aqui por segurança */
     display: flex;
+=======
+.modal-overlay.visible { 
+    /* Esta regra deve existir no seu global.css ou Projetos.css. Recriando aqui por segurança */
+    display: flex; 
+>>>>>>> main
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0,0,0,0.7); z-index: 2000;
     align-items: center; justify-content: center;
     padding: 1rem; backdrop-filter: blur(5px);
 }
+<<<<<<< HEAD
 .modal-content {
      /* Esta regra deve existir no seu global.css ou Projetos.css. Recriando aqui por segurança */
      background-color: var(--bg-secondary);
+=======
+.modal-content { 
+     /* Esta regra deve existir no seu global.css ou Projetos.css. Recriando aqui por segurança */
+     background-color: var(--bg-secondary); 
+>>>>>>> main
      border-radius: var(--card-radius);
      box-shadow: var(--shadow);
      display: flex; flex-direction: column; overflow: hidden;
      border: 1px solid var(--border-color);
      max-height: 90vh; width: 90%;
+<<<<<<< HEAD
      max-width: 600px;
 }
+=======
+     max-width: 600px; 
+} 
+>>>>>>> main
 
 .modal-content.modal-detalhe-vaga { max-width: 700px; }
 
 .detalhe-header-vaga {
+<<<<<<< HEAD
     background-color: var(--bg-tertiary);
+=======
+    background-color: var(--bg-tertiary); 
+>>>>>>> main
     border-bottom: 1px solid var(--border-color);
     padding: 1.5rem;
     display: flex;
@@ -192,7 +270,11 @@
     background-color: var(--bg-tertiary);
 }
 .btn-cancel { /* Herda do .btn-cancel geral */
+<<<<<<< HEAD
     background-color: var(--bg-quaternary);
+=======
+    background-color: var(--bg-quaternary); 
+>>>>>>> main
     color: var(--text-primary); border: none;
     padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 600;
 }
@@ -213,7 +295,11 @@
     .filters { flex-direction: column; }
     .vagas-grid { grid-template-columns: 1fr; gap: 1rem; }
     .vaga-card { padding: 1rem; }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> main
     /* Responsividade do Modal */
     .modal-content.modal-detalhe-vaga { max-width: 95%; }
     .detalhe-header-vaga { padding: 1rem; }

@@ -130,14 +130,22 @@
      .container-chat > .sidebar { display: none; }
      .chat-input-area {
         /* Ajusta o 'left' para começar depois da sidebar de conversas */
+<<<<<<< HEAD
         left: 340px;
+=======
+        left: 340px; 
+>>>>>>> main
         width: calc(100% - 340px);
      }
 }
 
 @media (max-width: 768px) {
     .container-chat { grid-template-columns: 1fr; }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> main
     /* Esconde a lista se o chat estiver ativo */
     .chat-conversations-sidebar.hidden-mobile {
         display: none;

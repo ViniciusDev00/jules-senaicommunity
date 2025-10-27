@@ -4,9 +4,15 @@ import React, { useState, useEffect } from 'react'; // Hooks já estavam aqui
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // Ícone do Sol/Lua já está importado de ThemeToggle, mas podemos precisar deles aqui
+<<<<<<< HEAD
 import {
     faHome, faCommentDots, faBell, faChevronDown, faUserEdit, faUserSlash,
     faSignOutAlt, faSearch, faMoon, faSun,
+=======
+import { 
+    faHome, faCommentDots, faBell, faChevronDown, faUserEdit, faUserSlash, 
+    faSignOutAlt, faSearch, faMoon, faSun, 
+>>>>>>> main
     faCog // ✅ 1. ÍCONE ADICIONADO
 } from '@fortawesome/free-solid-svg-icons';
 // import ThemeToggle from '../Auth/ThemeToggle'; // Não precisa mais importar separado se a lógica está aqui
@@ -38,7 +44,11 @@ const Topbar = ({ onLogout, currentUser }) => {
         <header className="topbar">
             <div className="header-left">
                 {/* Link para a página principal */}
+<<<<<<< HEAD
                 <Link to="/principal" className="logo-link">
+=======
+                <Link to="/principal" className="logo-link"> 
+>>>>>>> main
                     <h1 className="logo"><span className="highlight">SENAI </span>Community</h1>
                 </Link>
             </div>
@@ -74,6 +84,7 @@ const Topbar = ({ onLogout, currentUser }) => {
                         <img src={userImage} alt="Perfil" />
                     </div>
                     {/* Ocultar nome em telas pequenas se necessário */}
+<<<<<<< HEAD
                     <span className="username-display">{currentUser?.nome || 'Usuário'}</span>
                     <FontAwesomeIcon icon={faChevronDown} className={`dropdown-arrow ${isMenuOpen ? 'open' : ''}`} />
                 </div>
@@ -85,6 +96,19 @@ const Topbar = ({ onLogout, currentUser }) => {
                         {/* ✅ 2. LINK DE CONFIGURAÇÕES ADICIONADO */}
                         <Link to="/configuracoes" onClick={() => setIsMenuOpen(false)}><FontAwesomeIcon icon={faCog} /> Configurações</Link>
 
+=======
+                    <span className="username-display">{currentUser?.nome || 'Usuário'}</span> 
+                    <FontAwesomeIcon icon={faChevronDown} className={`dropdown-arrow ${isMenuOpen ? 'open' : ''}`} />
+                </div>
+                
+                {isMenuOpen && (
+                    <div className="dropdown-menu show"> 
+                        <Link to="/perfil" onClick={() => setIsMenuOpen(false)}><FontAwesomeIcon icon={faUserEdit} /> Meu Perfil</Link>
+                        
+                        {/* ✅ 2. LINK DE CONFIGURAÇÕES ADICIONADO */}
+                        <Link to="/configuracoes" onClick={() => setIsMenuOpen(false)}><FontAwesomeIcon icon={faCog} /> Configurações</Link>
+                        
+>>>>>>> main
                         {/* <a href="#" className="danger"><FontAwesomeIcon icon={faUserSlash} /> Excluir Conta</a> */}
                         <a href="#" onClick={() => { onLogout(); setIsMenuOpen(false); }}><FontAwesomeIcon icon={faSignOutAlt} /> Sair</a>
                     </div>

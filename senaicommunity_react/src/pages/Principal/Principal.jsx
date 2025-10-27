@@ -11,7 +11,11 @@ import RightSidebar from './RightSidebar.jsx';
 // CSS
 import './Principal.css';
 
+<<<<<<< HEAD
 const Principal = ({ onLogout }) => {
+=======
+const Principal = ({ onLogout }) => { 
+>>>>>>> main
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -25,11 +29,19 @@ const Principal = ({ onLogout }) => {
                 handleLogout(); // Se não tem token, faz logout
                 return;
             }
+<<<<<<< HEAD
 
             try {
                 // Configura o header do Axios para todas as requisições futuras
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
+=======
+            
+            try {
+                // Configura o header do Axios para todas as requisições futuras
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                
+>>>>>>> main
                 const response = await axios.get('http://localhost:8080/usuarios/me');
                 setCurrentUser(response.data);
             } catch (error) {
@@ -54,7 +66,11 @@ const Principal = ({ onLogout }) => {
 
     return (
         <div>
+<<<<<<< HEAD
             <Topbar onLogout={handleLogout} currentUser={currentUser} />
+=======
+            <Topbar onLogout={handleLogout} currentUser={currentUser} /> 
+>>>>>>> main
             <div className="container">
                 <Sidebar currentUser={currentUser} />
                 <MainContent currentUser={currentUser} />

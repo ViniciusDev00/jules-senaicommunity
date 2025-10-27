@@ -43,83 +43,145 @@ function App() {
                 {/* Rotas Públicas */}
                 <Route path="/login" element={<Login onLogin={handleLogin} />} />
                 <Route path="/cadastro" element={<Cadastro />} />
+<<<<<<< HEAD
 
                 {/* Rotas Privadas (dentro do PrivateRoute) */}
                 <Route
+=======
+                
+                {/* Rotas Privadas (dentro do PrivateRoute) */}
+                <Route 
+>>>>>>> main
                     path="/principal"
                     element={
                         <PrivateRoute>
                             <Principal onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
                 />
                 <Route
+=======
+                    } 
+                />
+                <Route 
+>>>>>>> main
                     path="/perfil"
                     element={
                         <PrivateRoute>
                             <Perfil onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
                 />
 
                 {/* ✅ NOVAS ROTAS ADICIONADAS */}
                 <Route
+=======
+                    } 
+                />
+                
+                {/* ✅ NOVAS ROTAS ADICIONADAS */}
+                <Route 
+>>>>>>> main
                     path="/projetos"
                     element={
                         <PrivateRoute>
                             <Projetos onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
                 />
                 <Route
+=======
+                    } 
+                />
+                <Route 
+>>>>>>> main
                     path="/vagas"
                     element={
                         <PrivateRoute>
                             <Vagas onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
                 />
                 <Route
+=======
+                    } 
+                />
+                <Route 
+>>>>>>> main
                     path="/eventos"
                     element={
                         <PrivateRoute>
                             <Eventos onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
                 />
                 <Route
+=======
+                    } 
+                />
+                <Route 
+>>>>>>> main
                     path="/mensagens"
                     element={
                         <PrivateRoute>
                             <Mensagens onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
                 />
                 <Route
+=======
+                    } 
+                />
+                <Route 
+>>>>>>> main
                     path="/encontrar-pessoas"
                     element={
                         <PrivateRoute>
                             <EncontrarPessoas onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
                 />
                 <Route
+=======
+                    } 
+                />
+                <Route 
+>>>>>>> main
                     path="/conexoes"
                     element={
                         <PrivateRoute>
                             <MinhasConexoes onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
                 />
 
                 {/* ✅ 2. NOVA ROTA DE CONFIGURAÇÕES ADICIONADA */}
                 <Route
+=======
+                    } 
+                />
+                
+                {/* ✅ 2. NOVA ROTA DE CONFIGURAÇÕES ADICIONADA */}
+                <Route 
+>>>>>>> main
                     path="/configuracoes"
                     element={
                         <PrivateRoute>
                             <Configuracoes onLogout={handleLogout} />
                         </PrivateRoute>
+<<<<<<< HEAD
                     }
+=======
+                    } 
+>>>>>>> main
                 />
                 {/* ✅ FIM DAS NOVAS ROTAS */}
 

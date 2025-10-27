@@ -154,7 +154,11 @@
 
 .toggle-switch-checkbox:checked + .toggle-switch-label .toggle-switch-switch {
     /* Move o círculo para a direita */
+<<<<<<< HEAD
     transform: translateX(24px);
+=======
+    transform: translateX(24px); 
+>>>>>>> main
 }
 
 .config-select {

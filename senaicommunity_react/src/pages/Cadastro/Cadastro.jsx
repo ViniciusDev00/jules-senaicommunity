@@ -29,7 +29,11 @@ const Cadastro = () => {
         foto: null,
         terms: false,
     });
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> main
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -48,11 +52,19 @@ const Cadastro = () => {
             return () => mask.destroy();
         }
     }, []);
+<<<<<<< HEAD
 
     // Função para lidar com mudanças nos inputs
     const handleChange = (e) => {
         const { name, value, type, checked, files } = e.target;
 
+=======
+    
+    // Função para lidar com mudanças nos inputs
+    const handleChange = (e) => {
+        const { name, value, type, checked, files } = e.target;
+        
+>>>>>>> main
         if (name === 'senha') {
             checkPasswordStrength(value);
         }
@@ -72,21 +84,37 @@ const Cadastro = () => {
         if (/[a-z]/.test(password)) score++;
         if (/[0-9]/.test(password)) score++;
         if (/[^A-Za-z0-9]/.test(password)) score++;
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> main
         if (score < 3) setPasswordStrength(1);
         else if (score < 5) setPasswordStrength(2);
         else setPasswordStrength(3);
     };
+<<<<<<< HEAD
 
     // Função para submeter o formulário
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+=======
+    
+    // Função para submeter o formulário
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+>>>>>>> main
         if (formData.senha !== formData.confirmarSenha) {
             Swal.fire({ icon: 'error', title: 'Oops...', text: 'As senhas não coincidem!' });
             return;
         }
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> main
         if (!formData.terms) {
             Swal.fire({ icon: 'warning', title: 'Atenção', text: 'Você deve aceitar os termos e a política de privacidade.' });
             return;
@@ -124,6 +152,7 @@ const Cadastro = () => {
                 text: 'Você será redirecionado para a tela de login.',
                 timer: 2500, showConfirmButton: false, allowOutsideClick: false
             });
+<<<<<<< HEAD
 
             navigate('/login');
 
@@ -131,6 +160,15 @@ const Cadastro = () => {
             console.error('Erro no cadastro:', error);
             const errorMessage = error.response?.status === 409
                 ? 'Este e-mail já está cadastrado!'
+=======
+            
+            navigate('/login'); 
+            
+        } catch (error) {
+            console.error('Erro no cadastro:', error);
+            const errorMessage = error.response?.status === 409 
+                ? 'Este e-mail já está cadastrado!' 
+>>>>>>> main
                 : 'Erro ao cadastrar. Verifique os dados e tente novamente.';
             Swal.fire({ icon: 'error', title: 'Erro no Cadastro', text: errorMessage });
         } finally {
@@ -155,6 +193,7 @@ const Cadastro = () => {
                     <form onSubmit={handleSubmit} className="auth-form">
                         <InputField icon="fas fa-user" type="text" name="nome" placeholder="Nome completo" value={formData.nome} onChange={handleChange} required />
                         <InputField icon="fas fa-envelope" type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
+<<<<<<< HEAD
 
                         <div className="input-group">
                             <i className="fas fa-lock"></i>
@@ -165,6 +204,18 @@ const Cadastro = () => {
                                 value={formData.senha}
                                 onChange={handleChange}
                                 required
+=======
+                        
+                        <div className="input-group">
+                            <i className="fas fa-lock"></i>
+                            <input 
+                                type={isPasswordVisible ? "text" : "password"} 
+                                name="senha" 
+                                placeholder="Senha" 
+                                value={formData.senha} 
+                                onChange={handleChange} 
+                                required 
+>>>>>>> main
                             />
                             <button type="button" className="toggle-password" onClick={() => setIsPasswordVisible(!isPasswordVisible)}>
                                 <i className={`fas ${isPasswordVisible ? 'fa-eye-slash' : 'fa-eye'}`}></i>
@@ -191,7 +242,11 @@ const Cadastro = () => {
                          </div>
 
                         <InputField icon="fas fa-birthday-cake" type="text" id="dataNascimento" name="dataNascimento" placeholder="Data de Nascimento (DD/MM/AAAA)" value={formData.dataNascimento} onChange={handleChange} required />
+<<<<<<< HEAD
 
+=======
+                        
+>>>>>>> main
                         <FileUpload file={formData.foto} setFile={(file) => setFormData(prev => ({ ...prev, foto: file }))} />
 
                         <label className="checkbox terms">
@@ -203,7 +258,11 @@ const Cadastro = () => {
                         <button type="submit" className="btn btn-primary" disabled={loading || !formData.terms}>
                             {loading ? <span className="spinner"></span> : <span className="btn-text">Cadastrar</span>}
                         </button>
+<<<<<<< HEAD
 
+=======
+                        
+>>>>>>> main
                         <div className="auth-footer">
                             <p>Já tem uma conta? <a href="/login" className="text-link">Faça login</a></p>
                         </div>

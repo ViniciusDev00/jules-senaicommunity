@@ -199,14 +199,24 @@
     .sidebar {
         position: fixed;
         left: 0;
+<<<<<<< HEAD
         top: 60px;
         height: calc(100% - 60px);
         transform: translateX(-100%);
+=======
+        top: 60px; 
+        height: calc(100% - 60px);
+        transform: translateX(-100%); 
+>>>>>>> main
         transition: transform 0.3s ease-in-out;
         z-index: 999;
         background-color: var(--bg-primary);
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> main
     .sidebar.is-open {
         transform: translateX(0);
     }
