@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useWebSocket } from './contexts/WebSocketContext.jsx';
 
 // Importe as páginas de autenticação
 import Login from './pages/Login/Login.jsx';
@@ -26,15 +27,25 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
     const [token, setToken] = useState(localStorage.getItem('authToken'));
+    const { connect, disconnect } = useWebSocket();
+
+    useEffect(() => {
+        const currentToken = localStorage.getItem('authToken');
+        if (currentToken) {
+            connect(currentToken);
+        }
+    }, [connect]);
 
     const handleLogin = (newToken) => {
         localStorage.setItem('authToken', newToken);
         setToken(newToken);
+        connect(newToken);
     };
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
         setToken(null);
+        disconnect();
     };
 
     return (
