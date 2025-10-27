@@ -9,6 +9,7 @@ import './Mensagens.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane, faEllipsisV, faSearch, faSpinner, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useWebSocket } from '../../contexts/WebSocketContext.jsx';
 
 // --- COMPONENTE CONVERSATIONListItem ---
 const ConversationListItem = ({ conversa, ativa, onClick }) => (
@@ -49,7 +50,7 @@ const Mensagens = ({ onLogout }) => {
     const [loadingMensagens, setLoadingMensagens] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [novaMensagem, setNovaMensagem] = useState('');
-    const stompClient = useRef(null); // Para WebSocket futuro
+    const { stompClient, isConnected } = useWebSocket();
     const messagesEndRef = useRef(null);
 
     const location = useLocation();
@@ -203,25 +204,51 @@ const Mensagens = ({ onLogout }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [mensagens]);
 
+    useEffect(() => {
+        if (isConnected && stompClient && conversaAtiva && currentUser) {
+            const topic = conversaAtiva.tipo === 'grupo'
+                ? `/topic/chat/grupo/${conversaAtiva.id}`
+                : `/topic/chat/privado/${currentUser.id}/${conversaAtiva.id}`;
+
+            const subscription = stompClient.subscribe(topic, (message) => {
+                const newMessage = JSON.parse(message.body);
+                // Evita adicionar a mensagem que o próprio usuário enviou (caso o backend a retorne)
+                if (newMessage.autorId !== currentUser.id) {
+                    setMensagens((prevMessages) => [...prevMessages, newMessage]);
+                }
+            });
+
+            return () => {
+                subscription.unsubscribe();
+            };
+        }
+    }, [isConnected, stompClient, conversaAtiva, currentUser]);
+
     // Função de enviar
-    const handleEnviarMensagem = (e) => {
+    const handleEnviarMensagem = async (e) => {
         e.preventDefault();
-        if (!novaMensagem.trim() || !conversaAtiva || !currentUser) return;
+        if (!novaMensagem.trim() || !conversaAtiva || !currentUser || !stompClient || !isConnected) return;
 
         const dataEnvio = new Date().toISOString();
+        const endpoint = conversaAtiva.tipo === 'grupo'
+            ? `/app/chat/grupo/${conversaAtiva.id}`
+            : `/app/chat/privado/${conversaAtiva.id}`;
 
         const mensagemParaEnviar = {
             autorId: currentUser.id,
             nomeAutor: currentUser.nome,
             conteudo: novaMensagem,
             dataEnvio: dataEnvio,
-            tipo: conversaAtiva.tipo
         };
 
-        // Atualização otimista da UI (adiciona mensagem localmente)
-        setMensagens(prev => [...prev, mensagemParaEnviar]);
+        stompClient.publish({
+            destination: endpoint,
+            body: JSON.stringify(mensagemParaEnviar),
+        });
+
+        // Atualização otimista da UI
+        setMensagens(prev => [...prev, { ...mensagemParaEnviar, tipo: conversaAtiva.tipo }]);
         setNovaMensagem('');
-        e.target.elements.messageInput.value = '';
     };
 
     // Função para voltar para a lista no mobile

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useWebSocket } from '../../contexts/WebSocketContext.jsx';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faImage, faVideo, faCode, faThumbsUp, faComment, faShareSquare, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
 // --- COMPONENTE POSTCREATOR CORRIGIDO ---
 
-const PostCreator = ({ currentUser }) => {
+const PostCreator = ({ currentUser, stompClient, isConnected }) => {
     // 1. ESTADO ATUALIZADO: Trocamos 'isExpanded' por 'postType'
     // (null = fechado, 'text' = texto, 'photo' = foto, 'video' = video, 'code' = código)
     const [postType, setPostType] = useState(null);
@@ -62,12 +63,25 @@ const PostCreator = ({ currentUser }) => {
         }
 
         try {
-            await axios.post(endpoint, formData, {
+            const response = await axios.post(endpoint, formData, {
                  // O Axios define o 'Content-Type: multipart/form-data' sozinho
                  // quando você envia um FormData.
             });
+
+            if (isConnected && stompClient) {
+                const newPostForSocket = {
+                    ...response.data,
+                    conteudo: postText,
+                    nomeAutor: currentUser.nome,
+                    urlFotoAutor: currentUser.urlFotoPerfil
+                };
+                stompClient.publish({
+                    destination: '/app/post',
+                    body: JSON.stringify(newPostForSocket),
+                });
+            }
+
             handleClose(); // Fecha e limpa o modal
-            // TODO: Adicionar lógica para recarregar o feed
         } catch (error) {
             console.error("Erro ao publicar:", error);
             alert("Não foi possível publicar a postagem.");
@@ -159,6 +173,20 @@ const PostCreator = ({ currentUser }) => {
 const MainContent = ({ currentUser }) => {
     const [posts, setPosts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { stompClient, isConnected } = useWebSocket();
+
+    useEffect(() => {
+        if (isConnected && stompClient) {
+            const subscription = stompClient.subscribe('/topic/feed', (message) => {
+                const newPost = JSON.parse(message.body);
+                setPosts((prevPosts) => [newPost, ...prevPosts]);
+            });
+
+            return () => {
+                subscription.unsubscribe();
+            };
+        }
+    }, [isConnected, stompClient]);
 
     useEffect(() => {
         const fetchPosts = async () => {
@@ -182,7 +210,7 @@ const MainContent = ({ currentUser }) => {
         <main className="main-content">
             <div className="post-creator">
                 {/* O PostCreator corrigido será renderizado aqui */}
-                <PostCreator currentUser={currentUser} />
+                <PostCreator currentUser={currentUser} stompClient={stompClient} isConnected={isConnected} />
             </div>
             <div className="feed-separator"><hr/></div>
             <div className="posts-container">

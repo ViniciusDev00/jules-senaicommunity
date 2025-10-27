@@ -13,6 +13,7 @@
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.0",
+    "@stomp/stompjs": "^7.2.1",
     "axios": "^1.12.2",
     "imask": "^7.6.1",
     "lodash": "^4.17.21",
@@ -20,6 +21,7 @@
     "react-dom": "^19.1.1",
     "react-dropzone": "^14.3.8",
     "react-router-dom": "^7.9.3",
+    "sockjs-client": "^1.6.1",
     "sweetalert2": "^11.23.0"
   },
   "devDependencies": {
