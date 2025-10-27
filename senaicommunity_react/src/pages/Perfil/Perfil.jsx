@@ -45,13 +45,8 @@ const Perfil = ({ onLogout }) => {
     }
 
     const userImage = currentUser.urlFotoPerfil || "https://via.placeholder.com/150";
-<<<<<<< HEAD
     const userDob = currentUser.dataNascimento
         ? new Date(currentUser.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
-=======
-    const userDob = currentUser.dataNascimento 
-        ? new Date(currentUser.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) 
->>>>>>> main
         : 'Não informado';
 
     return (

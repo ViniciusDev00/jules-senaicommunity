@@ -22,24 +22,24 @@ const Background = () => {
             const duration = 15 + Math.random() * 10;
 
             particle.classList.add('particle');
-            
+
             particle.style.width = `${size}px`;
             particle.style.height = `${size}px`;
             particle.style.left = `${posX}%`;
             particle.style.top = `${posY}%`;
-            
+
             particle.style.animationDelay = `${delay}s`;
             particle.style.animationDuration = `${duration}s`;
-            
+
             if (i % 5 === 0) {
                 particle.classList.add('highlight-particle');
                 particle.style.animationDuration = `${12 + Math.random() * 6}s`;
             }
-            
+
             if (size < 4) particle.classList.add('small-particle');
             else if (size < 6) particle.classList.add('medium-particle');
             else particle.classList.add('large-particle');
-            
+
             background.appendChild(particle);
         }
     }, []); // O array vazio [] no final garante que o efeito rode apenas uma vez.

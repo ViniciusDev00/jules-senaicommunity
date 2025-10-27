@@ -4,7 +4,6 @@
 .search-header-card {
     margin-bottom: 1.5rem; /* Espaçamento abaixo do header */
 }
-<<<<<<< HEAD
 .widget-title {
     font-size: 1.25rem;
     font-weight: 600;
@@ -20,23 +19,6 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-secondary);
-=======
-.widget-title { 
-    font-size: 1.25rem; 
-    font-weight: 600; 
-    margin-bottom: 1rem; 
-    color: var(--text-primary);
-}
-.search-box { 
-    position: relative; 
-}
-.search-box svg { 
-    position: absolute; 
-    left: 1rem; 
-    top: 50%; 
-    transform: translateY(-50%); 
-    color: var(--text-secondary); 
->>>>>>> main
     font-size: 1rem;
 }
 .search-box input {
@@ -89,7 +71,6 @@
     color: inherit; /* Herda a cor do texto */
 }
 
-<<<<<<< HEAD
 .user-card-avatar {
     position: relative;
     flex-shrink: 0; /* Impede que o avatar encolha */
@@ -99,23 +80,11 @@
     height: 60px;
     border-radius: 50%;
     object-fit: cover;
-=======
-.user-card-avatar { 
-    position: relative; 
-    flex-shrink: 0; /* Impede que o avatar encolha */
-}
-.user-card-avatar img { 
-    width: 60px; 
-    height: 60px; 
-    border-radius: 50%; 
-    object-fit: cover; 
->>>>>>> main
     border: 2px solid var(--border-color);
 }
 /* Estilo para status online/offline (se for usar) */
 /* .user-card-avatar .status { ... } */
 
-<<<<<<< HEAD
 .user-card-info {
     flex-grow: 1;
     overflow: hidden; /* Evita que texto longo quebre o layout */
@@ -123,38 +92,21 @@
 .user-card-info h4 {
     margin: 0 0 0.25rem 0;
     font-size: 1.1rem;
-=======
-.user-card-info { 
-    flex-grow: 1; 
-    overflow: hidden; /* Evita que texto longo quebre o layout */
-}
-.user-card-info h4 { 
-    margin: 0 0 0.25rem 0; 
-    font-size: 1.1rem; 
->>>>>>> main
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap; /* Impede quebra de linha */
     overflow: hidden;
     text-overflow: ellipsis; /* Adiciona "..." se nome for muito longo */
 }
-<<<<<<< HEAD
 .user-card-info p {
     margin: 0;
     font-size: 0.85rem;
     color: var(--text-secondary);
-=======
-.user-card-info p { 
-    margin: 0; 
-    font-size: 0.85rem; 
-    color: var(--text-secondary); 
->>>>>>> main
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-<<<<<<< HEAD
 .user-card-action {
     margin-left: auto; /* Empurra o botão para a direita */
     flex-shrink: 0; /* Impede que o botão encolha */
@@ -169,41 +121,18 @@
     display: inline-flex; /* Usa inline-flex para alinhar ícone e texto */
     align-items: center;
     gap: 0.5rem;
-=======
-.user-card-action { 
-    margin-left: auto; /* Empurra o botão para a direita */
-    flex-shrink: 0; /* Impede que o botão encolha */
-}
-.user-card-action .btn, .user-card-action .respond-link { 
-    padding: 0.6rem 1rem; 
-    border: none; 
-    border-radius: 6px; 
-    cursor: pointer; 
-    font-weight: 600; 
-    font-size: 0.8rem; 
-    display: inline-flex; /* Usa inline-flex para alinhar ícone e texto */
-    align-items: center; 
-    gap: 0.5rem; 
->>>>>>> main
     text-decoration: none; /* Para o Link */
     white-space: nowrap; /* Evita quebra de linha no botão */
     transition: var(--transition);
 }
-<<<<<<< HEAD
 .user-card-action .btn-primary, .user-card-action .respond-link {
     background-color: var(--accent-primary);
     color: white;
-=======
-.user-card-action .btn-primary, .user-card-action .respond-link { 
-    background-color: var(--accent-primary); 
-    color: white; 
->>>>>>> main
 }
 .user-card-action .btn-primary:hover, .user-card-action .respond-link:hover {
      background-color: var(--accent-secondary);
      transform: scale(1.03);
 }
-<<<<<<< HEAD
 .user-card-action .btn-secondary {
     background-color: var(--bg-quaternary);
     color: var(--text-secondary);
@@ -212,16 +141,6 @@
 .user-card-action .btn.disabled {
     cursor: default;
     opacity: 0.7;
-=======
-.user-card-action .btn-secondary { 
-    background-color: var(--bg-quaternary); 
-    color: var(--text-secondary); 
-    border: 1px solid var(--border-color);
-}
-.user-card-action .btn.disabled { 
-    cursor: default; 
-    opacity: 0.7; 
->>>>>>> main
 }
 .user-card-action .btn.disabled:hover {
     transform: none;
@@ -255,15 +174,9 @@
 
 @media (max-width: 768px) {
     .container { grid-template-columns: 1fr; }
-<<<<<<< HEAD
 
     .widget-title { font-size: 1.1rem; }
 
-=======
-    
-    .widget-title { font-size: 1.1rem; }
-    
->>>>>>> main
     .user-card {
         padding: 0.75rem; /* Menor padding */
         gap: 0.75rem;
@@ -274,11 +187,7 @@
     }
     .user-card-info h4 { font-size: 1rem; }
     .user-card-info p { font-size: 0.8rem; }
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> main
     .user-card-action .btn, .user-card-action .respond-link {
         padding: 0.5rem 0.75rem;
         font-size: 0.75rem;

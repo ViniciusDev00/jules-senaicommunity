@@ -38,11 +38,7 @@ const Login = ({ onLogin }) => {
             localStorage.setItem('authToken', token); // Armazena o token de autenticação
 
             onLogin(token); // Informa ao App.jsx que o login foi bem-sucedido
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> main
             // Redireciona para a página principal
             navigate('/principal');
 
@@ -72,7 +68,6 @@ const Login = ({ onLogin }) => {
                     <form onSubmit={handleSubmit} className="auth-form">
                         <div className="input-group">
                             <FontAwesomeIcon icon={faEnvelope} />
-<<<<<<< HEAD
                             <input
                                 type="email"
                                 name="email"
@@ -92,37 +87,12 @@ const Login = ({ onLogin }) => {
                                 value={senha}
                                 onChange={(e) => setSenha(e.target.value)}
                                 required
-=======
-                            <input 
-                                type="email" 
-                                name="email" 
-                                placeholder="Email" 
-                                value={email} 
-                                onChange={(e) => setEmail(e.target.value)} 
-                                required 
-                            />
-                        </div>
-                        
-                        <div className="input-group">
-                            <FontAwesomeIcon icon={faLock} />
-                            <input 
-                                type={isPasswordVisible ? "text" : "password"} 
-                                name="senha" 
-                                placeholder="Senha" 
-                                value={senha} 
-                                onChange={(e) => setSenha(e.target.value)} 
-                                required 
->>>>>>> main
                             />
                             <button type="button" className="toggle-password" onClick={() => setIsPasswordVisible(!isPasswordVisible)}>
                                 <FontAwesomeIcon icon={isPasswordVisible ? faEyeSlash : faEye} />
                             </button>
                         </div>
-<<<<<<< HEAD
 
-=======
-                        
->>>>>>> main
                         <div className="auth-options">
                             <label className="checkbox">
                                 <input type="checkbox" />
@@ -135,11 +105,7 @@ const Login = ({ onLogin }) => {
                         <button type="submit" className="btn btn-primary" disabled={loading}>
                             {loading ? <span className="spinner"></span> : 'Entrar'}
                         </button>
-<<<<<<< HEAD
 
-=======
-                        
->>>>>>> main
                         <div className="auth-footer">
                             <p>Não tem uma conta? <Link to="/cadastro" className="text-link">Cadastre-se</Link></p>
                         </div>

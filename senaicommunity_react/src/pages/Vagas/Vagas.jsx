@@ -6,17 +6,10 @@ import Topbar from '../../components/Layout/Topbar';
 import Sidebar from '../../components/Layout/Sidebar';
 import './Vagas.css'; // Vamos carregar o NOVO CSS
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-<<<<<<< HEAD
 import {
     faBookmark, faSearch, faBuilding, faClock,
     // ✅ CORREÇÃO: Ícones adicionados para o Modal
     faTag, faMapMarkerAlt, faSuitcase, faUserShield,
-=======
-import { 
-    faBookmark, faSearch, faBuilding, faClock, 
-    // ✅ CORREÇÃO: Ícones adicionados para o Modal
-    faTag, faMapMarkerAlt, faSuitcase, faUserShield, 
->>>>>>> main
     faInfoCircle, faTimes
 } from '@fortawesome/free-solid-svg-icons'; // Importei ícones adicionais
 
@@ -28,22 +21,14 @@ const VagaDetalheModal = ({ vaga, onClose }) => {
     const nivelMap = { 'JUNIOR': 'Júnior', 'PLENO': 'Pleno', 'SENIOR': 'Sênior' };
     const localMap = { 'REMOTO': 'Remoto', 'HIBRIDO': 'Híbrido', 'PRESENCIAL': 'Presencial' };
     const tipoMap = { 'TEMPO_INTEGRAL': 'Tempo Integral', 'MEIO_PERIODO': 'Meio Período', 'ESTAGIO': 'Estágio', 'TRAINEE': 'Trainee' };
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> main
     // URL de logo de exemplo (mantenha a lógica de fallback)
     const logoUrl = vaga.logoUrl || `https://placehold.co/100x100/161b22/ffffff?text=${vaga.empresa.substring(0, 2)}`;
 
     return (
         <div className="modal-overlay visible" onClick={onClose}>
             <div className="modal-content modal-detalhe-vaga" onClick={e => e.stopPropagation()}>
-<<<<<<< HEAD
 
-=======
-                
->>>>>>> main
                 <div className="modal-header detalhe-header-vaga">
                     <div className="vaga-header-info">
                         <div className="vaga-logo-modal">
@@ -55,11 +40,7 @@ const VagaDetalheModal = ({ vaga, onClose }) => {
                 </div>
 
                 <div className="modal-body detalhe-body">
-<<<<<<< HEAD
 
-=======
-                    
->>>>>>> main
                     {/* Informações Rápidas em Grid */}
                     <div className="detalhe-info-grid">
                         <div className="detalhe-info-item">
@@ -135,13 +116,8 @@ const VagaCard = ({ vaga, onVerDetalhes }) => {
         tipoMap[vaga.tipoContratacao] || vaga.tipoContratacao
     ];
 
-<<<<<<< HEAD
     const shortDesc = vaga.descricao.length > 100
         ? vaga.descricao.substring(0, 100) + '...'
-=======
-    const shortDesc = vaga.descricao.length > 100 
-        ? vaga.descricao.substring(0, 100) + '...' 
->>>>>>> main
         : vaga.descricao;
 
     return (
@@ -161,27 +137,16 @@ const VagaCard = ({ vaga, onVerDetalhes }) => {
                     <FontAwesomeIcon icon={faBookmark} />
                 </button>
             </header>
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> main
             <p className="vaga-descricao">{shortDesc}</p>
 
             <div className="vaga-tags">
                 {tags.map((tag, index) => tag && <span key={index} className="tag">{tag}</span>)}
             </div>
-<<<<<<< HEAD
 
             <footer className="vaga-card-footer">
                 <span className="vaga-publicado">
                     <FontAwesomeIcon icon={faClock} />
-=======
-            
-            <footer className="vaga-card-footer">
-                <span className="vaga-publicado">
-                    <FontAwesomeIcon icon={faClock} /> 
->>>>>>> main
                     {new Date(vaga.dataPublicacao).toLocaleDateString('pt-BR')}
                 </span>
                 {/* ✅ CHAMADA PARA ABRIR O MODAL */}
@@ -196,15 +161,9 @@ const VagaCard = ({ vaga, onVerDetalhes }) => {
 const Vagas = ({ onLogout }) => {
     const [vagas, setVagas] = useState([]);
     const [loading, setLoading] = useState(true);
-<<<<<<< HEAD
     const [currentUser, setCurrentUser] = useState(null);
     // ✅ NOVO ESTADO: Controla o modal de detalhes
     const [vagaSelecionada, setVagaSelecionada] = useState(null);
-=======
-    const [currentUser, setCurrentUser] = useState(null); 
-    // ✅ NOVO ESTADO: Controla o modal de detalhes
-    const [vagaSelecionada, setVagaSelecionada] = useState(null); 
->>>>>>> main
     const [filters, setFilters] = useState({
         busca: '',
         tipo: 'todos',
@@ -215,11 +174,7 @@ const Vagas = ({ onLogout }) => {
     useEffect(() => {
         document.title = 'Senai Community | Vagas';
         const token = localStorage.getItem('authToken');
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> main
         const fetchData = async () => {
             try {
                 const [userRes, vagasRes] = await Promise.all([
@@ -255,11 +210,7 @@ const Vagas = ({ onLogout }) => {
             const searchMatch = !busca ||
                 vaga.titulo.toLowerCase().includes(searchLower) ||
                 vaga.empresa.toLowerCase().includes(searchLower);
-<<<<<<< HEAD
 
-=======
-                
->>>>>>> main
             const tipoMatch = tipo === 'todos' || vaga.tipoContratacao === tipo;
             const localMatch = local === 'todos' || vaga.localizacao === local;
             const nivelMatch = nivel === 'todos' || vaga.nivel === nivel;
@@ -274,16 +225,11 @@ const Vagas = ({ onLogout }) => {
             <div className="container">
                 <Sidebar currentUser={currentUser} />
                 <main className="main-content">
-<<<<<<< HEAD
 
-=======
-                    
->>>>>>> main
                     <header className="vagas-header">
                         <h1>Encontre sua Próxima Oportunidade</h1>
                         <p>Explore vagas de estágio e emprego em empresas de tecnologia parceiras do SENAI.</p>
                     </header>
-<<<<<<< HEAD
 
                     <section className="filters-container">
                         <div className="search-vaga">
@@ -293,17 +239,6 @@ const Vagas = ({ onLogout }) => {
                                 name="busca"
                                 placeholder="Cargo, empresa ou palavra-chave"
                                 onChange={handleFilterChange}
-=======
-                    
-                    <section className="filters-container">
-                        <div className="search-vaga">
-                            <FontAwesomeIcon icon={faSearch} />
-                            <input 
-                                type="text" 
-                                name="busca" 
-                                placeholder="Cargo, empresa ou palavra-chave" 
-                                onChange={handleFilterChange} 
->>>>>>> main
                                 value={filters.busca}
                             />
                         </div>
@@ -331,21 +266,12 @@ const Vagas = ({ onLogout }) => {
                     </section>
 
                     <section className="vagas-grid">
-<<<<<<< HEAD
                         {loading ? <p className="loading-state">Carregando vagas...</p> :
                             filteredVagas.length > 0 ? (
                                 filteredVagas.map(vaga =>
                                     <VagaCard
                                         key={vaga.id}
                                         vaga={vaga}
-=======
-                        {loading ? <p className="loading-state">Carregando vagas...</p> : 
-                            filteredVagas.length > 0 ? (
-                                filteredVagas.map(vaga => 
-                                    <VagaCard 
-                                        key={vaga.id} 
-                                        vaga={vaga} 
->>>>>>> main
                                         onVerDetalhes={setVagaSelecionada} // ✅ PASSA A FUNÇÃO
                                     />
                                 )

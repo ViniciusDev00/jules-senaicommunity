@@ -12,11 +12,7 @@ const BuscarAmigos = ({ onLogout }) => {
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> main
     const backendUrl = 'http://localhost:8080';
 
     // Usamos useCallback para evitar recriar a função de busca a cada renderização
@@ -57,11 +53,7 @@ const BuscarAmigos = ({ onLogout }) => {
 
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, onLogout, searchUsers]);
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> main
     const handleAddFriend = async (userId, index) => {
         try {
             await axios.post(`${backendUrl}/api/amizades/solicitar/${userId}`);
@@ -89,13 +81,8 @@ const BuscarAmigos = ({ onLogout }) => {
                         <h3 className="widget-title">Encontrar Pessoas na Comunidade</h3>
                         <div className="search-box">
                             <i className="fas fa-search"></i>
-<<<<<<< HEAD
                             <input
                                 type="search"
-=======
-                            <input 
-                                type="search" 
->>>>>>> main
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Digite o nome de um aluno ou professor..."

@@ -16,15 +16,9 @@ import './Configuracoes.css'; // Estilos específicos da página
 const ToggleSwitch = ({ id, label, checked, onChange }) => {
     return (
         <div className="toggle-switch">
-<<<<<<< HEAD
             <input
                 type="checkbox"
                 className="toggle-switch-checkbox"
-=======
-            <input 
-                type="checkbox" 
-                className="toggle-switch-checkbox" 
->>>>>>> main
                 id={id}
                 checked={checked}
                 onChange={onChange}
@@ -49,11 +43,7 @@ const Configuracoes = ({ onLogout }) => {
     const [notificacoesEmail, setNotificacoesEmail] = useState(true);
     const [notificacoesPush, setNotificacoesPush] = useState(true);
     // ✅ NOVOS ESTADOS DE ACESSIBILIDADE
-<<<<<<< HEAD
     const [altoContraste, setAltoContraste] = useState(false);
-=======
-    const [altoContraste, setAltoContraste] = useState(false); 
->>>>>>> main
     const [tamanhoFonte, setTamanhoFonte] = useState('normal'); // 'normal', 'grande', 'extra-grande'
 
     useEffect(() => {
@@ -97,11 +87,7 @@ const Configuracoes = ({ onLogout }) => {
     const handleSaveChanges = () => {
         // Lógica para salvar as configurações no backend
         // Incluir altoContraste e tamanhoFonte nos dados enviados
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> main
         Swal.fire({
             icon: 'success',
             title: 'Salvo!',
@@ -146,11 +132,7 @@ const Configuracoes = ({ onLogout }) => {
                 <main className="main-content">
                     <div className="widget-card config-page-card">
                         <h2 className="widget-title">Configurações</h2>
-<<<<<<< HEAD
 
-=======
-                        
->>>>>>> main
                         {/* --- Seção de Perfil --- */}
                         <div className="config-section">
                             <h3>Conta e Perfil</h3>
@@ -180,11 +162,7 @@ const Configuracoes = ({ onLogout }) => {
                                     <h4>Perfil Privado</h4>
                                     <p>Se ativado, apenas suas conexões poderão ver seus projetos e postagens.</p>
                                 </div>
-<<<<<<< HEAD
                                 <ToggleSwitch
-=======
-                                <ToggleSwitch 
->>>>>>> main
                                     id="perfil-privado"
                                     checked={isPerfilPrivado}
                                     onChange={() => setIsPerfilPrivado(!isPerfilPrivado)}
@@ -196,21 +174,13 @@ const Configuracoes = ({ onLogout }) => {
                         <div className="config-section">
                             <h3>Notificações</h3>
                             {/* ... toggles de notificação ... */}
-<<<<<<< HEAD
                              <ToggleSwitch
-=======
-                             <ToggleSwitch 
->>>>>>> main
                                 id="notif-email"
                                 label="Receber notificações por e-mail"
                                 checked={notificacoesEmail}
                                 onChange={() => setNotificacoesEmail(!notificacoesEmail)}
                             />
-<<<<<<< HEAD
                             <ToggleSwitch
-=======
-                            <ToggleSwitch 
->>>>>>> main
                                 id="notif-push"
                                 label="Receber notificações push no navegador"
                                 checked={notificacoesPush}
@@ -226,11 +196,7 @@ const Configuracoes = ({ onLogout }) => {
                                     <h4>Modo de Alto Contraste</h4>
                                     <p>Aumenta o contraste das cores para facilitar a leitura.</p>
                                 </div>
-<<<<<<< HEAD
                                 <ToggleSwitch
-=======
-                                <ToggleSwitch 
->>>>>>> main
                                     id="alto-contraste"
                                     checked={altoContraste}
                                     onChange={() => setAltoContraste(!altoContraste)}
@@ -242,15 +208,9 @@ const Configuracoes = ({ onLogout }) => {
                                     <p>Ajuste o tamanho do texto em toda a plataforma.</p>
                                 </div>
                                 {/* Exemplo com Select - pode ser trocado por botões ou slider */}
-<<<<<<< HEAD
                                 <select
                                     className="config-select"
                                     value={tamanhoFonte}
-=======
-                                <select 
-                                    className="config-select" 
-                                    value={tamanhoFonte} 
->>>>>>> main
                                     onChange={(e) => setTamanhoFonte(e.target.value)}
                                 >
                                     <option value="normal">Normal</option>
@@ -280,11 +240,7 @@ const Configuracoes = ({ onLogout }) => {
 
                     </div>
                 </main>
-<<<<<<< HEAD
 
-=======
-                
->>>>>>> main
                 {/* A RightSidebar não é renderizada aqui */}
             </div>
         </>

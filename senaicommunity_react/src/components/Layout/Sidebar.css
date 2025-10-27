@@ -9,11 +9,7 @@
     padding-bottom: 1rem;
     box-sizing: border-box;
     /* Adiciona margem visual no topo se não for sticky */
-<<<<<<< HEAD
     padding-top: 1rem;
-=======
-    padding-top: 1rem; 
->>>>>>> main
 }
 
 /* User Info Card (sem link externo aqui) */
@@ -26,11 +22,7 @@
     box-shadow: var(--shadow);
     flex-shrink: 0; /* Impede que encolha */
     /* Link interno via JS ou componente Link */
-<<<<<<< HEAD
     cursor: pointer;
-=======
-    cursor: pointer; 
->>>>>>> main
     transition: var(--transition);
 }
 .user-info-card:hover {
@@ -56,11 +48,7 @@
     padding: 0.75rem;
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow);
-<<<<<<< HEAD
     flex-shrink: 0;
-=======
-    flex-shrink: 0; 
->>>>>>> main
 }
 .menu a {
     display: flex; align-items: center; gap: 0.75rem;

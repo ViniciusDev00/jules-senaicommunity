@@ -18,11 +18,7 @@
 .header-left { display: flex; align-items: center; gap: 1rem; }
 
 /* Link do logo */
-<<<<<<< HEAD
 .logo-link { text-decoration: none; }
-=======
-.logo-link { text-decoration: none; } 
->>>>>>> main
 
 .logo {
     font-size: 1.4rem; /* Pouco menor */

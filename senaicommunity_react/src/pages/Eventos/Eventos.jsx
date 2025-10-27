@@ -4,19 +4,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Topbar from '../../components/Layout/Topbar';
 import Sidebar from '../../components/Layout/Sidebar';
-<<<<<<< HEAD
 import RightSidebar from '../../pages/Principal/RightSidebar';
 import './Eventos.css'; // Carrega o CSS
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faTag, faClock, faMapMarkerAlt, faArrowRight, faUsers,
-=======
-import RightSidebar from '../../pages/Principal/RightSidebar'; 
-import './Eventos.css'; // Carrega o CSS
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-    faTag, faClock, faMapMarkerAlt, faArrowRight, faUsers, 
->>>>>>> main
     faCalendarAlt, faInfoCircle, faUserCheck, faTimes // Importei ícones adicionais
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -48,24 +40,14 @@ const EventoDetalheModal = ({ evento, onClose }) => {
 
 
     // Constrói a URL da imagem (reutiliza lógica do EventoCard)
-<<<<<<< HEAD
     const imageUrl = evento.imagemCapaUrl
         ? `http://localhost:8080${evento.imagemCapaUrl}`
         : 'https://source.unsplash.com/random/700x200?technology,event';
-=======
-    const imageUrl = evento.imagemCapaUrl 
-        ? `http://localhost:8080${evento.imagemCapaUrl}` 
-        : 'https://placehold.co/700x200/21262d/8b949e?text=SENAI+EVENTO';
->>>>>>> main
 
     return (
         <div className="modal-overlay visible" onClick={onClose}>
             <div className="modal-content modal-detalhe-evento" onClick={e => e.stopPropagation()}>
-<<<<<<< HEAD
 
-=======
-                
->>>>>>> main
                 {/* Cabeçalho com Imagem e Título */}
                 <div className="modal-header detalhe-header" style={{ backgroundImage: `url('${imageUrl}')` }}>
                     <div className="header-overlay">
@@ -75,11 +57,7 @@ const EventoDetalheModal = ({ evento, onClose }) => {
                 </div>
 
                 <div className="modal-body detalhe-body">
-<<<<<<< HEAD
 
-=======
-                    
->>>>>>> main
                     {/* Informações Rápidas em Grid */}
                     <div className="detalhe-info-grid">
                         <div className="detalhe-info-item">
@@ -115,11 +93,7 @@ const EventoDetalheModal = ({ evento, onClose }) => {
                     {/* Descrição Completa */}
                     <h3 className="detalhe-section-title"><FontAwesomeIcon icon={faInfoCircle} /> Sobre o Evento</h3>
                     <p className="evento-descricao-completa">{evento.descricao}</p>
-<<<<<<< HEAD
 
-=======
-                    
->>>>>>> main
                     {/* Contagem de Confirmados (Placeholder) */}
                     <h3 className="detalhe-section-title"><FontAwesomeIcon icon={faUserCheck} /> Participação</h3>
                     <p>Cerca de **--** pessoas confirmaram presença.</p>
@@ -148,15 +122,9 @@ const EventoCard = ({ evento, onVerDetalhes }) => {
 
     if (evento.data && typeof evento.data === 'string') {
         try {
-<<<<<<< HEAD
             const data = new Date(evento.data + 'T00:00:00');
             if (!isNaN(data.getTime())) {
                 dia = data.getUTCDate();
-=======
-            const data = new Date(evento.data + 'T00:00:00'); 
-            if (!isNaN(data.getTime())) {
-                dia = data.getUTCDate(); 
->>>>>>> main
                 mes = data.toLocaleString('pt-BR', { month: 'short', timeZone: 'UTC' }).replace('.', '');
                 dataFormatada = data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
                 dataValida = true;
@@ -176,23 +144,9 @@ const EventoCard = ({ evento, onVerDetalhes }) => {
     }
 
 
-<<<<<<< HEAD
     const imageUrl = evento.imagemCapaUrl
         ? `http://localhost:8080${evento.imagemCapaUrl}`
         : 'https://source.unsplash.com/random/600x400?event,technology';
-=======
-    let imageUrl = 'https://placehold.co/600x400/21262d/8b949e?text=Evento'; 
-    const backendUrlPath = evento.imagemCapaUrl;
-    if (backendUrlPath) {
-        try {
-            const fileName = backendUrlPath.substring(backendUrlPath.lastIndexOf('/') + 1);
-            if (fileName) {
-                // Monta URL completa para o frontend acessar
-                imageUrl = `http://localhost:8080/api/arquivos/eventoPictures/${fileName}`; 
-            }
-        } catch (e) { /* ignorar */ }
-    }
->>>>>>> main
 
     return (
         <article className="evento-card">
@@ -236,11 +190,7 @@ const Eventos = ({ onLogout }) => {
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
     // ✅ NOVO ESTADO: Controla o modal de detalhes
-<<<<<<< HEAD
     const [eventoSelecionado, setEventoSelecionado] = useState(null);
-=======
-    const [eventoSelecionado, setEventoSelecionado] = useState(null); 
->>>>>>> main
     const [filters, setFilters] = useState({
         periodo: 'proximos',
         formato: 'todos',
@@ -250,20 +200,13 @@ const Eventos = ({ onLogout }) => {
     useEffect(() => {
         document.title = 'Senai Community | Eventos';
         const token = localStorage.getItem('authToken');
-<<<<<<< HEAD
 
         const fetchData = async () => {
              if (!token) {
-=======
-        
-        const fetchData = async () => {
-             if (!token) { 
->>>>>>> main
                 onLogout();
                 return;
              }
             try {
-<<<<<<< HEAD
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
                 const [userRes, eventosRes] = await Promise.all([
@@ -278,22 +221,6 @@ const Eventos = ({ onLogout }) => {
                     onLogout();
                 }
                  setEventos([]);
-=======
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; 
-                
-                const [userRes, eventosRes] = await Promise.all([
-                    axios.get('http://localhost:8080/usuarios/me'),
-                    axios.get('http://localhost:8080/api/eventos') 
-                ]);
-                setCurrentUser(userRes.data);
-                setEventos(Array.isArray(eventosRes.data) ? eventosRes.data : []); 
-            } catch (error) {
-                console.error("Erro ao buscar dados:", error);
-                if (error.response?.status === 401 || error.response?.status === 403) { 
-                    onLogout();
-                }
-                 setEventos([]); 
->>>>>>> main
             } finally {
                 setLoading(false);
             }
@@ -316,7 +243,6 @@ const Eventos = ({ onLogout }) => {
 
         let filtered = eventos.filter(evento => {
             if (!evento.data || (typeof evento.data !== 'string' && !Array.isArray(evento.data))) {
-<<<<<<< HEAD
                 return false;
             }
             try {
@@ -328,19 +254,6 @@ const Eventos = ({ onLogout }) => {
                 const eventoDate = new Date(dateSource);
 
                 if (isNaN(eventoDate.getTime())) return false;
-=======
-                return false; 
-            }
-            try {
-                // Tenta lidar com a data como string (formato YYYY-MM-DD) ou como array [Y, M, D]
-                const dateSource = Array.isArray(evento.data) ? 
-                    new Date(evento.data[0], evento.data[1] - 1, evento.data[2]) :
-                    new Date(evento.data + 'T00:00:00');
-                    
-                const eventoDate = new Date(dateSource);
-
-                if (isNaN(eventoDate.getTime())) return false; 
->>>>>>> main
 
                 const periodoMatch = filters.periodo === 'proximos' ? eventoDate >= hoje : eventoDate < hoje;
                 const formatoMatch = filters.formato === 'todos' || evento.formato === filters.formato;
@@ -348,11 +261,7 @@ const Eventos = ({ onLogout }) => {
                 return periodoMatch && formatoMatch && categoriaMatch;
             } catch (e) {
                 console.error("Erro ao processar data no filtro:", evento.data, e);
-<<<<<<< HEAD
                 return false;
-=======
-                return false; 
->>>>>>> main
             }
         });
 
@@ -360,11 +269,7 @@ const Eventos = ({ onLogout }) => {
             try {
                 const dateA = Array.isArray(a.data) ? new Date(a.data[0], a.data[1] - 1, a.data[2]) : new Date(a.data + 'T00:00:00');
                 const dateB = Array.isArray(b.data) ? new Date(b.data[0], b.data[1] - 1, b.data[2]) : new Date(b.data + 'T00:00:00');
-<<<<<<< HEAD
 
-=======
-                
->>>>>>> main
                 if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
                 return filters.periodo === 'proximos' ? dateA - dateB : dateB - dateA;
             } catch (e) {
@@ -406,21 +311,12 @@ const Eventos = ({ onLogout }) => {
                         </select>
                     </section>
                     <section className="eventos-grid">
-<<<<<<< HEAD
                         {loading ? <p className="loading-state">Carregando eventos...</p> :
                             filteredEventos.length > 0 ? (
                                 filteredEventos.map(evento =>
                                     <EventoCard
                                         key={evento.id}
                                         evento={evento}
-=======
-                        {loading ? <p className="loading-state">Carregando eventos...</p> : 
-                            filteredEventos.length > 0 ? (
-                                filteredEventos.map(evento => 
-                                    <EventoCard 
-                                        key={evento.id} 
-                                        evento={evento} 
->>>>>>> main
                                         onVerDetalhes={setEventoSelecionado} // ✅ PASSA A FUNÇÃO
                                     />
                                 )
@@ -433,11 +329,7 @@ const Eventos = ({ onLogout }) => {
                         }
                     </section>
                 </main>
-<<<<<<< HEAD
                 <RightSidebar />
-=======
-                <RightSidebar /> 
->>>>>>> main
             </div>
             {/* ✅ NOVO MODAL DE DETALHES */}
             <EventoDetalheModal

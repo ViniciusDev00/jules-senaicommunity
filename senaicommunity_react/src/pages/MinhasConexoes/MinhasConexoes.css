@@ -9,15 +9,9 @@
     border: 1px solid var(--border-color);
 }
 
-<<<<<<< HEAD
 .widget-title {
     font-size: 1.5rem; /* Título maior */
     font-weight: 600;
-=======
-.widget-title { 
-    font-size: 1.5rem; /* Título maior */
-    font-weight: 600; 
->>>>>>> main
     margin-bottom: 2rem; /* Mais espaço abaixo */
     color: var(--text-primary);
     padding-bottom: 0.75rem;
@@ -86,15 +80,9 @@
     border: 3px solid var(--border-color); /* Borda sutil */
 }
 
-<<<<<<< HEAD
 .conexao-nome {
     margin: 0;
     font-size: 1.1rem;
-=======
-.conexao-nome { 
-    margin: 0; 
-    font-size: 1.1rem; 
->>>>>>> main
     font-weight: 600;
     color: var(--text-primary);
     /* Limita nome a uma linha */
@@ -111,17 +99,10 @@
     margin-top: auto; /* Empurra os botões para baixo */
     width: 100%; /* Faz os botões ocuparem a largura */
 }
-<<<<<<< HEAD
 .conexao-actions .btn, .conexao-actions .respond-link {
     width: 100%;
     padding: 0.65rem;
     font-size: 0.875rem;
-=======
-.conexao-actions .btn, .conexao-actions .respond-link { 
-    width: 100%; 
-    padding: 0.65rem; 
-    font-size: 0.875rem; 
->>>>>>> main
     border-radius: 6px;
     cursor: pointer;
     font-weight: 500;
@@ -136,15 +117,9 @@
 .btn-primary.btn-accept { background-color: var(--success); color: white; border: none; }
 .btn-primary.btn-accept:hover { background-color: #269c40; } /* Tom mais escuro de verde */
 
-<<<<<<< HEAD
 .btn-secondary.btn-decline, .btn-secondary.btn-cancel {
     background-color: var(--bg-quaternary);
     color: var(--text-secondary);
-=======
-.btn-secondary.btn-decline, .btn-secondary.btn-cancel { 
-    background-color: var(--bg-quaternary); 
-    color: var(--text-secondary); 
->>>>>>> main
     border: 1px solid var(--border-color);
 }
 .btn-secondary.btn-decline:hover, .btn-secondary.btn-cancel:hover {
@@ -159,7 +134,6 @@
 }
 .btn-secondary.btn-message:hover { background-color: var(--accent-secondary); }
 
-<<<<<<< HEAD
 .btn-danger.btn-remove {
     background-color: transparent;
     color: var(--danger);
@@ -168,16 +142,6 @@
 .btn-danger.btn-remove:hover {
     background-color: var(--danger);
     color: white;
-=======
-.btn-danger.btn-remove { 
-    background-color: transparent; 
-    color: var(--danger); 
-    border: 1px solid var(--danger); 
-}
-.btn-danger.btn-remove:hover { 
-    background-color: var(--danger); 
-    color: white; 
->>>>>>> main
 }
 
 
@@ -207,7 +171,6 @@
 
 @media (max-width: 768px) {
     .container { grid-template-columns: 1fr; }
-<<<<<<< HEAD
 
     .connections-page-card { padding: 1rem 1.25rem; }
     .widget-title { font-size: 1.25rem; margin-bottom: 1.5rem; }
@@ -216,16 +179,6 @@
     .conexao-grid {
         /* Mantém 2 colunas se houver espaço, senão 1 */
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-=======
-    
-    .connections-page-card { padding: 1rem 1.25rem; }
-    .widget-title { font-size: 1.25rem; margin-bottom: 1.5rem; }
-    .connections-section h3 { font-size: 1rem; margin-bottom: 1rem; }
-    
-    .conexao-grid {
-        /* Mantém 2 colunas se houver espaço, senão 1 */
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
->>>>>>> main
         gap: 1rem;
     }
 
@@ -238,10 +191,6 @@
 @media (max-width: 480px) {
      .conexao-grid {
         /* Garante 1 coluna em telas muito pequenas */
-<<<<<<< HEAD
         grid-template-columns: 1fr;
-=======
-        grid-template-columns: 1fr; 
->>>>>>> main
     }
 }

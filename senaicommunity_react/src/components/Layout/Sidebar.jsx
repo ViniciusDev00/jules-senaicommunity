@@ -7,13 +7,8 @@ import './Sidebar.css';
 const Sidebar = ({ currentUser }) => {
 
     // ✅ MELHORIA: A URL da foto é construída corretamente
-<<<<<<< HEAD
     const userImage = currentUser?.urlFotoPerfil
         ? `http://localhost:8080${currentUser.urlFotoPerfil}`
-=======
-    const userImage = currentUser?.urlFotoPerfil 
-        ? `http://localhost:8080${currentUser.urlFotoPerfil}` 
->>>>>>> main
         : "https://via.placeholder.com/80";
 
     const userTitle = currentUser?.tipoUsuario === 'ALUNO' ? 'Aluno(a)' : 'Professor(a)';
@@ -50,11 +45,7 @@ const Sidebar = ({ currentUser }) => {
                 <Link to="/vagas"><FontAwesomeIcon icon={faBriefcase} /> Vagas</Link>
                 <Link to="/eventos"><FontAwesomeIcon icon={faCalendarCheck} /> Eventos</Link>
                 <Link to="/encontrar-pessoas"><FontAwesomeIcon icon={faUserPlus} /> Encontrar Pessoas</Link>
-<<<<<<< HEAD
                 <Link to="/conexoes"><FontAwesomeIcon icon={faUserFriends} /> Minhas Conexões</Link>
-=======
-                <Link to="/conexoes"><FontAwesomeIcon icon={faUserFriends} /> Minhas Conexões</Link> 
->>>>>>> main
             </nav>
         </aside>
     );
