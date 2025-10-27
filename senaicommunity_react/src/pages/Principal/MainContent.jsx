@@ -12,7 +12,11 @@ const PostCreator = ({ currentUser }) => {
     const [postText, setPostText] = useState('');
     const [postFile, setPostFile] = useState(null); // Estado para o arquivo
 
+<<<<<<< HEAD
+    const userImage = currentUser?.urlFotoPerfil
+=======
     const userImage = currentUser?.urlFotoPerfil 
+>>>>>>> main
         ? `http://localhost:8080${currentUser.urlFotoPerfil}`
         : "https://via.placeholder.com/40";
 
@@ -40,14 +44,22 @@ const PostCreator = ({ currentUser }) => {
 
         const formData = new FormData();
         const postData = { conteudo: postText };
+<<<<<<< HEAD
+
+=======
         
+>>>>>>> main
         formData.append(
             "postagem",
             new Blob([JSON.stringify(postData)], { type: "application/json" })
         );
 
         let endpoint;
+<<<<<<< HEAD
+
+=======
         
+>>>>>>> main
         // Se tiver um arquivo (foto ou vídeo)
         if (postFile) {
             formData.append("midia", postFile);
@@ -60,7 +72,11 @@ const PostCreator = ({ currentUser }) => {
             // Se for SÓ texto (ou código)
             endpoint = 'http://localhost:8080/postagem/upload-mensagem';
         }
+<<<<<<< HEAD
+
+=======
         
+>>>>>>> main
         try {
             await axios.post(endpoint, formData, {
                  // O Axios define o 'Content-Type: multipart/form-data' sozinho
@@ -96,7 +112,11 @@ const PostCreator = ({ currentUser }) => {
     }
 
     // 7. VISTA EXPANDIDA (QUANDO postType !== null)
+<<<<<<< HEAD
+
+=======
     
+>>>>>>> main
     // Define o título e placeholder com base no tipo
     let title = "Criar Publicação";
     let placeholder = `No que você está pensando, ${currentUser?.nome || ''}?`;
@@ -107,23 +127,41 @@ const PostCreator = ({ currentUser }) => {
         title = "Publicar Código";
         placeholder = "Cole seu código aqui...";
     }
+<<<<<<< HEAD
+
+    return (
+        <div className="post-creator-expanded" style={{ display: 'block' }}>
+            <div className="editor-header"><h3>{title}</h3></div>
+            <textarea
+                className="editor-textarea"
+=======
             
     return (
         <div className="post-creator-expanded" style={{ display: 'block' }}>
             <div className="editor-header"><h3>{title}</h3></div>
             <textarea 
                 className="editor-textarea" 
+>>>>>>> main
                 placeholder={placeholder}
                 value={postText}
                 onChange={(e) => setPostText(e.target.value)}
                 autoFocus
             />
+<<<<<<< HEAD
+
+            {/* 8. RENDERIZAÇÃO CONDICIONAL DO INPUT DE ARQUIVO */}
+            {(postType === 'photo' || postType === 'video') && (
+                <div className="file-uploader" style={{marginTop: '1rem'}}>
+                    <input
+                        type="file"
+=======
             
             {/* 8. RENDERIZAÇÃO CONDICIONAL DO INPUT DE ARQUIVO */}
             {(postType === 'photo' || postType === 'video') && (
                 <div className="file-uploader" style={{marginTop: '1rem'}}>
                     <input 
                         type="file" 
+>>>>>>> main
                         accept={postType === 'photo' ? "image/*" : "video/*"}
                         onChange={handleFileChange}
                         style={{
@@ -134,16 +172,28 @@ const PostCreator = ({ currentUser }) => {
                     {postFile && <p style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Arquivo selecionado: {postFile.name}</p>}
                 </div>
             )}
+<<<<<<< HEAD
+
+=======
             
+>>>>>>> main
             <div className="post-editor-footer">
                 <div className="editor-actions">
                     {/* Botão Cancelar agora chama handleClose */}
                     <button className="cancel-btn" onClick={handleClose}>Cancelar</button>
+<<<<<<< HEAD
+                    <button
+                        className="publish-btn"
+                        // 9. LÓGICA DE 'DISABLED' ATUALIZADA
+                        // Habilita se tiver texto OU arquivo
+                        disabled={!postText.trim() && !postFile}
+=======
                     <button 
                         className="publish-btn" 
                         // 9. LÓGICA DE 'DISABLED' ATUALIZADA
                         // Habilita se tiver texto OU arquivo
                         disabled={!postText.trim() && !postFile} 
+>>>>>>> main
                         onClick={handlePublish}
                     >
                         Publicar
@@ -194,7 +244,11 @@ const MainContent = ({ currentUser }) => {
                         const autorAvatar = post.urlFotoAutor
                             ? `http://localhost:8080${post.urlFotoAutor}`
                             : 'https://via.placeholder.com/40';
+<<<<<<< HEAD
+
+=======
                         
+>>>>>>> main
                         return (
                             <div className="post" key={post.id}>
                                 <div className="post-header">

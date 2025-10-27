@@ -22,7 +22,11 @@ const Amizades = ({ onLogout }) => {
             return;
         }
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+<<<<<<< HEAD
+
+=======
         
+>>>>>>> main
         try {
             const [userRes, receivedRes, sentRes, friendsRes] = await Promise.all([
                 axios.get(`${backendUrl}/usuarios/me`),
@@ -41,7 +45,11 @@ const Amizades = ({ onLogout }) => {
             setIsLoading(false);
         }
     };
+<<<<<<< HEAD
+
+=======
     
+>>>>>>> main
     useEffect(() => {
         document.title = 'Senai Community | Conexões';
         fetchData();
@@ -60,7 +68,11 @@ const Amizades = ({ onLogout }) => {
             fetchData(); // Recarrega todos os dados
         } catch (error) { console.error("Erro ao recusar pedido:", error); }
     };
+<<<<<<< HEAD
+
+=======
     
+>>>>>>> main
     if (isLoading) {
         return <div>Carregando...</div>;
     }

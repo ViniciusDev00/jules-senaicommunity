@@ -32,7 +32,11 @@
     align-items: flex-end;
     padding: 0 2rem;
     /* Puxa toda a seção de detalhes para cima, sobrepondo o banner */
+<<<<<<< HEAD
+    margin-top: -80px;
+=======
     margin-top: -80px; 
+>>>>>>> main
     z-index: 2; /* Garante que os detalhes fiquem sobre o banner */
     position: relative;
 }

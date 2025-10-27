@@ -80,7 +80,11 @@ const Mensagens = ({ onLogout }) => {
                 avatar: amigo.fotoPerfil ? `http://localhost:8080${amigo.fotoPerfil}` : `https://i.pravatar.cc/50?u=${amigo.idUsuario}`,
                 ultimaMensagem: 'Conversa privada', // Placeholder
             }));
+<<<<<<< HEAD
+
+=======
             
+>>>>>>> main
             // 3. Junta as duas listas
             const todasConversas = [...conversasGrupos, ...conversasDMs];
             setConversas(todasConversas);
@@ -99,7 +103,11 @@ const Mensagens = ({ onLogout }) => {
     // Agora recebe 'user' como parâmetro para evitar a dependência de 'currentUser'
     // e remove 'conversaAtiva' das dependências para quebrar o loop.
     const selecionarConversa = useCallback(async (conversa, user, atualizarUrl = true) => {
+<<<<<<< HEAD
+
+=======
         
+>>>>>>> main
         // Removemos a checagem 'conversaAtiva?.id === conversa.id'
         // para quebrar o loop de dependência.
         if (!conversa) return;
@@ -122,11 +130,25 @@ const Mensagens = ({ onLogout }) => {
             } else {
                 // USA O 'user' PASSADO COMO PARÂMETRO
                 // Isso corrige a "race condition"
+<<<<<<< HEAD
+                if (!user) {
+=======
                 if (!user) { 
+>>>>>>> main
                      throw new Error("Dados do usuário ainda carregando.");
                 }
                 endpoint = `http://localhost:8080/api/chat/privado/${user.id}/${conversa.id}`;
             }
+<<<<<<< HEAD
+
+            const mensagensRes = await axios.get(endpoint);
+
+            const msgsFormatadas = mensagensRes.data.map(msg => ({
+                ...msg,
+                tipo: conversa.tipo
+            }));
+
+=======
             
             const mensagensRes = await axios.get(endpoint);
             
@@ -135,6 +157,7 @@ const Mensagens = ({ onLogout }) => {
                 tipo: conversa.tipo 
             }));
             
+>>>>>>> main
             setMensagens(msgsFormatadas);
 
         } catch (error) {
@@ -147,7 +170,11 @@ const Mensagens = ({ onLogout }) => {
         }
     // Removemos 'currentUser' e 'conversaAtiva' das dependências.
     // A função agora é estável e não causará o loop.
+<<<<<<< HEAD
+    }, [navigate]);
+=======
     }, [navigate]); 
+>>>>>>> main
 
     // ✅ --- useEffect PRINCIPAL (Lógica de inicialização CORRIGIDA) ---
     useEffect(() => {
@@ -161,13 +188,21 @@ const Mensagens = ({ onLogout }) => {
                 const userRes = await axios.get('http://localhost:8080/usuarios/me');
                 const userData = userRes.data; // Salva o dado aqui
                 setCurrentUser(userData); // Define o estado
+<<<<<<< HEAD
+
+=======
                 
+>>>>>>> main
                 const todasConversas = await fetchConversas(); // Busca todas as conversas
 
                 // VERIFICA A URL
                 const params = new URLSearchParams(location.search);
                 const grupoIdQuery = params.get('grupo');
+<<<<<<< HEAD
+                const dmIdQuery = params.get('dm');
+=======
                 const dmIdQuery = params.get('dm'); 
+>>>>>>> main
 
                 let chatParaAbrir = null;
 
@@ -178,16 +213,28 @@ const Mensagens = ({ onLogout }) => {
                     const idNumerico = parseInt(dmIdQuery, 10);
                     chatParaAbrir = todasConversas.find(c => c.id === idNumerico && c.tipo === 'dm');
                 }
+<<<<<<< HEAD
+
+                if (chatParaAbrir) {
+                    // Passa o 'userData' DIRETO, não o 'currentUser' do estado
+                    // Isso corrige a "race condition"
+                    selecionarConversa(chatParaAbrir, userData, false);
+=======
                     
                 if (chatParaAbrir) {
                     // Passa o 'userData' DIRETO, não o 'currentUser' do estado
                     // Isso corrige a "race condition"
                     selecionarConversa(chatParaAbrir, userData, false); 
+>>>>>>> main
                 } else if (grupoIdQuery || dmIdQuery) {
                     console.warn("Chat da URL não encontrado na lista de conversas.");
                     navigate('/mensagens', { replace: true }); // Limpa a URL
                 }
+<<<<<<< HEAD
+
+=======
                 
+>>>>>>> main
             } catch (error) {
                 console.error("Erro ao buscar dados iniciais:", error);
                 if (error.response?.status === 401) onLogout();
@@ -208,7 +255,11 @@ const Mensagens = ({ onLogout }) => {
         e.preventDefault();
         if (!novaMensagem.trim() || !conversaAtiva || !currentUser) return;
 
+<<<<<<< HEAD
+        const dataEnvio = new Date().toISOString();
+=======
         const dataEnvio = new Date().toISOString(); 
+>>>>>>> main
 
         const mensagemParaEnviar = {
             autorId: currentUser.id,
@@ -217,7 +268,11 @@ const Mensagens = ({ onLogout }) => {
             dataEnvio: dataEnvio,
             tipo: conversaAtiva.tipo
         };
+<<<<<<< HEAD
+
+=======
         
+>>>>>>> main
         // Atualização otimista da UI (adiciona mensagem localmente)
         setMensagens(prev => [...prev, mensagemParaEnviar]);
         setNovaMensagem('');
@@ -235,7 +290,11 @@ const Mensagens = ({ onLogout }) => {
             <Topbar onLogout={onLogout} currentUser={currentUser} />
             <div className="container container-chat">
                 <Sidebar currentUser={currentUser}/>
+<<<<<<< HEAD
+
+=======
                 
+>>>>>>> main
                 <aside className={`chat-conversations-sidebar ${conversaAtiva ? 'hidden-mobile' : ''}`}>
                     <div className="conv-sidebar-header"><h2>Mensagens</h2></div>
                     <div className="conv-search">
@@ -247,7 +306,11 @@ const Mensagens = ({ onLogout }) => {
                             conversas.length > 0 ? (
                                 conversas.map(c => (
                                     <ConversationListItem
+<<<<<<< HEAD
+                                        key={`${c.tipo}-${c.id}`}
+=======
                                         key={`${c.tipo}-${c.id}`} 
+>>>>>>> main
                                         conversa={c}
                                         ativa={conversaAtiva?.id === c.id}
                                         // AQUI: Passamos o 'currentUser' do estado
@@ -272,7 +335,11 @@ const Mensagens = ({ onLogout }) => {
                                 </div>
                                 <button className="chat-options-btn"><FontAwesomeIcon icon={faEllipsisV} /></button>
                             </header>
+<<<<<<< HEAD
+
+=======
                             
+>>>>>>> main
                             <div className="chat-messages-area">
                                 {loadingMensagens ? <p className="loading-state"><FontAwesomeIcon icon={faSpinner} spin /> Carregando...</p> :
                                     mensagens.length > 0 ? (
@@ -289,7 +356,11 @@ const Mensagens = ({ onLogout }) => {
                                 }
                                 <div ref={messagesEndRef} />
                             </div>
+<<<<<<< HEAD
+
+=======
                             
+>>>>>>> main
                             <form className="chat-input-area" onSubmit={handleEnviarMensagem}>
                                 <input
                                     type="text"

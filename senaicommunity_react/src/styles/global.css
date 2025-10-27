@@ -26,7 +26,11 @@
 }
 
 /* --- CORREÇÃO AQUI --- */
+<<<<<<< HEAD
+/* O seletor foi corrigido para :root[data-theme="light"]
+=======
 /* O seletor foi corrigido para :root[data-theme="light"] 
+>>>>>>> main
    para garantir que ele sobrescreva as variáveis do :root base.
 */
 :root[data-theme="light"] {
