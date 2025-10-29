@@ -1,3 +1,5 @@
+// Arquivo: BackEnd/src/main/java/com/SenaiCommunity/BackEnd/Config/SecurityConfig.java
+
 package com.SenaiCommunity.BackEnd.Config;
 
 import com.SenaiCommunity.BackEnd.Security.JWTFilter;
@@ -57,6 +59,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/projetos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/alunos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/professores/**").permitAll()
+                        // ✅ ESTA LINHA PERMITE O ACESSO INICIAL AO WEBSOCKET SEM O TOKEN
                         .requestMatchers("/auth/**", "/cadastro/**", "/ws/**", "/login**", "/oauth2/**").permitAll()
                         .requestMatchers("/images/**", "/api/arquivos/**").permitAll()
                         .requestMatchers(
@@ -77,16 +80,14 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ✅ --- CORREÇÃO APLICADA AQUI --- ✅
-        // Adicionado "http://localhost:5173" (seu frontend React) à lista de origens permitidas.
+        // ✅ ESTA SEÇÃO ESTÁ CORRETA PARA O CORS
         configuration.setAllowedOrigins(List.of(
                 "http://127.0.0.1:5500",
                 "http://127.0.0.1:5501",
                 "http://localhost:3000",
                 "http://127.0.0.1:5502",
-                "http://localhost:5173" // <-- ADICIONADO
+                "http://localhost:5173"
         ));
-        // --- FIM DA CORREÇÃO ---
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
