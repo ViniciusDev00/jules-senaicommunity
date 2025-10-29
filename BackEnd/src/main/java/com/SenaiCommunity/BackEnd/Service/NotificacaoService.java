@@ -1,4 +1,3 @@
-// BackEnd/src/main/java/com/SenaiCommunity/BackEnd/Service/NotificacaoService.java
 package com.SenaiCommunity.BackEnd.Service;
 
 import com.SenaiCommunity.BackEnd.DTO.NotificacaoSaidaDTO;
@@ -29,7 +28,9 @@ public class NotificacaoService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    // --- MÉTODO toDTO ATUALIZADO ---
+    /**
+     * MÉTODO DE CONVERSÃO ATUALIZADO
+     */
     private NotificacaoSaidaDTO toDTO(Notificacao notificacao) {
         String remetenteNome = null;
         Long remetenteId = null;
@@ -40,7 +41,7 @@ public class NotificacaoService {
             remetenteId = notificacao.getRemetente().getId();
             remetenteNome = notificacao.getRemetente().getNome();
             if (notificacao.getRemetente().getFotoPerfil() != null && !notificacao.getRemetente().getFotoPerfil().isBlank()) {
-                // Monta a URL completa para o frontend consumir
+                // Monta a URL que o frontend espera
                 remetenteFotoUrl = "/api/arquivos/" + notificacao.getRemetente().getFotoPerfil();
             }
         }
@@ -51,17 +52,18 @@ public class NotificacaoService {
                 .dataCriacao(notificacao.getDataCriacao())
                 .lida(notificacao.isLida())
                 .tipo(notificacao.getTipo() != null ? notificacao.getTipo() : "GERAL")
-                .idReferencia(notificacao.getIdReferencia()) // Mantenha este ID para referência
+                .idReferencia(notificacao.getIdReferencia())
                 // Popula os novos campos
                 .remetenteId(remetenteId)
                 .remetenteNome(remetenteNome)
                 .remetenteFotoUrl(remetenteFotoUrl)
                 .build();
     }
-    // --- FIM DA ATUALIZAÇÃO ---
 
-    // --- MÉTODO criarNotificacao ATUALIZADO ---
-    // Agora recebe o 'remetente'
+    /**
+     * MÉTODO criarNotificacao ATUALIZADO
+     * Agora recebe o 'remetente' (quem fez a ação)
+     */
     @Transactional
     public void criarNotificacao(Usuario destinatario, Usuario remetente, String mensagem, String tipo, Long idReferencia) {
         Notificacao notificacao = Notificacao.builder()
@@ -70,7 +72,8 @@ public class NotificacaoService {
                 .mensagem(mensagem)
                 .dataCriacao(LocalDateTime.now())
                 .tipo(tipo)
-                .idReferencia(idReferencia) // Mantenha o ID de referência original
+                .idReferencia(idReferencia)
+                .lida(false) // Garante que seja 'não lida'
                 .build();
 
         Notificacao notificacaoSalva = notificacaoRepository.save(notificacao);
@@ -80,30 +83,17 @@ public class NotificacaoService {
         // Envia via WebSocket para o destinatário específico
         messagingTemplate.convertAndSendToUser(
                 destinatario.getEmail(), // Usa o email como identificador do usuário no STOMP
-                "/queue/notifications", // Destino privado do usuário
+                "/queue/notifications", // Destino privado do usuário (VERIFIQUE SEU WebSocketConfig)
                 dto
         );
     }
 
-    // Adapte os outros métodos que chamam criarNotificacao para passar o 'remetente'
-    // Exemplo para o ProjetoService.enviarConvite:
-    /*
-        // Dentro de ProjetoService.enviarConvite
-        notificacaoService.criarNotificacao(
-            usuarioConvidado,
-            usuarioConvidador, // Passa quem está convidando como remetente
-            mensagem,
-            "CONVITE_PROJETO",
-            convite.getId() // <<<<<< IMPORTANTE: Passar o ID do CONVITE aqui!
-        );
-    */
-
-    // Sobrecarga para notificações gerais (sem remetente específico, pode ser o sistema)
+    // Sobrecarga para notificações gerais (sem remetente, ex: sistema)
     public void criarNotificacao(Usuario destinatario, String mensagem) {
         criarNotificacao(destinatario, null, mensagem, "GERAL", null);
     }
-    // --- FIM DA ATUALIZAÇÃO ---
 
+    // --- RESTANTE DO CÓDIGO (buscarPorDestinatario, marcarComoLida, etc.) ---
 
     public List<NotificacaoSaidaDTO> buscarPorDestinatario(String emailDestinatario) {
         Usuario destinatario = usuarioRepository.findByEmail(emailDestinatario)

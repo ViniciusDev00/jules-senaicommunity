@@ -1,4 +1,3 @@
-// BackEnd/src/main/java/com/SenaiCommunity/BackEnd/Entity/Notificacao.java
 package com.SenaiCommunity.BackEnd.Entity;
 
 import jakarta.persistence.*;
@@ -20,22 +19,25 @@ public class Notificacao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY) // Evita carregar o usuário desnecessariamente
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "destinatario_id", nullable = false)
     private Usuario destinatario;
 
-    // --- NOVA RELAÇÃO ---
+    // --- CAMPO ADICIONADO ---
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "remetente_id") // Pode ser nulo (notificação do sistema)
     private Usuario remetente;
-    // --- FIM DA NOVA RELAÇÃO ---
+    // --- FIM DA ADIÇÃO ---
 
     private String mensagem;
-    @Builder.Default // Garante que a data seja definida se não for passada no builder
+
+    @Builder.Default // Garante que a data seja definida
     private LocalDateTime dataCriacao = LocalDateTime.now();
-    @Builder.Default // Garante que 'lida' seja false por padrão
+
+    @Builder.Default // Garante que 'lida' seja false
     private boolean lida = false;
-    private String tipo; // Ex: "CONVITE_PROJETO", "PEDIDO_AMIZADE", "NOVA_MENSAGEM", "GERAL"
-    private Long idReferencia; // ID da entidade principal relacionada (Projeto, Amizade, Mensagem, etc.)
+
+    private String tipo; // Ex: "CONVITE_PROJETO", "PEDIDO_AMIZADE", "GERAL"
+    private Long idReferencia; // ID da entidade relacionada (Projeto, Amizade, etc.)
 
 }

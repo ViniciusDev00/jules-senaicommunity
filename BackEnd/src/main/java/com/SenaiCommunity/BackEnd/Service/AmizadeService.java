@@ -3,11 +3,13 @@ package com.SenaiCommunity.BackEnd.Service;
 import com.SenaiCommunity.BackEnd.DTO.AmigoDTO;
 import com.SenaiCommunity.BackEnd.DTO.SolicitacaoAmizadeDTO;
 import com.SenaiCommunity.BackEnd.DTO.SolicitacaoEnviadaDTO;
+import com.SenaiCommunity.BackEnd.DTO.UsuarioBuscaDTO;
 import com.SenaiCommunity.BackEnd.Entity.Amizade;
-import com.SenaiCommunity.BackEnd.Enum.StatusAmizade;
 import com.SenaiCommunity.BackEnd.Entity.Usuario;
+import com.SenaiCommunity.BackEnd.Enum.StatusAmizade;
 import com.SenaiCommunity.BackEnd.Repository.AmizadeRepository;
 import com.SenaiCommunity.BackEnd.Repository.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,20 +44,29 @@ public class AmizadeService {
             throw new IllegalArgumentException("Você não pode adicionar a si mesmo.");
         }
 
-        amizadeRepository.findAmizadeEntreUsuarios(solicitante, solicitado).ifPresent(a -> {
-            throw new IllegalStateException("Já existe uma solicitação ou amizade com este usuário.");
-        });
+        Optional<Amizade> amizadeExistente = amizadeRepository.findAmizadeEntreUsuarios(solicitante, solicitado); //
+
+        if (amizadeExistente.isPresent()) {
+            StatusAmizade status = amizadeExistente.get().getStatus();
+            if (status == StatusAmizade.ACEITO) { //
+                throw new IllegalStateException("Vocês já são amigos.");
+            } else if (status == StatusAmizade.PENDENTE) {
+                throw new IllegalStateException("Já existe uma solicitação pendente entre vocês.");
+            }
+        }
 
         Amizade novaSolicitacao = new Amizade();
-        novaSolicitacao.setSolicitante(solicitante);
-        novaSolicitacao.setSolicitado(solicitado);
+        novaSolicitacao.setSolicitante(solicitante); //
+        novaSolicitacao.setSolicitado(solicitado); //
         novaSolicitacao.setStatus(StatusAmizade.PENDENTE);
         novaSolicitacao.setDataSolicitacao(LocalDateTime.now());
         Amizade solicitacaoSalva = amizadeRepository.save(novaSolicitacao);
 
+        String mensagem = String.format("enviou um pedido de amizade.");
         notificacaoService.criarNotificacao(
                 solicitado,
-                solicitante.getNome() + " te enviou um pedido de amizade.",
+                solicitante,
+                mensagem,
                 "PEDIDO_AMIZADE",
                 solicitacaoSalva.getId()
         );
@@ -65,15 +77,25 @@ public class AmizadeService {
         Amizade amizade = amizadeRepository.findById(amizadeId)
                 .orElseThrow(() -> new RuntimeException("Solicitação não encontrada."));
 
-        // A verificação agora é feita pelo ID do usuário, que é mais seguro
         if (!amizade.getSolicitado().getId().equals(usuarioLogado.getId())) {
             throw new SecurityException("Ação não permitida.");
         }
 
-        amizade.setStatus(StatusAmizade.ACEITO);
+        if (amizade.getStatus() != StatusAmizade.PENDENTE) {
+            throw new IllegalArgumentException("Esta solicitação não está mais pendente.");
+        }
+
+        amizade.setStatus(StatusAmizade.ACEITO); //
         amizadeRepository.save(amizade);
 
-        notificacaoService.criarNotificacao(amizade.getSolicitante(), amizade.getSolicitado().getNome() + " aceitou seu pedido de amizade.");
+        String mensagem = String.format("aceitou seu pedido de amizade.");
+        notificacaoService.criarNotificacao(
+                amizade.getSolicitante(),
+                usuarioLogado,
+                mensagem,
+                "AMIZADE_ACEITA",
+                amizade.getId()
+        );
     }
 
     @Transactional
@@ -81,62 +103,104 @@ public class AmizadeService {
         Amizade amizade = amizadeRepository.findById(amizadeId)
                 .orElseThrow(() -> new RuntimeException("Relação não encontrada."));
 
-        // Verifica se o usuário logado faz parte da amizade (seja como solicitante ou solicitado)
-        boolean isPartOfAmizade = amizade.getSolicitado().getId().equals(usuarioLogado.getId()) ||
+        boolean isParte = amizade.getSolicitado().getId().equals(usuarioLogado.getId()) ||
                 amizade.getSolicitante().getId().equals(usuarioLogado.getId());
 
-        if (!isPartOfAmizade) {
+        if (!isParte) {
             throw new SecurityException("Ação não permitida.");
         }
 
+        Usuario outroUsuario = amizade.getSolicitante().getId().equals(usuarioLogado.getId())
+                ? amizade.getSolicitado()
+                : amizade.getSolicitante();
+
+        StatusAmizade statusAnterior = amizade.getStatus();
+
         amizadeRepository.delete(amizade);
+
+        if (statusAnterior == StatusAmizade.PENDENTE) {
+            if (amizade.getSolicitado().getId().equals(usuarioLogado.getId())) {
+                String msgRecusa = String.format("recusou seu pedido de amizade.");
+                notificacaoService.criarNotificacao(outroUsuario, usuarioLogado, msgRecusa, "AMIZADE_RECUSADA", amizade.getId());
+            }
+        } else if (statusAnterior == StatusAmizade.ACEITO) { //
+            String msgDesfeita = String.format("desfez a amizade com você.");
+            notificacaoService.criarNotificacao(outroUsuario, usuarioLogado, msgDesfeita, "AMIZADE_DESFEITA", amizade.getId());
+        }
     }
 
     public List<SolicitacaoAmizadeDTO> listarSolicitacoesPendentes(Usuario usuarioLogado) {
-        List<Amizade> solicitacoes = amizadeRepository.findBySolicitadoAndStatus(usuarioLogado, StatusAmizade.PENDENTE);
+        List<Amizade> solicitacoes = amizadeRepository.findBySolicitadoAndStatus(usuarioLogado, StatusAmizade.PENDENTE); //
         return solicitacoes.stream()
-                .map(amizade -> new SolicitacaoAmizadeDTO(
-                        amizade.getId(),
-                        amizade.getSolicitante().getId(),
-                        amizade.getSolicitante().getNome(),
-                        amizade.getSolicitante().getFotoPerfil(),
-                        amizade.getDataSolicitacao()))
+                .map(SolicitacaoAmizadeDTO::fromEntity) //
                 .collect(Collectors.toList());
     }
 
     public List<SolicitacaoEnviadaDTO> listarSolicitacoesEnviadas(Usuario usuarioLogado) {
-        List<Amizade> solicitacoes = amizadeRepository.findBySolicitanteAndStatus(usuarioLogado, StatusAmizade.PENDENTE);
+        List<Amizade> solicitacoes = amizadeRepository.findBySolicitanteAndStatus(usuarioLogado, StatusAmizade.PENDENTE); //
         return solicitacoes.stream()
-                .map(amizade -> new SolicitacaoEnviadaDTO(
+                .map(amizade -> new SolicitacaoEnviadaDTO( //
                         amizade.getId(),
                         amizade.getSolicitado().getId(),
                         amizade.getSolicitado().getNome(),
-                        amizade.getSolicitado().getFotoPerfil(),
+                        getFotoUrl(amizade.getSolicitado()),
                         amizade.getDataSolicitacao()))
                 .collect(Collectors.toList());
     }
 
     public List<AmigoDTO> listarAmigos(Usuario usuarioLogado) {
-        List<Amizade> amizades = amizadeRepository.findAmigosByUsuario(usuarioLogado);
+        List<Amizade> amizades = amizadeRepository.findAmigosByUsuario(usuarioLogado); //
         return amizades.stream()
                 .map(amizade -> {
                     Usuario amigo = amizade.getSolicitante().getId().equals(usuarioLogado.getId())
                             ? amizade.getSolicitado()
                             : amizade.getSolicitante();
                     boolean isOnline = userStatusService.isOnline(amigo.getEmail());
-                    return new AmigoDTO(amizade.getId(), amigo, isOnline);
+                    return new AmigoDTO(amizade.getId(), amigo, isOnline); //
                 })
                 .collect(Collectors.toList());
     }
 
     public List<AmigoDTO> listarAmigosOnline(Usuario usuarioLogado) {
-        // 1. Pega a lista completa de amigos do usuário.
-        // Supondo que o método listarAmigos retorne List<AmigoDTO>
         List<AmigoDTO> todosOsAmigos = this.listarAmigos(usuarioLogado);
-
-        // 2. Filtra a lista, mantendo apenas os amigos que estão online.
         return todosOsAmigos.stream()
-                .filter(amigo -> userStatusService.isOnline(amigo.getEmail()))
+                .filter(AmigoDTO::isOnline) //
                 .collect(Collectors.toList());
+    }
+
+    private String getFotoUrl(Usuario usuario) {
+        if (usuario.getFotoPerfil() != null && !usuario.getFotoPerfil().isBlank()) {
+            return "/api/arquivos/" + usuario.getFotoPerfil();
+        }
+        return null;
+    }
+
+    // --- MÉTODO CORRIGIDO ---
+    public UsuarioBuscaDTO.StatusAmizadeRelacao getStatusAmizadeComUsuario(Usuario usuarioLogado, Usuario usuarioPerfil) {
+        if (usuarioLogado.getId().equals(usuarioPerfil.getId())) {
+            // CORREÇÃO: Usa 'MESMO_USUARIO' do seu Enum
+            return UsuarioBuscaDTO.StatusAmizadeRelacao.MESMO_USUARIO;
+        }
+
+        Optional<Amizade> amizadeOpt = amizadeRepository.findAmizadeEntreUsuarios(usuarioLogado, usuarioPerfil); //
+
+        if (amizadeOpt.isEmpty()) {
+            // CORREÇÃO: Usa 'NENHUMA' do seu Enum
+            return UsuarioBuscaDTO.StatusAmizadeRelacao.NENHUMA;
+        }
+
+        Amizade amizade = amizadeOpt.get();
+        switch (amizade.getStatus()) {
+            case ACEITO: //
+                return UsuarioBuscaDTO.StatusAmizadeRelacao.AMIGOS; //
+            case PENDENTE:
+                if (amizade.getSolicitante().getId().equals(usuarioLogado.getId())) {
+                    return UsuarioBuscaDTO.StatusAmizadeRelacao.SOLICITACAO_ENVIADA;
+                } else {
+                    return UsuarioBuscaDTO.StatusAmizadeRelacao.SOLICITACAO_RECEBIDA;
+                }
+            default: // RECUSADO ou outros estados
+                return UsuarioBuscaDTO.StatusAmizadeRelacao.NENHUMA;
+        }
     }
 }

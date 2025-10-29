@@ -1,8 +1,7 @@
-// src/components/Layout/Topbar.tsx (CORRIGIDO)
+// src/components/Layout/Topbar.tsx (COMPLETO, CORRIGIDO E ATUALIZADO)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-// A importação do WebSocketContext deve funcionar se o arquivo for .tsx
 import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -11,47 +10,44 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './Topbar.css';
 import axios from 'axios';
-import ConviteProjetoModal from './ConviteProjetoModal'; // Sem erro, pois o arquivo existe
+import ConviteProjetoModal from './ConviteProjetoModal'; // Importa o NOVO modal
 
-// =================================================================
-// === DEFINIÇÃO DOS TIPOS ===
-// =================================================================
-// Define como é uma notificação
+// --- DEFINIÇÃO DOS TIPOS ---
 interface Notificacao {
     id: any;
     mensagem: string;
-    dataCriacao: string; // ou Date
+    dataCriacao: string; // Vem como string do JSON
     lida: boolean;
     tipo: string;
     idReferencia: any;
+    // Campos do Remetente (vindos do Backend atualizado)
     remetenteId?: any;
     remetenteNome?: string;
-    remetenteFotoUrl?: string;
+    remetenteFotoUrl?: string; 
 }
 
-// Define como é o objeto do convite selecionado
+// O que guardamos no estado ao clicar em um convite
 interface ConviteSelecionado {
-    id: any;
-    conviteId: any;
+    id: any; // ID da Notificação
+    conviteId: any; // ID do Convite (de idReferencia)
     mensagem: string;
     remetenteNome?: string;
+    remetenteFotoUrl?: string; // Passa a foto para o modal
 }
-// =================================================================
 
-// Define o tipo das props (currentUser e onLogout)
+// Tipo das props do Topbar
 interface TopbarProps {
     onLogout: () => void;
-    currentUser: any; // Idealmente, defina uma interface de Usuário aqui
+    currentUser: any; // Idealmente, defina uma interface de Usuário
 }
 
 const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
     
-    // Corrige a desestruturação do contexto (pode ser null)
     const webSocketContext = useWebSocket();
     const stompClient = webSocketContext?.stompClient;
     const isConnected = webSocketContext?.isConnected;
 
-    // Tipa explicitamente os estados
+    // Estados tipados
     const [notifications, setNotifications] = useState<Notificacao[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -60,6 +56,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
     const [conviteSelecionado, setConviteSelecionado] = useState<ConviteSelecionado | null>(null);
     const [isConviteModalOpen, setIsConviteModalOpen] = useState(false);
 
+    // Busca notificações existentes
     const fetchNotifications = useCallback(async () => {
         if (currentUser) {
             try {
@@ -73,7 +70,6 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
                     const unread = sortedNotifications.filter(notif => !notif.lida).length;
                     setUnreadCount(unread);
                 } else {
-                    console.warn("API /api/notificacoes não retornou um array. Retorno:", response.data);
                     setNotifications([]);
                     setUnreadCount(0);
                 }
@@ -92,9 +88,9 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
         fetchNotifications();
     }, [fetchNotifications]); 
 
+    // Ouve o WebSocket
     useEffect(() => {
         if (isConnected && stompClient && currentUser && currentUser.email) {
-            
             const subscription = stompClient.subscribe(`/user/${currentUser.email}/queue/notifications`, (message) => {
                 try {
                     const newNotification: Notificacao = JSON.parse(message.body);
@@ -130,6 +126,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
         setIsNotificationsOpen(false); 
     };
 
+    // Abre/Fecha dropdown de notificações e marca como lidas
     const handleOpenNotifications = () => {
         const newState = !isNotificationsOpen;
         setIsNotificationsOpen(newState);
@@ -147,7 +144,9 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
         }
     };
 
-    const handleNotificationClick = (notif: Notificacao) => { 
+    // --- LÓGICA PRINCIPAL (CLIQUE NA NOTIFICAÇÃO) ---
+    const handleNotificationClick = (notif: Notificacao) => {
+        // 1. Marca como lida (se já não estiver)
         if (!notif.lida) {
             axios.post(`http://localhost:8080/api/notificacoes/${notif.id}/ler`)
                 .then(() => {
@@ -156,53 +155,51 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
                 .catch(err => console.error("Erro ao marcar notificação como lida:", err));
         }
 
+        // 2. Ação específica (Abrir Modal de Convite)
         if (notif.tipo === 'CONVITE_PROJETO' && notif.idReferencia) {
             setConviteSelecionado({
                 id: notif.id,
-                conviteId: notif.idReferencia,
+                conviteId: notif.idReferencia, // Este é o ID do CONVITE
                 mensagem: notif.mensagem,
-                remetenteNome: notif.remetenteNome,
+                remetenteNome: notif.remetenteNome, // Passa o nome para o modal
+                remetenteFotoUrl: notif.remetenteFotoUrl // Passa a foto para o modal
             });
             setIsConviteModalOpen(true); 
             setIsNotificationsOpen(false); 
         } else {
-            console.log("Notificação clicada (não é convite):", notif);
+            console.log("Notificação clicada (tipo " + notif.tipo + "):", notif);
             setIsNotificationsOpen(false); 
         }
     };
 
+    // --- Funções para o Modal ---
     const handleCloseConviteModal = () => {
         setIsConviteModalOpen(false);
         setConviteSelecionado(null);
     };
 
-    const handleAcceptConvite = async (conviteId: any) => {
-        try {
-            await axios.post(`http://localhost:8080/projetos/convites/${conviteId}/aceitar`);
-            setNotifications(prev => prev.filter(n => n.id !== conviteSelecionado?.id));
-            handleCloseConviteModal();
-            fetchNotifications(); 
-        } catch (error) {
-            console.error("Erro ao aceitar convite:", error);
-        }
+    // (Promise<void> garante que podemos usar 'await' no modal)
+    const handleAcceptConvite = async (conviteId: any): Promise<void> => {
+        await axios.post(`http://localhost:8080/projetos/convites/${conviteId}/aceitar`);
+        // Remove a notificação da lista e fecha o modal
+        setNotifications(prev => prev.filter(n => n.id !== conviteSelecionado?.id));
+        handleCloseConviteModal();
+        // Você pode querer adicionar um fetchProjetos() aqui se tiver uma lista global
     };
 
-    const handleDeclineConvite = async (conviteId: any) => {
-        try {
-            await axios.delete(`http://localhost:8080/projetos/convites/${conviteId}/recusar`);
-            setNotifications(prev => prev.filter(n => n.id !== conviteSelecionado?.id));
-            handleCloseConviteModal();
-            fetchNotifications(); 
-        } catch (error) {
-            console.error("Erro ao recusar convite:", error);
-        }
+    const handleDeclineConvite = async (conviteId: any): Promise<void> => {
+        await axios.delete(`http://localhost:8080/projetos/convites/${conviteId}/recusar`);
+        // Remove a notificação da lista e fecha o modal
+        setNotifications(prev => prev.filter(n => n.id !== conviteSelecionado?.id));
+        handleCloseConviteModal();
     };
 
-
+    // URL da foto do usuário logado (para a barra)
     const userImage = currentUser?.urlFotoPerfil
         ? `http://localhost:8080${currentUser.urlFotoPerfil}`
         : "https://via.placeholder.com/40";
 
+    // URL da foto do REMETENTE da notificação (para o dropdown)
     const getNotificationSenderPhoto = (notif: Notificacao) => { 
         if (notif.remetenteFotoUrl) {
             if (notif.remetenteFotoUrl.startsWith('http')) {
@@ -210,6 +207,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
             }
             return `http://localhost:8080${notif.remetenteFotoUrl}`;
         }
+        // Fallback
         return `https://i.pravatar.cc/40?u=${notif.remetenteId || 'sistema'}`;
     };
 
@@ -235,6 +233,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
                         <FontAwesomeIcon icon={faCommentDots} />
                     </Link>
 
+                    {/* === ÁREA DE NOTIFICAÇÃO ATUALIZADA === */}
                     <div className="nav-icon notifications-container" data-tooltip="Notificações">
                         <div onClick={handleOpenNotifications}>
                             <FontAwesomeIcon icon={faBell} />
@@ -261,6 +260,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
                                                 />
                                                 <div className="notification-content">
                                                     <p className="notification-text">
+                                                        {/* USA O NOME DO REMETENTE! */}
                                                         <strong>{notif.remetenteNome || 'Notificação'}</strong>
                                                         &nbsp;{notif.mensagem}
                                                     </p>
@@ -278,6 +278,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
                             </div>
                         )}
                     </div>
+                    {/* === FIM DA ÁREA DE NOTIFICAÇÃO === */}
 
                     <div className="nav-icon theme-toggle-button" data-tooltip="Alternar tema" onClick={handleThemeToggle}>
                         <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} />
@@ -303,6 +304,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
                 </div>
             </header>
 
+            {/* Renderiza o novo modal */}
             {isConviteModalOpen && conviteSelecionado && (
                 <ConviteProjetoModal
                     convite={conviteSelecionado}
