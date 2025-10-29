@@ -176,17 +176,15 @@ public class AmizadeService {
     }
 
     // --- MÉTODO CORRIGIDO ---
+    // Removida a verificação de 'MESMO_USUARIO'
     public UsuarioBuscaDTO.StatusAmizadeRelacao getStatusAmizadeComUsuario(Usuario usuarioLogado, Usuario usuarioPerfil) {
-        if (usuarioLogado.getId().equals(usuarioPerfil.getId())) {
-            // CORREÇÃO: Usa 'MESMO_USUARIO' do seu Enum
-            return UsuarioBuscaDTO.StatusAmizadeRelacao.MESMO_USUARIO;
-        }
+        // A verificação if (usuarioLogado.getId().equals(usuarioPerfil.getId()))
+        // foi REMOVIDA. Ela deve ser feita no UsuarioController.
 
         Optional<Amizade> amizadeOpt = amizadeRepository.findAmizadeEntreUsuarios(usuarioLogado, usuarioPerfil); //
 
         if (amizadeOpt.isEmpty()) {
-            // CORREÇÃO: Usa 'NENHUMA' do seu Enum
-            return UsuarioBuscaDTO.StatusAmizadeRelacao.NENHUMA;
+            return UsuarioBuscaDTO.StatusAmizadeRelacao.NENHUMA; //
         }
 
         Amizade amizade = amizadeOpt.get();

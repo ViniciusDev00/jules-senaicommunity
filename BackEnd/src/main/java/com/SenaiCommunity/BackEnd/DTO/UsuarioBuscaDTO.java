@@ -24,6 +24,6 @@ public class UsuarioBuscaDTO {
         AMIGOS,
         SOLICITACAO_ENVIADA,
         SOLICITACAO_RECEBIDA,
-        MESMO_USUARIO, NENHUMA // Nenhuma relação
+        NENHUMA // Nenhuma relação
     }
 }
