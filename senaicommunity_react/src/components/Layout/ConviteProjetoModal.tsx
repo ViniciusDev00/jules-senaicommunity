@@ -1,59 +1,61 @@
-// src/components/Layout/ConviteProjetoModal.tsx (NOVO E MELHORADO)
+// src/components/Layout/ConviteProjetoModal.tsx (CORRIGIDO)
 
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faTimes, faSpinner, faEnvelopeOpenText } from '@fortawesome/free-solid-svg-icons';
-import './ConviteProjetoModal.css'; // Importa o NOVO CSS
+import { faCheck, faTimes, faSpinner, faUserPlus, faEnvelopeOpen } from '@fortawesome/free-solid-svg-icons';
+import './ConviteProjetoModal.css'; // O CSS que melhora o design
 
-// Define o tipo de dados que o modal espera
+// --- DEFINIÇÃO DE TIPOS CORRIGIDA ---
 interface Convite {
-    id: any;
+    id: any; 
     conviteId: any;
     mensagem: string;
     remetenteNome?: string;
-    remetenteFotoUrl?: string; // Espera a foto do remetente
+    remetenteFotoUrl?: string; // O backend deve enviar o caminho relativo!
+    // ✅ PROPRIEDADES ADICIONADAS PARA RESOLVER OS ERROS:
+    tipo?: string; 
+    remetenteId?: any; 
 }
 
 interface ConviteProjetoModalProps {
     convite: Convite;
     onClose: () => void;
-    onAccept: (conviteId: any) => Promise<void>; // Espera uma Promise
-    onDecline: (conviteId: any) => Promise<void>; // Espera uma Promise
+    onAccept: (conviteId: any) => Promise<void>; 
+    onDecline: (conviteId: any) => Promise<void>; 
 }
+// --- FIM DA CORREÇÃO DE TIPOS ---
 
 const ConviteProjetoModal: React.FC<ConviteProjetoModalProps> = ({ convite, onClose, onAccept, onDecline }) => {
     const [isLoadingAccept, setIsLoadingAccept] = useState(false);
     const [isLoadingDecline, setIsLoadingDecline] = useState(false);
     const [error, setError] = useState('');
-    const [projetoNome, setProjetoNome] = useState('...');
+    const [projetoNome, setProjetoNome] = useState('este projeto');
 
-    // Pega a foto do remetente ou um placeholder
-    const fotoRemetente = convite.remetenteFotoUrl
-        ? `http://localhost:8080${convite.remetenteFotoUrl}`
-        : `https://i.pravatar.cc/80?u=${convite.id}`; // Usa o ID da notificação como fallback
-
-    // Extrai o nome do projeto da mensagem
+    // Extrai o nome do projeto (para exibir o título grande)
     useEffect(() => {
         const match = convite.mensagem.match(/projeto '(.*?)'/);
         if (match && match[1]) {
             setProjetoNome(match[1]);
-        } else {
-            setProjetoNome("este projeto"); // Fallback
+        } else if (convite.tipo === 'CONVITE_PROJETO') {
+            setProjetoNome("um Projeto");
         }
-    }, [convite.mensagem]);
+    }, [convite.mensagem, convite.tipo]);
+
+    // Lógica para obter a URL da foto do remetente
+    const fotoRemetenteUrl = convite.remetenteFotoUrl
+        ? `http://localhost:8080${convite.remetenteFotoUrl}`
+        : `https://i.pravatar.cc/80?u=${convite.remetenteId || 'sistema'}`; // ✅ remetenteId é usado aqui!
 
     const handleAcceptClick = async () => {
         setIsLoadingAccept(true);
         setError('');
         try {
-            await onAccept(convite.conviteId); // Chama a função do Topbar
-            Swal.fire('Aceito!', `Você entrou no projeto '${projetoNome}'.`, 'success');
-            // O Topbar é quem fecha o modal (no 'onAccept')
+            await onAccept(convite.conviteId); 
         } catch (err: any) {
             console.error("Erro ao aceitar convite (Modal):", err);
-            const errorMsg = err.response?.data?.message || 'Não foi possível aceitar o convite.';
-            setError(errorMsg); // Mostra o erro no modal
+            const errorMsg = err.response?.data?.message || 'Não foi possível aceitar o convite. Projeto cheio?';
+            Swal.fire('Erro', errorMsg, 'error');
             setIsLoadingAccept(false);
         }
     };
@@ -62,13 +64,11 @@ const ConviteProjetoModal: React.FC<ConviteProjetoModalProps> = ({ convite, onCl
         setIsLoadingDecline(true);
         setError('');
         try {
-            await onDecline(convite.conviteId); // Chama a função do Topbar
-            Swal.fire('Recusado', 'O convite foi recusado.', 'info');
-            // O Topbar é quem fecha o modal (no 'onDecline')
+            await onDecline(convite.conviteId);
         } catch (err: any) {
             console.error("Erro ao recusar convite (Modal):", err);
             const errorMsg = err.response?.data?.message || 'Não foi possível recusar o convite.';
-            setError(errorMsg);
+            Swal.fire('Erro', errorMsg, 'error');
             setIsLoadingDecline(false);
         }
     };
@@ -83,19 +83,33 @@ const ConviteProjetoModal: React.FC<ConviteProjetoModalProps> = ({ convite, onCl
 
                 <div className="convite-modal-header">
                     <img 
-                        src={fotoRemetente} 
+                        src={fotoRemetenteUrl} 
                         alt={`Foto de ${convite.remetenteNome || 'Usuário'}`} 
                         className="convite-remetente-foto"
                     />
-                    <h2>
-                        <strong>{convite.remetenteNome || 'Alguém'}</strong> convidou você!
+                    <h2 className="convite-title">
+                        {convite.remetenteNome ? (
+                            <>
+                                <span className="highlight-text">{convite.remetenteNome}</span> convidou você!
+                            </>
+                        ) : (
+                             <>
+                                <span className="highlight-text">Convite Recebido</span>
+                            </>
+                        )}
                     </h2>
                 </div>
 
                 <div className="convite-modal-body">
+                    <div className="icon-container">
+                        <FontAwesomeIcon icon={faEnvelopeOpen} />
+                    </div>
                     <p>
-                        Você recebeu um convite para entrar no projeto: <strong>{projetoNome}</strong>
+                        Você foi convidado(a) para fazer parte do projeto:
                     </p>
+                    <h3 className="convite-projeto-nome">
+                         {projetoNome}
+                    </h3>
                     
                     {error && <p className="convite-error">{error}</p>}
                 </div>
