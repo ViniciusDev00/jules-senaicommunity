@@ -1,0 +1,161 @@
+/* src/components/Layout/ConviteProjetoModal.css */
+
+/* Reutiliza o overlay do modal principal (assumindo que está no global.css) */
+/* Se não estiver, copie os estilos .modal-overlay e .modal-content do seu CSS */
+
+/* Ajusta o tamanho do modal de convite */
+.modal-content.modal-convite {
+    max-width: 450px; /* Um pouco menor */
+    /* Garante que estilos básicos do modal sejam aplicados */
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.modal-convite .modal-header {
+    /* Estilos do seu .modal-header */
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-convite .modal-header h2 {
+    font-size: 1.15rem; /* Título um pouco menor */
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Botão de fechar (reutilize o seu se tiver) */
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.modal-convite .modal-body {
+    padding: 1.5rem;
+    text-align: center; /* Centraliza o conteúdo */
+}
+
+.convite-remetente {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+.convite-remetente strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.convite-projeto-nome {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent-primary); /* Destaca o nome do projeto */
+    margin-bottom: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.convite-mensagem-original {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border-color);
+}
+
+.convite-error {
+    color: var(--danger);
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+.modal-convite .modal-footer.footer-convite {
+    /* Estilos do seu .modal-footer */
+    display: flex;
+    justify-content: space-between; /* Botões nas extremidades */
+    padding: 1rem 1.5rem;
+    background-color: var(--bg-primary); /* Fundo um pouco diferente */
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-convite {
+    padding: 0.7rem 1.4rem; /* Padding maior */
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 120px; /* Largura mínima para botões */
+    justify-content: center;
+}
+
+.btn-convite:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-convite.btn-recusar {
+    background-color: var(--bg-quaternary);
+    color: var(--text-primary);
+}
+.btn-convite.btn-recusar:hover:not(:disabled) {
+    background-color: var(--danger); /* Muda para vermelho no hover */
+    color: white;
+}
+
+.btn-convite.btn-aceitar {
+    background-color: var(--success); /* Verde */
+    color: white;
+}
+.btn-convite.btn-aceitar:hover:not(:disabled) {
+    background-color: #269c40; /* Verde mais escuro */
+}
+
+/* Animação de spinner (pode ser global) */
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estilos de overlay (se não estiverem globais) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro semi-transparente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1040; /* Abaixo do modal de convite */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+  z-index: 1050; /* Z-index alto */
+}
+
+.modal-content {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}

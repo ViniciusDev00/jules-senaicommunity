@@ -1,4 +1,4 @@
-/* src/components/Layout/Topbar.css (ATUALIZADO PARA INCLUIR THEME TOGGLE) */
+/* src/components/Layout/Topbar.css (COMPLETO E MELHORADO) */
 
 .topbar {
     display: flex;
@@ -154,11 +154,152 @@
 .dropdown-menu a.danger { color: var(--danger); }
 .dropdown-menu a.danger:hover { background-color: rgba(248, 81, 73, 0.1); } /* Fundo vermelho suave */
 
-/* --- RESPONSIVIDADE --- */
+
+/* =================================================================== */
+/* === INÍCIO - ESTILOS DE NOTIFICAÇÃO (MELHORADOS) === */
+/* =================================================================== */
+
+.notifications-container {
+    position: relative;
+    cursor: pointer;
+}
+
+.notifications-dropdown {
+    position: absolute;
+    top: 60px; /* Ajuste conforme a altura da sua topbar + folga */
+    right: 0;
+    width: 380px; /* Largura aumentada para caber foto e texto */
+    max-height: 400px; /* Limita a altura */
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+}
+
+.notifications-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Impede que o header encolha */
+}
+
+.notifications-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.notifications-list {
+    overflow-y: auto;
+    flex-grow: 1; /* Faz a lista ocupar o espaço disponível */
+}
+
+/* --- O Item de Notificação Individual --- */
+.notification-item {
+    display: flex;
+    align-items: flex-start; /* Alinha ao topo (melhor que 'center' para textos longos) */
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color-light); /* Cor de borda mais suave */
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    position: relative; /* Para o indicador "não lido" */
+}
+
+.notification-item:hover {
+    background-color: var(--bg-tertiary); /* Fundo um pouco mais escuro no hover */
+}
+
+.notification-item:last-child {
+    border-bottom: none; /* Remove a borda do último item */
+}
+
+/* --- A Foto do Remetente --- */
+.notification-sender-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+    object-fit: cover;
+    flex-shrink: 0; /* Impede que a imagem encolha */
+    background-color: var(--bg-tertiary); /* Cor de fundo caso a imagem falhe */
+}
+
+/* --- O Conteúdo (Texto e Data) --- */
+.notification-content {
+    flex-grow: 1;
+    /* Evita que o texto vaze para a área do "ponto azul" */
+    /* Ajuste a largura se o indicador for muito largo */
+    width: calc(100% - 70px);
+}
+
+.notification-text {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary); /* Cor mais suave para a mensagem */
+    line-height: 1.4;
+    word-wrap: break-word; /* Quebra de linha */
+}
+
+/* --- O Nome em negrito --- */
+.notification-text strong {
+    font-weight: 600;
+    color: var(--text-primary); /* Cor principal para o nome */
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: var(--text-tertiary); /* Cor mais sutil para a data */
+    margin-top: 4px;
+}
+
+/* --- Indicador de Não Lido (Ponto Azul) --- */
+.unread-indicator {
+    width: 8px;
+    height: 8px;
+    background-color: var(--accent-primary); /* Azul */
+    border-radius: 50%;
+    margin-left: 10px;
+    align-self: center; /* Centraliza o ponto verticalmente */
+    flex-shrink: 0;
+}
+
+/* --- Estilo para o item "não lido" (fundo sutil) --- */
+.notification-item.unread {
+    /* Define uma variável de cor no seu :root se preferir */
+    background-color: rgba(88, 166, 255, 0.05);
+}
+.notification-item.unread:hover {
+    background-color: rgba(88, 166, 255, 0.1); /* Um pouco mais forte no hover */
+}
+
+
+.no-notifications {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ================================================================= */
+/* === FIM - NOVOS ESTILOS DE NOTIFICAÇÃO === */
+/* ================================================================= */
+
+
+/* --- RESPONSIVIDADE (JÁ EXISTENTE) --- */
 @media (max-width: 768px) {
     .topbar { padding: 0.5rem 1rem; }
     .search { display: none; } /* Esconde busca no mobile */
     .username-display { display: none; } /* Esconde nome no mobile */
     .user { padding: 0.5rem; } /* Menor padding no user */
     .nav-icons { gap: 0.25rem; } /* Menor gap entre ícones */
+
+    /* Ajuste para o dropdown de notificação no mobile */
+    .notifications-dropdown {
+        width: 320px; /* Um pouco mais estreito */
+        top: 60px; /* Ajuste de posição */
+    }
 }
