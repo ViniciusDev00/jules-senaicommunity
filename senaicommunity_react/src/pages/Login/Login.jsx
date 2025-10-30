@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import AuthContext from '../../contexts/Auth/AuthContext';
 
 // Importações do Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,12 +13,13 @@ import Background from '../../components/Auth/Background';
 import ThemeToggle from '../../components/Auth/ThemeToggle';
 import './login.css'; // O CSS corrigido que ajusta o alinhamento dos ícones
 
-const Login = ({ onLogin }) => {
+const Login = () => {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { login } = useContext(AuthContext);
 
     // Define o título da página quando o componente é montado
     useEffect(() => {
@@ -35,9 +37,7 @@ const Login = ({ onLogin }) => {
             });
 
             const token = response.data.token;
-            localStorage.setItem('authToken', token); // Armazena o token de autenticação
-
-            onLogin(token); // Informa ao App.jsx que o login foi bem-sucedido
+            login(token); // Usa a função de login do AuthContext
 
             // Redireciona para a página principal
             navigate('/principal');

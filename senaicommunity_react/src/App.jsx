@@ -1,140 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useWebSocket } from './contexts/WebSocketContext.jsx';
+import AuthContext from './contexts/Auth/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 
 // Importe as páginas de autenticação
 import Login from './pages/Login/Login.jsx';
 import Cadastro from './pages/Cadastro/Cadastro.jsx';
 
-// ✅ IMPORTANDO TODAS AS SUAS PÁGINAS NOVAS
+// Importe as outras páginas
 import Principal from './pages/Principal/Principal.jsx';
 import Perfil from './pages/Perfil/Perfil.jsx';
 import Projetos from './pages/Projetos/Projetos.jsx';
 import Vagas from './pages/Vagas/Vagas.jsx';
 import Eventos from './pages/Eventos/Eventos.jsx';
 import Mensagens from './pages/Mensagens/Mensagens.jsx';
-import EncontrarPessoas from './pages/EncontrarPessoas/EncontrarPessoas.jsx'; // Usando o componente mais novo
-import MinhasConexoes from './pages/MinhasConexoes/MinhasConexoes.jsx'; // Usando o componente mais novo
-
-// ✅ 1. IMPORTAÇÃO DA NOVA PÁGINA
+import EncontrarPessoas from './pages/EncontrarPessoas/EncontrarPessoas.jsx';
+import MinhasConexoes from './pages/MinhasConexoes/MinhasConexoes.jsx';
 import Configuracoes from './pages/Configuracoes/Configuracoes.jsx';
 
-// Componente para proteger rotas
-const PrivateRoute = ({ children }) => {
-    const token = localStorage.getItem('authToken');
-    return token ? children : <Navigate to="/login" />;
-};
-
 function App() {
-    const [token, setToken] = useState(localStorage.getItem('authToken'));
-    const { connect, disconnect } = useWebSocket();
-
-    useEffect(() => {
-        const currentToken = localStorage.getItem('authToken');
-        if (currentToken) {
-            connect(currentToken);
-        }
-    }, [connect]);
-
-    const handleLogin = (newToken) => {
-        localStorage.setItem('authToken', newToken);
-        setToken(newToken);
-        connect(newToken);
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        setToken(null);
-        disconnect();
-    };
+    const { token } = useContext(AuthContext);
 
     return (
         <Router>
             <Routes>
                 {/* Rotas Públicas */}
-                <Route path="/login" element={<Login onLogin={handleLogin} />} />
-                <Route path="/cadastro" element={<Cadastro />} />
+                <Route path="/login" element={!token ? <Login /> : <Navigate to="/principal" />} />
+                <Route path="/cadastro" element={!token ? <Cadastro /> : <Navigate to="/principal" />} />
 
-                {/* Rotas Privadas (dentro do PrivateRoute) */}
-                <Route
-                    path="/principal"
-                    element={
-                        <PrivateRoute>
-                            <Principal onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/perfil"
-                    element={
-                        <PrivateRoute>
-                            <Perfil onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
+                {/* Rotas Privadas */}
+                <Route element={<ProtectedRoute />}>
+                    <Route path="/principal" element={<Principal />} />
+                    <Route path="/perfil" element={<Perfil />} />
+                    <Route path="/projetos" element={<Projetos />} />
+                    <Route path="/vagas" element={<Vagas />} />
+                    <Route path="/eventos" element={<Eventos />} />
+                    <Route path="/mensagens" element={<Mensagens />} />
+                    <Route path="/encontrar-pessoas" element={<EncontrarPessoas />} />
+                    <Route path="/conexoes" element={<MinhasConexoes />} />
+                    <Route path="/configuracoes" element={<Configuracoes />} />
+                </Route>
 
-                {/* ✅ NOVAS ROTAS ADICIONADAS */}
-                <Route
-                    path="/projetos"
-                    element={
-                        <PrivateRoute>
-                            <Projetos onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/vagas"
-                    element={
-                        <PrivateRoute>
-                            <Vagas onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/eventos"
-                    element={
-                        <PrivateRoute>
-                            <Eventos onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/mensagens"
-                    element={
-                        <PrivateRoute>
-                            <Mensagens onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/encontrar-pessoas"
-                    element={
-                        <PrivateRoute>
-                            <EncontrarPessoas onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/conexoes"
-                    element={
-                        <PrivateRoute>
-                            <MinhasConexoes onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
-
-                {/* ✅ 2. NOVA ROTA DE CONFIGURAÇÕES ADICIONADA */}
-                <Route
-                    path="/configuracoes"
-                    element={
-                        <PrivateRoute>
-                            <Configuracoes onLogout={handleLogout} />
-                        </PrivateRoute>
-                    }
-                />
-                {/* ✅ FIM DAS NOVAS ROTAS */}
-
-                {/* Rota Padrão: Redireciona para /principal se logado, senão para /login */}
+                {/* Rota Padrão */}
                 <Route path="/" element={<Navigate to={token ? "/principal" : "/login"} />} />
             </Routes>
         </Router>
