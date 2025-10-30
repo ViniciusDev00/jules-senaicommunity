@@ -1,15 +1,16 @@
 // src/components/Layout/Topbar.tsx (COMPLETO, CORRIGIDO E ATUALIZADO)
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
+import { useWebSocket } from '../../contexts/WebSocketContext.tsx';
+import AuthContext from '../../contexts/Auth/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faHome, faCommentDots, faBell, faChevronDown, faUserEdit,
     faSignOutAlt, faSearch, faMoon, faSun, faCog
 } from '@fortawesome/free-solid-svg-icons';
 import './Topbar.css';
-import axios from 'axios';
+import api from '../../api';
 import ConviteProjetoModal from './ConviteProjetoModal'; // Importa o NOVO modal
 
 // --- DEFINIÇÃO DOS TIPOS ---
@@ -35,14 +36,10 @@ interface ConviteSelecionado {
     remetenteFotoUrl?: string; // Passa a foto para o modal
 }
 
-// Tipo das props do Topbar
-interface TopbarProps {
-    onLogout: () => void;
-    currentUser: any; // Idealmente, defina uma interface de Usuário
-}
-
-const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
+const Topbar: React.FC = () => {
     
+    const { user: currentUser, logout } = useContext(AuthContext);
+    const onLogout = logout;
     const webSocketContext = useWebSocket();
     const stompClient = webSocketContext?.stompClient;
     const isConnected = webSocketContext?.isConnected;
@@ -60,7 +57,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
     const fetchNotifications = useCallback(async () => {
         if (currentUser) {
             try {
-                const response = await axios.get('http://localhost:8080/api/notificacoes');
+                const response = await api.get('/api/notificacoes');
                 
                 if (response.data && Array.isArray(response.data)) {
                     const sortedNotifications: Notificacao[] = response.data.sort((a: Notificacao, b: Notificacao) =>

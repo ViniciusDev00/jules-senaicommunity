@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 
 const AuthContext = createContext();
 
@@ -12,11 +12,8 @@ export const AuthProvider = ({ children }) => {
         const fetchUser = async () => {
             if (token) {
                 try {
-                    // Adiciona o token ao cabeçalho do axios para esta requisição
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
                     // Endpoint para buscar dados do usuário logado (será criado no backend)
-                    const response = await axios.get('http://localhost:8080/api/usuarios/me');
+                    const response = await api.get('/api/usuarios/me');
                     setUser(response.data);
                 } catch (error) {
                     console.error('Falha ao buscar usuário. Token inválido?', error);
@@ -39,7 +36,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('authToken');
         setToken(null);
         setUser(null);
-        delete axios.defaults.headers.common['Authorization'];
     };
 
     return (
