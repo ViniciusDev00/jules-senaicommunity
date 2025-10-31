@@ -9,6 +9,7 @@ import './styles/global.css';
 // Importa o CSS padrão do Vite (Correto!)
 import './index.css';
 
+// ✅ CORREÇÃO: Removido o operador '!' para resolver o erro de Unexpected token no Babel/JSX.
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(

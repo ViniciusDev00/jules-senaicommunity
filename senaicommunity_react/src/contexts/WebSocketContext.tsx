@@ -14,7 +14,13 @@ type WebSocketContextType = {
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 // 3. Hook para consumir o contexto
-export const useWebSocket = (): WebSocketContextType | null => useContext(WebSocketContext);
+export const useWebSocket = (): WebSocketContextType => {
+  const context = useContext(WebSocketContext);
+  if (context === null) {
+    throw new Error('useWebSocket deve ser usado dentro de um WebSocketProvider');
+  }
+  return context;
+};
 
 // Tipo para as props do Provider
 type WebSocketProviderProps = {
@@ -29,10 +35,8 @@ export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
 
   // Função de desconexão (agora sem useCallback para simplificar, será recriada se stompClient mudar)
   const disconnect = () => {
-    // console.log("Attempting disconnect..."); // Log para debug
     if (stompClient?.connected) {
       stompClient.deactivate();
-      // console.log("STOMP client deactivated."); // Log para debug
     }
     // Apenas limpa se já não estiver limpo, para evitar loops
     if (stompClient !== null) {
@@ -46,12 +50,14 @@ export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
   // Função de conexão (useCallback mantido, mas com dependências corretas)
   const connect = useCallback((token: string) => {
     // Evita reconexão se já conectado ou se não há token
-    if (!token || (stompClient?.connected && isConnected)) {
-      // console.log("Connect skipped: No token or already connected."); // Log para debug
+    if (!token || isConnected) {
       return;
     }
-
-    // console.log("Attempting connect..."); // Log para debug
+    
+    // Se um cliente STOMP existe, desativa antes de criar um novo.
+    if (stompClient) {
+        stompClient.deactivate();
+    }
 
     // Cria nova factory e cliente a cada tentativa de conexão
     const socketFactory = () => new SockJS(`http://localhost:8080/ws`);
@@ -101,19 +107,16 @@ export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
     // Ativa o cliente para iniciar a conexão
     client.activate();
 
-  // Removido 'stompClient' e 'disconnect' das dependências para evitar loop
-  // A lógica agora garante que 'connect' só executa se necessário
-  }, [isConnected]); // Depende apenas de 'isConnected' para decidir se tenta reconectar
+  }, [isConnected, stompClient]);
 
   // Efeito para desconectar ao desmontar o componente
   useEffect(() => {
     // A função retornada pelo useEffect é a função de cleanup
     return () => {
-      // console.log("Cleanup: Disconnecting WebSocket..."); // Log para debug
       disconnect();
     };
   // As dependências corretas aqui são stompClient e disconnect
-  }, [stompClient, disconnect]);
+  }, [disconnect, stompClient]);
 
 
   // Valor do Contexto

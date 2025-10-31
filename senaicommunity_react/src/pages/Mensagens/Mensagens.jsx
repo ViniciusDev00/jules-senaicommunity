@@ -1,4 +1,4 @@
-// src/pages/Mensagens/Mensagens.jsx (COMPLETO E CORRIGIDO PARA JAVASCRIPT)
+// src/pages/Mensagens/Mensagens.jsx (COMPLETO E CORRIGIDO)
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
@@ -9,7 +9,7 @@ import './Mensagens.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane, faEllipsisV, faSearch, faSpinner, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; // Importar de um .tsx é OK
+import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
 
 // --- COMPONENTE CONVERSATIONListItem ---
 const ConversationListItem = ({ conversa, ativa, onClick }) => (
@@ -50,7 +50,8 @@ const Mensagens = ({ onLogout }) => {
     const [loadingMensagens, setLoadingMensagens] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [novaMensagem, setNovaMensagem] = useState('');
-    const { stompClient, isConnected } = useWebSocket() || {};
+    
+    const { stompClient, isConnected } = useWebSocket(); 
     const messagesEndRef = useRef(null);
 
     const location = useLocation();
@@ -65,17 +66,24 @@ const Mensagens = ({ onLogout }) => {
                 id: proj.id, 
                 nome: proj.titulo,
                 tipo: 'grupo',
+                // ✅ CORREÇÃO IMAGEM GRUPO: Tentando o caminho /arquivos/ seguido pelo nome da pasta de uploads
                 avatar: proj.imagemUrl
-                    ? `http://localhost:8080/projetos/imagens/${proj.imagemUrl}`
+                    ? `http://localhost:8080/arquivos/projeto-pictures/${proj.imagemUrl}`
                     : `https://placehold.co/50/30363d/8b949e?text=${proj.titulo.substring(0, 2)}`,
                 ultimaMensagem: 'Chat do projeto', 
             }));
 
-            const amigosRes = await axios.get('http://localhost:8080/api/amizades/amigos'); 
-            const conversasDMs = amigosRes.data.map(amigo => ({
+            // Endpoint de amigos já corrigido para /api/amizades/
+            const amigosRes = await axios.get('http://localhost:8080/api/amizades/'); 
+            
+            // Filtro para garantir que amigo.usuario.id exista (previne TypeError)
+            const validAmigos = amigosRes.data.filter(amigo => amigo && amigo.usuario && amigo.usuario.id);
+
+            const conversasDMs = validAmigos.map(amigo => ({
                 id: amigo.usuario.id, 
                 nome: amigo.usuario.nome,
                 tipo: 'dm',
+                // Caminho DM: assume que fotoPerfil retorna um caminho relativo (ex: /uploads/alunoPictures/...)
                 avatar: amigo.usuario.fotoPerfil ? `http://localhost:8080${amigo.usuario.fotoPerfil}` : `https://i.pravatar.cc/50?u=${amigo.usuario.id}`,
                 ultimaMensagem: 'Conversa privada', 
             }));
@@ -86,7 +94,6 @@ const Mensagens = ({ onLogout }) => {
 
         } catch (error) {
             console.error("Erro ao buscar conversas:", error);
-            // CORREÇÃO AQUI: Removido '(error as any)'
             const status = (error && typeof error === 'object' && 'response' in error && error.response) ? error.response.status : null;
             if (status === 401) {
                 onLogout();
@@ -99,7 +106,7 @@ const Mensagens = ({ onLogout }) => {
 
     // --- FUNÇÃO DE SELECIONAR CONVERSA ---
     const selecionarConversa = useCallback(async (conversa, user, atualizarUrl = true) => {
-
+        // ... (lógica de seleção de conversa, mantida igual)
         if (!conversa) return;
 
         setConversaAtiva(conversa);
@@ -125,7 +132,6 @@ const Mensagens = ({ onLogout }) => {
 
             const mensagensRes = await axios.get(endpoint);
 
-            // CORREÇÃO AQUI: Removido '(msg: any)'
             const msgsFormatadas = mensagensRes.data.map((msg) => ({
                 ...msg,
                 tipo: conversa.tipo
@@ -166,11 +172,9 @@ const Mensagens = ({ onLogout }) => {
 
                 if (grupoIdQuery && todasConversas.length > 0) {
                     const idNumerico = parseInt(grupoIdQuery, 10);
-                    // CORREÇÃO AQUI: Removido '(c: any)'
                     chatParaAbrir = todasConversas.find((c) => c.id === idNumerico && c.tipo === 'grupo');
                 } else if (dmIdQuery && todasConversas.length > 0) {
                     const idNumerico = parseInt(dmIdQuery, 10);
-                    // CORREÇÃO AQUI: Removido '(c: any)'
                     chatParaAbrir = todasConversas.find((c) => c.id === idNumerico && c.tipo === 'dm');
                 }
 
@@ -183,7 +187,6 @@ const Mensagens = ({ onLogout }) => {
 
             } catch (error) {
                 console.error("Erro ao buscar dados iniciais:", error);
-                 // CORREÇÃO AQUI: Removido '(error as any)'
                 if (error.response?.status === 401) onLogout();
             }
         };
@@ -218,7 +221,6 @@ const Mensagens = ({ onLogout }) => {
     }, [isConnected, stompClient, conversaAtiva, currentUser]);
 
     // Função de enviar (Removida a atualização Otimista)
-    // CORREÇÃO AQUI: Removido '(e: React.FormEvent)'
     const handleEnviarMensagem = async (e) => {
         e.preventDefault();
         if (!novaMensagem.trim() || !conversaAtiva || !currentUser || !stompClient || !isConnected) return;
@@ -328,9 +330,9 @@ const Mensagens = ({ onLogout }) => {
                        <div className="empty-chat-view">
                            <svg width="150" height="150" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{opacity: 0.3, marginBottom: '1.5rem', color: 'var(--text-tertiary)'}}>
                                 <path d="M16.8 13.4147C17.411 13.4147 17.957 13.1417 18.441 12.6577C18.925 12.1737 19.199 11.6277 19.199 11.0157C19.199 10.4037 18.925 9.85873 18.441 9.37373C17.957 8.88973 17.411 8.61573 16.8 8.61573H7.199C6.588 8.61573 6.042 8.88973 5.558 9.37373C5.074 9.85873 4.799 10.4037 4.799 11.0157C4.799 11.6277 5.074 12.1737 5.558 12.6577C6.042 13.1417 6.588 13.4147 7.199 13.4147H16.8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M12 17.0147H7.199C6.588 17.0147 6.042 16.7417 5.558 16.2577C5.074 15.7737 4.799 15.2277 4.799 14.6157C4.799 14.0037 5.074 13.4587 5.558 12.9737C6.042 12.4897 6.588 12.2157 7.199 12.2157H12" stroke="currentColor" strokeWidth="1.s5" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M12 17.0147H7.199C6.588 17.0147 6.042 16.7417 5.558 16.2577C5.074 15.7737 4.799 15.2277 4.799 14.6157C4.799 14.0037 5.074 13.4587 5.558 12.9737C6.042 12.4897 6.588 12.2157 7.199 12.2157H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                                 <path d="M21.6 11.0147V16.6147C21.6 18.3117 20.916 19.5097 19.548 20.2087C18.18 20.9077 16.584 21.0147 14.76 20.5287L11.7 19.6417C8.748 18.8417 5.999 18.8417 3 19.6417L1.8 19.9867C1.487 20.0767 1.156 20.0207 0.88 19.8317C0.604 19.6427 0.466 19.3497 0.466 18.9527V6.01473C0.466 4.31773 1.15 3.11973 2.518 2.42073C3.886 1.72173 5.482 1.61473 7.306 2.10073L10.366 2.98773C13.318 3.78773 16.067 3.78773 19.019 2.98773L20.219 2.64273C20.532 2.55273 20.863 2.59973 21.139 2.78873C21.415 2.97773 21.553 3.27073 21.553 3.66773L21.6 11.0147Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
+                           </svg>
                            <h3>Selecione uma conversa</h3>
                            <p>Escolha um amigo ou grupo para começar a conversar.</p>
                        </div>
@@ -342,4 +344,3 @@ const Mensagens = ({ onLogout }) => {
 };
 
 export default Mensagens;
-// A CHAVE "}" EXTRA QUE ESTAVA AQUI FOI REMOVIDA
