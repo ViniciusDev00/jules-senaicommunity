@@ -211,6 +211,25 @@ public class PostagemService {
                         .anyMatch(curtida -> curtida.getUsuario().getId().equals(usuarioLogadoId));
             }
 
+            // ✅ ===== CORREÇÃO APLICADA (1 de 2) ===== ✅
+            // Lógica para foto do autor do comentário (replicada do AlunoService.java)
+            String nomeFotoComentario = comentario.getAutor().getFotoPerfil();
+            String urlFotoComentarioCorrigida;
+            if (nomeFotoComentario != null && !nomeFotoComentario.isBlank()) {
+                // Se for Cloudinary, já é uma URL completa.
+                if (nomeFotoComentario.startsWith("http")) {
+                    urlFotoComentarioCorrigida = nomeFotoComentario;
+                } else {
+                    // Se for local, monta a URL para o ArquivoController.
+                    urlFotoComentarioCorrigida = "/api/arquivos/" + nomeFotoComentario;
+                }
+            } else {
+                // URL do avatar padrão
+                urlFotoComentarioCorrigida = "/images/default-avatar.jpg";
+            }
+            // ✅ ===== FIM DA CORREÇÃO ===== ✅
+
+
             // 3. Construir o DTO do comentário com todos os campos
             return ComentarioSaidaDTO.builder()
                     .id(comentario.getId())
@@ -224,7 +243,7 @@ public class PostagemService {
                     .destacado(comentario.isDestacado())
                     .totalCurtidas(totalCurtidasComentario)
                     .curtidoPeloUsuario(curtidoPeloUsuarioComentario)
-                    .urlFotoAutor(comentario.getAutor().getFotoPerfil())
+                    .urlFotoAutor(urlFotoComentarioCorrigida) // USA A URL CORRIGIDA
                     .build();
 
         }).collect(Collectors.toList())
@@ -238,6 +257,24 @@ public class PostagemService {
                     .anyMatch(c -> c.getUsuario().getId().equals(usuarioLogadoId));
         }
 
+        // ✅ ===== CORREÇÃO APLICADA (2 de 2) ===== ✅
+        // Lógica para foto do autor da POSTAGEM (replicada do AlunoService.java)
+        String nomeFotoAutor = postagem.getAutor().getFotoPerfil();
+        String urlFotoAutorCorrigida;
+        if (nomeFotoAutor != null && !nomeFotoAutor.isBlank()) {
+            // Se for Cloudinary, já é uma URL completa.
+            if (nomeFotoAutor.startsWith("http")) {
+                urlFotoAutorCorrigida = nomeFotoAutor;
+            } else {
+                // Se for local, monta a URL para o ArquivoController.
+                urlFotoAutorCorrigida = "/api/arquivos/" + nomeFotoAutor;
+            }
+        } else {
+            // URL do avatar padrão
+            urlFotoAutorCorrigida = "/images/default-avatar.jpg";
+        }
+        // ✅ ===== FIM DA CORREÇÃO ===== ✅
+
         return PostagemSaidaDTO.builder()
                 .id(postagem.getId())
                 .conteudo(postagem.getConteudo())
@@ -247,7 +284,7 @@ public class PostagemService {
                 .urlsMidia(urls)
                 .comentarios(comentariosDTO)
                 .totalCurtidas(totalCurtidasPostagem)
-                .urlFotoAutor(postagem.getAutor().getFotoPerfil())
+                .urlFotoAutor(urlFotoAutorCorrigida) // USA A URL CORRIGIDA
                 .curtidoPeloUsuario(curtidoPeloUsuarioPostagem)
                 .build();
     }
