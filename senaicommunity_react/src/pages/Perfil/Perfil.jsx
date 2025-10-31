@@ -1,3 +1,5 @@
+// senaicommunity_react/src/pages/Perfil/Perfil.jsx
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,10 +12,13 @@ import Sidebar from '../../components/Layout/Sidebar';
 // Estilos
 import '../../pages/Principal/Principal.css'; // Estilo principal do layout
 import './Perfil.css'; // Estilos específicos da página de perfil
+import EditarPerfilModal from './EditarPerfilModal'; // <-- ADICIONADO
+import './EditarPerfilModal.css'; // <-- ADICIONADO
 
 const Perfil = ({ onLogout }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false); // <-- ADICIONADO (Controla o modal)
 
     useEffect(() => {
         document.title = 'Senai Community | Meu Perfil';
@@ -39,6 +44,24 @@ const Perfil = ({ onLogout }) => {
 
         fetchCurrentUser();
     }, [onLogout]);
+
+    // <-- ADICIONADO (Função para salvar os dados do modal SÓ NO FRONT-END) -->
+    const handleSaveProfile = (novosDados) => {
+        // Atualiza o estado 'currentUser' com os novos dados
+        setCurrentUser(prevUser => ({
+            ...prevUser,
+            nome: novosDados.nome,
+            urlFotoPerfil: novosDados.urlFotoPerfil,
+            bio: novosDados.bio
+        }));
+        
+        // Fecha o modal
+        setIsModalOpen(false);
+        
+        // No futuro, você adicionará o axios.put() aqui
+        // console.log("Novos dados para enviar ao backend:", novosDados);
+    };
+    // <-- FIM DA FUNÇÃO ADICIONADA -->
 
     if (isLoading || !currentUser) {
         return <div>Carregando perfil...</div>;
@@ -71,7 +94,12 @@ const Perfil = ({ onLogout }) => {
                                         <p id="profile-title">{currentUser.tipoUsuario}</p>
                                     </div>
                                     <div className="profile-actions">
-                                        <button className="btn btn-primary" id="edit-profile-btn-page">
+                                        {/* <-- MODIFICADO: Adicionado 'onClick' para abrir o modal --> */}
+                                        <button 
+                                            className="btn btn-primary" 
+                                            id="edit-profile-btn-page" 
+                                            onClick={() => setIsModalOpen(true)}
+                                        >
                                             <FontAwesomeIcon icon={faPen} /> Editar Perfil
                                         </button>
                                     </div>
@@ -92,6 +120,15 @@ const Perfil = ({ onLogout }) => {
                     </div>
                 </main>
             </div>
+
+            {/* <-- ADICIONADO: Renderiza o modal se 'isModalOpen' for true --> */}
+            {isModalOpen && (
+                <EditarPerfilModal
+                    user={currentUser}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={handleSaveProfile}
+                />
+            )}
         </>
     );
 };

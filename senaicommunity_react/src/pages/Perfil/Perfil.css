@@ -1,3 +1,5 @@
+/* senaicommunity_react/src/pages/Perfil/Perfil.css */
+
 /* Estilos para a página de perfil (perfil.css) */
 
 .profile-page {
@@ -6,6 +8,8 @@
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow);
     overflow: hidden;
+    /* REMOVIDO: flex-grow, max-width e margin: auto 
+       para manter seu tamanho original. */
 }
 
 /* Nova abordagem de layout para o cabeçalho */
@@ -19,6 +23,7 @@
     height: 220px;
     /* REMOVIDO: background-color: var(--bg-quaternary); */
     /* Se a imagem não carregar, esta área ficará transparente ou usará o background do body */
+    background-color: var(--bg-tertiary); /* Adicionei uma cor de fallback */
 }
 
 .profile-banner img {
@@ -116,7 +121,10 @@
     color: var(--text-secondary);
 }
 
-.profile-metadata li i {
+/* CORREÇÃO MANTIDA: Seu JSX usa <FontAwesomeIcon> (que é <svg>), 
+  mas seu CSS original usava 'i'. Corrigi o seletor.
+*/
+.profile-metadata li .svg-inline--fa { 
     width: 20px;
     text-align: center;
     color: var(--text-tertiary);
