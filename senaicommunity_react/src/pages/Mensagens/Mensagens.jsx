@@ -1,4 +1,4 @@
-// src/pages/Mensagens/Mensagens.jsx (COMPLETO E CORRIGIDO PARA PARSING E PERSISTÊNCIA)
+// src/pages/Mensagens/Mensagens.jsx (COMPLETO E CORRIGIDO PARA JAVASCRIPT)
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
@@ -9,7 +9,7 @@ import './Mensagens.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane, faEllipsisV, faSearch, faSpinner, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; // Assumindo .tsx
+import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; // Importar de um .tsx é OK
 
 // --- COMPONENTE CONVERSATIONListItem ---
 const ConversationListItem = ({ conversa, ativa, onClick }) => (
@@ -86,7 +86,8 @@ const Mensagens = ({ onLogout }) => {
 
         } catch (error) {
             console.error("Erro ao buscar conversas:", error);
-            const status = (error && typeof error === 'object' && 'response' in error && (error as any).response) ? (error as any).response.status : null;
+            // CORREÇÃO AQUI: Removido '(error as any)'
+            const status = (error && typeof error === 'object' && 'response' in error && error.response) ? error.response.status : null;
             if (status === 401) {
                 onLogout();
             }
@@ -124,7 +125,8 @@ const Mensagens = ({ onLogout }) => {
 
             const mensagensRes = await axios.get(endpoint);
 
-            const msgsFormatadas = mensagensRes.data.map((msg: any) => ({
+            // CORREÇÃO AQUI: Removido '(msg: any)'
+            const msgsFormatadas = mensagensRes.data.map((msg) => ({
                 ...msg,
                 tipo: conversa.tipo
             }));
@@ -164,10 +166,12 @@ const Mensagens = ({ onLogout }) => {
 
                 if (grupoIdQuery && todasConversas.length > 0) {
                     const idNumerico = parseInt(grupoIdQuery, 10);
-                    chatParaAbrir = todasConversas.find((c: any) => c.id === idNumerico && c.tipo === 'grupo');
+                    // CORREÇÃO AQUI: Removido '(c: any)'
+                    chatParaAbrir = todasConversas.find((c) => c.id === idNumerico && c.tipo === 'grupo');
                 } else if (dmIdQuery && todasConversas.length > 0) {
                     const idNumerico = parseInt(dmIdQuery, 10);
-                    chatParaAbrir = todasConversas.find((c: any) => c.id === idNumerico && c.tipo === 'dm');
+                    // CORREÇÃO AQUI: Removido '(c: any)'
+                    chatParaAbrir = todasConversas.find((c) => c.id === idNumerico && c.tipo === 'dm');
                 }
 
                 if (chatParaAbrir) {
@@ -179,7 +183,8 @@ const Mensagens = ({ onLogout }) => {
 
             } catch (error) {
                 console.error("Erro ao buscar dados iniciais:", error);
-                if ((error as any).response?.status === 401) onLogout();
+                 // CORREÇÃO AQUI: Removido '(error as any)'
+                if (error.response?.status === 401) onLogout();
             }
         };
 
@@ -213,7 +218,8 @@ const Mensagens = ({ onLogout }) => {
     }, [isConnected, stompClient, conversaAtiva, currentUser]);
 
     // Função de enviar (Removida a atualização Otimista)
-    const handleEnviarMensagem = async (e: React.FormEvent) => {
+    // CORREÇÃO AQUI: Removido '(e: React.FormEvent)'
+    const handleEnviarMensagem = async (e) => {
         e.preventDefault();
         if (!novaMensagem.trim() || !conversaAtiva || !currentUser || !stompClient || !isConnected) return;
 
@@ -336,3 +342,4 @@ const Mensagens = ({ onLogout }) => {
 };
 
 export default Mensagens;
+// A CHAVE "}" EXTRA QUE ESTAVA AQUI FOI REMOVIDA
