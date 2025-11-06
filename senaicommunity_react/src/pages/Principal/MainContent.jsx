@@ -112,7 +112,7 @@ const PostCreator = ({ currentUser }) => {
     }
 
     // VISTA EXPANDIDA
-    let title = "Publicar Mídia";
+    let title = "Publicar Postagem";
     let placeholder = `No que você está pensando, ${currentUser?.nome || ''}?`;
     
     return (
