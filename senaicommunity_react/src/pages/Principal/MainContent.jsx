@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-    faImage, faVideo, faCode, faThumbsUp, faComment, 
-    faShareSquare, faEllipsisH, faSpinner 
+    faImage, faThumbsUp, faComment, 
+    faShareSquare, faEllipsisH, faSpinner, faTimesCircle
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
@@ -24,24 +24,16 @@ const getCorrectImageUrl = (url) => {
     }
     
     // CASO 1: URL Completa (Cloudinary)
-    // (Ex: http://res.cloudinary.com/...)
-    //
     if (url.startsWith('http://') || url.startsWith('https://')) {
         return url; 
     }
     
     // CASO 2: URL Local Correta (Salva com / no início - Ex: Professores)
-    // (Ex: /professorPictures/foto.png)
-    //
     if (url.startsWith('/')) {
         return `http://localhost:8080${url}`; 
     }
     
     // ✅ CASO 3: DADO CORROMPIDO (Salvo sem / no início - O SEU BUG)
-    // (Ex: 1761934776174_images.jpg)
-    // Isso acontece por causa do bug no AlunoService.java.
-    // Vamos "adivinhar" a pasta /alunoPictures/
-    //
     return `http://localhost:8080/alunoPictures/${url}`; 
 };
 
@@ -55,7 +47,6 @@ const PostCreator = ({ currentUser }) => {
     const [postFiles, setPostFiles] = useState([]); 
     const [isPublishing, setIsPublishing] = useState(false);
 
-    // ✅ Usa a função helper para a foto do usuário logado
     const userImage = getCorrectImageUrl(currentUser?.urlFotoPerfil);
 
     const handleClose = () => {
@@ -66,8 +57,12 @@ const PostCreator = ({ currentUser }) => {
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files.length > 0) {
-            setPostFiles(Array.from(e.target.files));
+            setPostFiles(prevFiles => [...prevFiles, ...Array.from(e.target.files)]);
         }
+    };
+
+    const handleRemoveFile = (indexToRemove) => {
+        setPostFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
     };
 
     // Função de publicação alinhada com o Backend
@@ -82,21 +77,19 @@ const PostCreator = ({ currentUser }) => {
         
         const postData = { conteudo: postText };
         formData.append(
-            "postagem", // Nome "postagem"
+            "postagem", 
             new Blob([JSON.stringify(postData)], { type: "application/json" })
         );
 
-        // Nome "arquivos"
         postFiles.forEach((file) => {
             formData.append("arquivos", file);
         });
 
-        // Endpoint "/upload-mensagem"
         const endpoint = 'http://localhost:8080/postagem/upload-mensagem';
 
         try {
             await axios.post(endpoint, formData);
-            handleClose(); // Limpa o form. O WebSocket (via /topic/publico) vai atualizar o feed.
+            handleClose(); 
         } catch (error) {
             console.error("Erro ao publicar:", error);
             alert("Não foi possível publicar a postagem.");
@@ -109,56 +102,76 @@ const PostCreator = ({ currentUser }) => {
     if (postType === null) {
         return (
             <div className="post-creator-simple">
-                <div className="post-creator-trigger" onClick={() => setPostType('text')}>
+                <div className="post-creator-trigger" onClick={() => setPostType('media')}>
                     <div className="avatar-small"><img src={userImage} alt="Seu Perfil" /></div>
                     <input type="text" placeholder="Começar publicação" readOnly />
                 </div>
-                <div className="post-options">
-                    <button className="option-btn" onClick={() => setPostType('photo')}><FontAwesomeIcon icon={faImage} /> Foto</button>
-                    <button className="option-btn" onClick={() => setPostType('video')}><FontAwesomeIcon icon={faVideo} /> Vídeo</button>
-                    <button className="option-btn" onClick={() => setPostType('code')}><FontAwesomeIcon icon={faCode} /> Código</button>
-                </div>
+                {/* ✅ BOTÃO "MÍDIA" REMOVIDO (O div .post-options foi apagado) */}
             </div>
         );
     }
 
     // VISTA EXPANDIDA
-    let title = "Criar Publicação";
+    let title = "Publicar Mídia";
     let placeholder = `No que você está pensando, ${currentUser?.nome || ''}?`;
-    if (postType === 'photo') title = "Publicar Foto";
-    if (postType === 'video') title = "Publicar Vídeo";
-    if (postType === 'code') title = "Publicar Código";
-
+    
     return (
         <div className="post-creator-expanded" style={{ display: 'block' }}>
             <div className="editor-header"><h3>{title}</h3></div>
             <textarea
-                className={`editor-textarea ${postType === 'code' ? 'code-font' : ''}`}
+                className="editor-textarea"
                 placeholder={placeholder}
                 value={postText}
                 onChange={(e) => setPostText(e.target.value)}
                 autoFocus
             />
 
-            {(postType === 'photo' || postType === 'video') && (
-                <div className="file-uploader" style={{marginTop: '1rem'}}>
-                    <input
-                        type="file"
-                        accept={postType === 'photo' ? "image/*" : "video/*"}
-                        onChange={handleFileChange}
-                        multiple
-                        style={{
-                            color: postFiles.length > 0 ? 'var(--success)' : 'var(--text-secondary)',
-                            marginTop: '0.5rem'
-                        }}
-                    />
-                    {postFiles.length > 0 && (
-                        <p style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>
-                            {postFiles.length} arquivo(s) selecionado(s): {postFiles.map(f => f.name).join(', ')}
-                        </p>
-                    )}
-                </div>
-            )}
+            <div className="file-uploader" style={{marginTop: '1rem'}}>
+                
+                {/* Botão "Mídia" para upload */}
+                <label htmlFor="file-upload-input" className="file-upload-label">
+                    <FontAwesomeIcon icon={faImage} />
+                    <span>Mídia</span>
+                </label>
+
+                {/* Input original escondido */}
+                <input
+                    id="file-upload-input"
+                    className="hidden-file-input"
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleFileChange}
+                    multiple
+                />
+                
+                {/* Visualização de arquivos */}
+                {postFiles.length > 0 && (
+                    <div className="selected-files-preview">
+                        {postFiles.map((file, index) => (
+                            <div key={index} className="file-preview-item">
+                                {file.type.startsWith('image/') ? (
+                                    <img 
+                                        src={URL.createObjectURL(file)} 
+                                        alt={file.name} 
+                                    />
+                                ) : (
+                                    <video 
+                                        src={URL.createObjectURL(file)} 
+                                        controls={false} 
+                                    />
+                                )}
+                                <button 
+                                    type="button" 
+                                    onClick={() => handleRemoveFile(index)} 
+                                    className="remove-file-btn"
+                                >
+                                    <FontAwesomeIcon icon={faTimesCircle} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             <div className="post-editor-footer">
                 <div className="editor-actions">
@@ -214,7 +227,6 @@ const MainContent = ({ currentUser }) => {
         };
 
         if (isConnected && stompClient) {
-            // Tópico "/topic/publico"
             const subscription = stompClient.subscribe('/topic/publico', handleFeedUpdate);
             return () => {
                 subscription.unsubscribe();
@@ -226,7 +238,6 @@ const MainContent = ({ currentUser }) => {
     useEffect(() => {
         const fetchPosts = async () => {
             try {
-                // Endpoint "/api/chat/publico"
                 const response = await axios.get('http://localhost:8080/api/chat/publico'); 
                 const sortedPosts = response.data.sort(
                     (a, b) => new Date(b.dataCriacao) - new Date(a.dataCriacao)
@@ -255,27 +266,19 @@ const MainContent = ({ currentUser }) => {
                     </p>
                 ) : (
                     posts.map(post => {
-                        // Pega a URL exata vinda do back-end
                         const urlDoBackend = post.urlFotoAutor; 
-                        
-                        // ✅ Usa a função helper para a foto do AUTOR DO POST
                         const autorAvatar = getCorrectImageUrl(urlDoBackend);
                         
-                        // ==========================================================
-                        // CONSOLE.LOG PARA DEBUG (Como você pediu)
-                        // ==========================================================
                         console.log(`--- POST ID: ${post.id} ---
 Autor: ${post.nomeAutor}
 URL vinda do Backend: ${urlDoBackend}
 URL Final usada no <img>: ${autorAvatar}
 `);
-                        // ==========================================================
 
                         return (
                             <div className="post" key={post.id}>
                                 <div className="post-header">
                                     <div className="post-author">
-                                        {/* A foto do autor do post agora usa 'autorAvatar' corrigido */}
                                         <div className="post-icon"><img src={autorAvatar} alt={post.nomeAutor} /></div>
                                         <div className="post-info">
                                             <h2>{post.nomeAutor || 'Usuário'}</h2>
@@ -285,17 +288,11 @@ URL Final usada no <img>: ${autorAvatar}
                                     <div className="post-options-btn"><FontAwesomeIcon icon={faEllipsisH} /></div>
                                 </div>
                                 
-                                {/* CORREÇÃO DE CONTEÚDO: 
-                                  Seu código original usava 'post.text'
-                                  Mas o DTO do backend
-                                  usa 'post.conteudo'. 
-                                */}
                                 <p className="post-text">{post.conteudo}</p>
                                 
                                 {post.urlsMidia && post.urlsMidia.length > 0 && (
                                     <div className="post-images">
                                         {post.urlsMidia.map((url, index) => {
-                                            // ✅ Usa a função helper para a MÍDIA também
                                             const fullUrl = getCorrectImageUrl(url);
                                             
                                             if (fullUrl.match(/\.(mp4|webm|ogg)$/i)) {
