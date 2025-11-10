@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpMethod; // ✅ IMPORTANTE: VERIFIQUE SE ESTE IMPORT ESTÁ AQUI
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -46,11 +46,18 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Habilita o CORS
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // ==========================================================
+                        // ✅ ✅ ✅ A CORREÇÃO DEFINITIVA ESTÁ AQUI ✅ ✅ ✅
+                        // Permite todas as requisições "pre-flight" OPTIONS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // ==========================================================
+
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/autenticacao/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/autenticacao/login/google").permitAll()
                         .requestMatchers(HttpMethod.POST, "/cadastro/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/projetos/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/curtidas/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/eventos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/projetos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()
@@ -59,7 +66,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/projetos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/alunos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/professores/**").permitAll()
-                        // ✅ ESTA LINHA PERMITE O ACESSO INICIAL AO WEBSOCKET SEM O TOKEN
                         .requestMatchers("/auth/**", "/cadastro/**", "/ws/**", "/login**", "/oauth2/**").permitAll()
                         .requestMatchers("/images/**", "/api/arquivos/**").permitAll()
                         .requestMatchers(
@@ -80,7 +86,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ✅ ESTA SEÇÃO ESTÁ CORRETA PARA O CORS
         configuration.setAllowedOrigins(List.of(
                 "http://127.0.0.1:5500",
                 "http://127.0.0.1:5501",
@@ -89,7 +94,7 @@ public class SecurityConfig {
                 "http://localhost:5173"
         ));
 
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // OPTIONS ESTÁ AQUI
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

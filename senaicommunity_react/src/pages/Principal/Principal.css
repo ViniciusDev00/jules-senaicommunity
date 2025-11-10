@@ -54,7 +54,8 @@
 }
 
 /* ✅ REVERTIDO: Estilos da sidebar esquerda e direita */
-.sidebar, .right-sidebar {
+.sidebar,
+.right-sidebar {
   position: sticky;
   top: 74px; /* Altura do topbar */
   height: calc(100vh - 84px);
@@ -71,15 +72,55 @@
   box-shadow: var(--shadow);
   margin-bottom: 1rem;
 }
-.avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 1rem; position: relative; }
-.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-.status { position: absolute; bottom: 5px; right: 5px; width: 15px; height: 15px; border-radius: 50%; border: 2px solid var(--bg-secondary); }
-.status.online { background-color: var(--online); }
-.user-info h2 { font-size: 1.25rem; margin-bottom: 0.25rem; }
-.user-title { color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem; }
-.user-stats { display: flex; justify-content: center; gap: 1.5rem; margin-top: 1rem; }
-.stat strong { display: block; font-size: 1.25rem; color: var(--accent-primary); }
-.stat span { font-size: 0.75rem; color: var(--text-secondary); }
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  position: relative;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.status {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-secondary);
+}
+.status.online {
+  background-color: var(--online);
+}
+.user-info h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+.user-title {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+.user-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.stat strong {
+  display: block;
+  font-size: 1.25rem;
+  color: var(--accent-primary);
+}
+.stat span {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
 
 .menu {
   background-color: var(--bg-secondary);
@@ -89,29 +130,67 @@
   box-shadow: var(--shadow);
 }
 .menu a {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.75rem; color: var(--text-primary); text-decoration: none;
-  border-radius: 6px; position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: 6px;
+  position: relative;
 }
-.menu a.active, .menu a:hover { background-color: var(--bg-tertiary); color: var(--accent-primary); }
-.menu a .badge { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); }
+.menu a.active,
+.menu a:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--accent-primary);
+}
+.menu a .badge {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
 
 /* --- Conteúdo Principal (Centro) --- */
-.main-content { display: flex; flex-direction: column; gap: 1rem; }
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
 
-.post-creator-expanded { display: none; }
-.post-creator-simple { display: block; }
+.post-creator-expanded {
+  display: none;
+}
+.post-creator-simple {
+  display: block;
+}
 
 .post-creator {
-    background-color: var(--bg-secondary); border-radius: var(--card-radius);
-    padding: 1rem; border: 1px solid var(--border-color); box-shadow: var(--shadow);
+  background-color: var(--bg-secondary);
+  border-radius: var(--card-radius);
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
-.post-creator-trigger { display: flex; align-items: center; gap: 0.75rem; cursor: pointer; }
-.avatar-small img { width: 40px; height: 40px; border-radius: 50%; }
+.post-creator-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+.avatar-small img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
 .post-creator-trigger input {
-    flex-grow: 1; background-color: var(--bg-tertiary);
-    border: none; border-radius: 20px;
-    padding: 0.75rem 1rem; color: var(--text-primary); cursor: pointer;
+  flex-grow: 1;
+  background-color: var(--bg-tertiary);
+  border: none;
+  border-radius: 20px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  cursor: pointer;
 }
 
 /* O .post-options foi removido do JSX, então esses estilos não são mais necessários */
@@ -124,24 +203,60 @@
 .option-btn:hover { background-color: var(--bg-tertiary); }
 */
 
-
-.editor-header { margin-bottom: 1rem; font-size: 1.25rem; font-weight: 600; text-align: center; }
-.editor-textarea {
-    width: 100%; min-height: 120px; background-color: transparent;
-    border: none; color: var(--text-primary); font-size: 1rem;
-    font-family: inherit; resize: vertical; padding: 0; margin-top: 1rem;
+.editor-header {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
 }
-.editor-textarea:focus { outline: none; }
-.post-editor-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
-.editor-actions .cancel-btn { background: var(--bg-quaternary); color: var(--text-primary); border: none; padding: 0.75rem 1rem; border-radius: 6px; cursor: pointer; }
-.editor-actions .publish-btn { background: var(--accent-primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; }
-.publish-btn:disabled { background-color: var(--button-disabled); color: var(--text-tertiary); cursor: not-allowed; }
+.editor-textarea {
+  width: 100%;
+  min-height: 120px;
+  background-color: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  padding: 0;
+  margin-top: 1rem;
+}
+.editor-textarea:focus {
+  outline: none;
+}
+.post-editor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+.editor-actions .cancel-btn {
+  background: var(--bg-quaternary);
+  color: var(--text-primary);
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.editor-actions .publish-btn {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.publish-btn:disabled {
+  background-color: var(--button-disabled);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
 
 /* --- ✅ ESTILOS ATUALIZADOS (Upload e Miniaturas) --- */
 
 /* Esconde o input de arquivo original */
 .hidden-file-input {
-    display: none;
+  display: none;
 }
 
 /* * ✅ CORREÇÃO APLICADA:
@@ -149,30 +264,30 @@
  * e não uma caixa de drag-and-drop gigante.
 */
 .file-upload-label {
-    display: inline-flex; /* Faz ele se comportar como um botão */
-    align-items: center;
-    gap: 0.5rem; 
-    
-    background-color: var(--bg-quaternary); /* Cor de botão */
-    color: var(--text-primary);
-    border: 1px solid var(--border-color); /* Borda SÓLIDA, não tracejada */
-    padding: 0.65rem 1rem; /* Padding pequeno para parecer um botão */
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.9rem;
-    transition: var(--transition);
-    margin-bottom: 1rem; 
-    
-    /* Garante que não tenha tamanho fixo */
-    height: auto; 
-    min-height: 0;
-    width: auto;
+  display: inline-flex; /* Faz ele se comportar como um botão */
+  align-items: center;
+  gap: 0.5rem;
+
+  background-color: var(--bg-quaternary); /* Cor de botão */
+  color: var(--text-primary);
+  border: 1px solid var(--border-color); /* Borda SÓLIDA, não tracejada */
+  padding: 0.65rem 1rem; /* Padding pequeno para parecer um botão */
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: var(--transition);
+  margin-bottom: 1rem;
+
+  /* Garante que não tenha tamanho fixo */
+  height: auto;
+  min-height: 0;
+  width: auto;
 }
 
 .file-upload-label:hover {
-    background-color: var(--bg-tertiary);
-    border-color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  border-color: var(--text-secondary);
 }
 
 /* * ✅ ESTILOS PARA AS MINIATURAS (100x100, lado a lado)
@@ -180,147 +295,358 @@
 
 /* Contêiner das miniaturas */
 .selected-files-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 1rem;
-    padding: 10px;
-    border: 1px dashed var(--border-color);
-    border-radius: var(--card-radius);
-    background-color: var(--bg-tertiary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1rem;
+  padding: 10px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--card-radius);
+  background-color: var(--bg-tertiary);
 }
 
 /* Item individual da miniatura */
 .file-preview-item {
-    position: relative;
-    width: 100px; /* Tamanho fixo pequeno */
-    height: 100px; /* Tamanho fixo pequeno */
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  position: relative;
+  width: 100px; /* Tamanho fixo pequeno */
+  height: 100px; /* Tamanho fixo pequeno */
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .file-preview-item img,
 .file-preview-item video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block; 
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* Botão de remover */
 .file-preview-item .remove-file-btn {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.9rem; 
-    transition: background-color 0.2s ease;
-    z-index: 2;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+  z-index: 2;
 }
 
 .file-preview-item .remove-file-btn:hover {
-    background-color: var(--danger);
+  background-color: var(--danger);
 }
 
 /* --- Fim dos Estilos Atualizados --- */
 
-
-.posts-container { display: flex; flex-direction: column; gap: 1rem; }
-.post {
-    background-color: var(--bg-secondary); border-radius: var(--card-radius);
-    padding: 1rem; border: 1px solid var(--border-color); box-shadow: var(--shadow);
+.posts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
-.post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.post-author { display: flex; align-items: center; gap: 0.75rem; }
-.post-icon img { width: 40px; height: 40px; border-radius: 50%; }
-.post-info h2 { font-size: 0.875rem; font-weight: 600; }
-.post-info span { font-size: 0.75rem; color: var(--text-secondary); }
+.post {
+  background-color: var(--bg-secondary);
+  border-radius: var(--card-radius);
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.post-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.post-icon img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+.post-info h2 {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.post-info span {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
 
 /* ✅ CORREÇÃO DA QUEBRA DE LINHA DO POST */
-.post-text { 
-  margin-bottom: 1rem; 
-  line-height: 1.6; 
+.post-text {
+  margin-bottom: 1rem;
+  line-height: 1.6;
   overflow-wrap: break-word; /* Força a quebra de palavras longas */
   word-wrap: break-word; /* Suporte para navegadores mais antigos */
   word-break: break-all; /* Garante a quebra em todos os casos */
 }
 
-.post-images img { width: 100%; border-radius: var(--card-radius); margin-bottom: 1rem; }
-.post-actions { display: flex; justify-content: space-around; border-top: 1px solid var(--border-color); padding-top: 0.75rem; }
-.post-actions button {
-    display: flex; align-items: center; gap: 0.5rem; background: none; border: none; color: var(--text-secondary);
-    padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; transition: var(--transition); flex: 1; justify-content: center;
+.post-images img {
+  width: 100%;
+  border-radius: var(--card-radius);
+  margin-bottom: 1rem;
 }
-.post-actions button:hover { background-color: var(--bg-tertiary); }
+.post-actions {
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+.post-actions button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  flex: 1;
+  justify-content: center;
+}
+.post-actions button:hover {
+  background-color: var(--bg-tertiary);
+}
 
 /* --- Widgets da Direita (RESTAURADOS) --- */
 .right-sidebar .widget-card {
-    background-color: var(--bg-secondary); border: 1px solid var(--border-color);
-    border-radius: var(--card-radius); padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--card-radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
 }
-.widget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.widget-header h3 { font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
-.see-all { font-size: 0.75rem; color: var(--accent-primary); text-decoration: none; }
-.follow-list { display: flex; flex-direction: column; gap: 1rem; }
-.follow-item { display: flex; justify-content: space-between; align-items: center; }
-.follow-link { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit; }
-.follow-avatar img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
-.follow-info h4 { font-size: 0.875rem; font-weight: 600; }
-.follow-info span { font-size: 0.8rem; color: var(--text-secondary); }
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.widget-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.see-all {
+  font-size: 0.75rem;
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+.follow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.follow-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.follow-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+}
+.follow-avatar img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.follow-info h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.follow-info span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
 .follow-btn {
-    background: transparent; border: 1px solid var(--accent-primary); color: var(--accent-primary);
-    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; transition: var(--transition);
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
 }
-.follow-btn:hover { background-color: var(--accent-primary); color: white; }
+.follow-btn:hover {
+  background-color: var(--accent-primary);
+  color: white;
+}
 
 /* --- Menu de Notificações --- */
 .notification-menu {
-    display: none; position: absolute; top: 55px; right: 0; width: 380px;
-    background-color: var(--bg-secondary); border: 1px solid var(--border-color);
-    border-radius: var(--card-radius); box-shadow: var(--shadow); z-index: 1001;
+  display: none;
+  position: absolute;
+  top: 55px;
+  right: 0;
+  width: 380px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow);
+  z-index: 1001;
 }
 /* ... (resto do seu CSS) ... */
 
 @media (max-width: 1200px) {
-    .container {
-        /* ✅ REVERTIDO: Mantém 3 colunas, mas esconde a da direita */
-        grid-template-columns: 280px 1fr;
-    }
-    .right-sidebar {
-        display: none;
-    }
+  .container {
+    /* ✅ REVERTIDO: Mantém 3 colunas, mas esconde a da direita */
+    grid-template-columns: 280px 1fr;
+  }
+  .right-sidebar {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
-    .container {
-        grid-template-columns: 1fr;
-        padding: 0.5rem;
-    }
+  .container {
+    grid-template-columns: 1fr;
+    padding: 0.5rem;
+  }
 
-    .sidebar {
-        position: fixed;
-        left: 0;
-        top: 60px;
-        height: calc(100% - 60px);
-        transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
-        z-index: 999;
-        background-color: var(--bg-primary);
-    }
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 60px;
+    height: calc(100% - 60px);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    z-index: 999;
+    background-color: var(--bg-primary);
+  }
 
-    .sidebar.is-open {
-        transform: translateX(0);
-    }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+}
+/* O container principal da seção de comentários */
+.comment-section {
+  padding-top: 12px;
+  border-top: 1px solid #e5e5e5; /* Linha separadora sutil */
+  margin-top: 12px;
+}
+
+/* O formulário para escrever um novo comentário */
+.comment-form {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Espaço entre o avatar e o input */
+  margin-bottom: 16px;
+}
+
+/* O input de texto (estilo pílula) */
+.comment-form input[type="text"] {
+  flex-grow: 1; /* Faz o input ocupar o espaço restante */
+  border: none;
+  background-color: #f0f2f5; /* Cor de fundo cinza claro (estilo Facebook) */
+  border-radius: 20px; /* Bordas arredondadas */
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  outline: none; /* Remove a borda azul feia ao focar */
+  transition: box-shadow 0.2s ease;
+}
+
+.comment-form input[type="text"]:focus {
+  /* Borda sutil vermelha (SENAI) ao focar */
+  box-shadow: 0 0 0 1px #ff0000;
+}
+
+/* Esconde o botão "Enviar" (o usuário usa Enter) */
+.comment-form button[type="submit"] {
+  display: none;
+}
+
+/* A lista de comentários */
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Espaço entre cada comentário */
+}
+
+/* Um item de comentário individual (avatar + bolha) */
+.comment-item {
+  display: flex;
+  gap: 8px; /* Espaço entre avatar e bolha */
+}
+
+/* O avatar no comentário */
+.comment-item .avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0; /* Impede que o avatar encolha */
+  margin-top: 2px;
+}
+
+.comment-item .avatar-small img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* O "corpo" do comentário (agrupa a bolha e as ações) */
+.comment-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Alinha a bolha à esquerda */
+  width: 100%;
+}
+
+/* A "bolha" cinza que contém o texto */
+.comment-content {
+  background-color: #f0f2f5; /* Cor da bolha */
+  border-radius: 18px; /* Arredondamento da bolha */
+  padding: 10px 14px;
+  max-width: 90%; /* Impede que a bolha fique muito larga */
+}
+
+.comment-content strong {
+  display: block; /* Faz o nome ficar em sua própria linha */
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #050505; /* Cor do nome (preto suave) */
+}
+
+.comment-content p {
+  font-size: 0.9rem;
+  color: #1c1e21; /* Cor do texto (preto mais escuro) */
+  margin: 2px 0 0 0;
+  padding: 0;
+  /* Permite que o texto quebre palavras longas */
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Ações abaixo da bolha (data, curtir, responder) */
+.comment-actions-below {
+  padding: 4px 0 0 12px; /* Alinha com o texto da bolha */
 }
