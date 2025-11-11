@@ -777,3 +777,141 @@
   color: var(--text-secondary);
   font-size: 0.8rem; /* Tamanho da data */
 }
+
+/* ... (Todo o seu CSS existente) ... */
+
+/* =================================================
+ * ✅ NOVOS ESTILOS: Menu Dropdown de Postagem
+ * =================================================
+*/
+.post-header {
+  position: relative; /* Necessário para o dropdown */
+}
+
+.post-options-btn {
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 50%;
+  color: var(--text-secondary);
+}
+.post-options-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.post-options-dropdown {
+  position: absolute;
+  top: 40px; /* Posição abaixo do header */
+  right: 0;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow);
+  z-index: 10;
+  width: 200px;
+  overflow: hidden;
+}
+
+.post-options-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  padding: 0.75rem 1rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.post-options-dropdown button:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.post-options-dropdown button.danger {
+  color: var(--danger);
+}
+.post-options-dropdown button.danger:hover {
+  background-color: rgba(248, 81, 73, 0.1);
+}
+
+.post-editor-inline {
+  background-color: var(--bg-secondary);
+  border-radius: var(--card-radius);
+  padding: 1rem;
+  border: 1px solid var(--accent-primary); /* Destaque azul para modo de edição */
+  box-shadow: 0 0 0 3px var(--accent-primary-light);
+}
+
+.post-editor-inline .editor-textarea {
+  min-height: 80px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.edit-media-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1rem;
+  padding: 10px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--card-radius);
+  background-color: var(--bg-tertiary);
+  min-height: 100px; /* Altura mínima para o dropzone */
+}
+
+.edit-media-item {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.edit-media-item img,
+.edit-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.remove-media-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+  z-index: 2;
+}
+
+.remove-media-btn:hover {
+  background-color: var(--danger);
+}
+
+.post-editor-footer .editor-actions-left {
+  flex-grow: 1;
+}
+
+.file-upload-label.small {
+  padding: 0.5rem 0.8rem;
+  font-size: 0.8rem;
+  margin-bottom: 0;
+}

@@ -10,10 +10,14 @@ import {
   faSpinner,
   faTimesCircle,
   faPaperPlane,
-  faChevronLeft, // ÍCONE ADICIONADO PARA NAVEGAÇÃO
-  faChevronRight, // ÍCONE ADICIONADO PARA NAVEGAÇÃO
+  faChevronLeft,
+  faChevronRight,
+  faPen, // ✅ ÍCONE ADICIONADO
+  faTrash, // ✅ ÍCONE ADICIONADO
+  faTimes, // ✅ ÍCONE ADICIONADO
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
+import Swal from "sweetalert2"; // ✅ IMPORTADO PARA CONFIRMAÇÃO
 
 // =================================================================
 // FUNÇÃO HELPER (Para corrigir URLs de imagem)
@@ -24,15 +28,16 @@ const getCorrectImageUrl = (url) => {
   if (!url) {
     return placeholder;
   }
-  // O backend envia URLs de 2 formas: completas (Cloudinary) ou locais (/api/arquivos/...)
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
-  // Se for um caminho local, prefixamos com a URL do backend
+  if (url.startsWith("blob:")) {
+    // ✅ Adicionado para suportar previews de edição
+    return url;
+  }
   if (url.startsWith("/")) {
     return `http://localhost:8080${url}`;
   }
-  // Fallback para um padrão antigo que você possa ter
   return `http://localhost:8080/alunoPictures/${url}`;
 };
 
@@ -41,34 +46,31 @@ const getCorrectImageUrl = (url) => {
 // =================================================================
 const formatTimeAgo = (dateString) => {
   if (!dateString) return "";
-
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
   if (seconds < 60) {
     return seconds + "s";
   }
-
-  let interval = seconds / 31536000; // Anos
+  let interval = seconds / 31536000;
   if (interval > 1) {
     return Math.floor(interval) + "a";
   }
-  interval = seconds / 2592000; // Meses
+  interval = seconds / 2592000;
   if (interval > 1) {
-    return Math.floor(interval) + "m"; // 'm' para meses
+    return Math.floor(interval) + "m";
   }
-  interval = seconds / 86400; // Dias
+  interval = seconds / 86400;
   if (interval > 1) {
     return Math.floor(interval) + "d";
   }
-  interval = seconds / 3600; // Horas
+  interval = seconds / 3600;
   if (interval > 1) {
     return Math.floor(interval) + "h";
   }
-  interval = seconds / 60; // Minutos
+  interval = seconds / 60;
   if (interval > 1) {
-    return Math.floor(interval) + "min"; // 'min' para minutos
+    return Math.floor(interval) + "min";
   }
   return Math.floor(seconds) + "s";
 };
@@ -105,40 +107,30 @@ const PostCreator = ({ currentUser }) => {
     );
   };
 
-  // Função de publicação (usa FormData)
   const handlePublish = async () => {
     const textIsEmpty = !postText.trim();
     const filesAreEmpty = postFiles.length === 0;
-
     if (textIsEmpty && filesAreEmpty) return;
 
     setIsPublishing(true);
     const formData = new FormData();
-
     const postData = { conteudo: postText };
     formData.append(
       "postagem",
       new Blob([JSON.stringify(postData)], { type: "application/json" })
     );
-
     postFiles.forEach((file) => {
       formData.append("arquivos", file);
     });
 
-    // Este endpoint é para UPLOAD (diferente de curtir)
     const endpoint = "http://localhost:8080/postagem/upload-mensagem";
-
     const token = localStorage.getItem("authToken");
     if (!token) {
       alert("Sua sessão expirou. Por favor, faça login novamente.");
       setIsPublishing(false);
       return;
     }
-
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      // Não defina 'Content-Type', o FormData cuida disso
-    };
+    const headers = { Authorization: `Bearer ${token}` };
 
     try {
       await axios.post(endpoint, formData, { headers });
@@ -184,7 +176,6 @@ const PostCreator = ({ currentUser }) => {
         onChange={(e) => setPostText(e.target.value)}
         autoFocus
       />
-
       <div className="file-uploader" style={{ marginTop: "1rem" }}>
         <label htmlFor="file-upload-input" className="file-upload-label">
           <FontAwesomeIcon icon={faImage} />
@@ -219,7 +210,6 @@ const PostCreator = ({ currentUser }) => {
           </div>
         )}
       </div>
-
       <div className="post-editor-footer">
         <div className="editor-actions">
           <button
@@ -249,7 +239,166 @@ const PostCreator = ({ currentUser }) => {
 };
 
 // =================================================================
-// COMPONENTE: COMMENTSECTION (HTML e CSS atualizados)
+// ✅ NOVO COMPONENTE: POSTEDITOR (para edição inline)
+// =================================================================
+const PostEditor = ({ post, onCancel, onSave }) => {
+  const [editedText, setEditedText] = useState(post.conteudo);
+  const [keptMediaUrls, setKeptMediaUrls] = useState(post.urlsMidia || []);
+  const [newMediaFiles, setNewMediaFiles] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Limpa os ObjectURLs quando o componente é desmontado
+  useEffect(() => {
+    return () => {
+      newMediaFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+    };
+  }, [newMediaFiles]);
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesWithPreview = Array.from(e.target.files).map((file) =>
+        Object.assign(file, {
+          preview: URL.createObjectURL(file),
+        })
+      );
+      setNewMediaFiles((prevFiles) => [...prevFiles, ...filesWithPreview]);
+    }
+  };
+
+  const handleRemoveKeptUrl = (urlToRemove) => {
+    setKeptMediaUrls(keptMediaUrls.filter((url) => url !== urlToRemove));
+  };
+
+  const handleRemoveNewFile = (indexToRemove) => {
+    setNewMediaFiles((prevFiles) =>
+      prevFiles.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
+  const handleSaveClick = async () => {
+    setIsSaving(true);
+    const formData = new FormData();
+
+    // 1. Adiciona o conteúdo de texto
+    const postData = { conteudo: editedText };
+    formData.append(
+      "postagem",
+      new Blob([JSON.stringify(postData)], { type: "application/json" })
+    );
+
+    // 2. Adiciona as URLs das mídias antigas que devem ser mantidas
+    // O backend deve esperar por isso
+    formData.append("urlsMidiaParaManter", JSON.stringify(keptMediaUrls));
+
+    // 3. Adiciona os novos arquivos de mídia
+    newMediaFiles.forEach((file) => {
+      formData.append("arquivos", file); // Envia o File object
+    });
+
+    // Chama a função onSave passada pelo MainContent
+    await onSave(formData, post.id);
+
+    setIsSaving(false);
+  };
+
+  const totalMedia = keptMediaUrls.length + newMediaFiles.length;
+
+  return (
+    <div className="post-editor-inline">
+      <textarea
+        className="editor-textarea"
+        value={editedText}
+        onChange={(e) => setEditedText(e.target.value)}
+        autoFocus
+      />
+
+      <div className="edit-media-container">
+        {/* Mídia existente (URLs) */}
+        {keptMediaUrls.map((url, index) => {
+          const fullUrl = getCorrectImageUrl(url);
+          const isVideo = fullUrl.match(/\.(mp4|webm|ogg)$/i);
+          return (
+            <div key={`kept-${index}`} className="edit-media-item">
+              {isVideo ? (
+                <video src={fullUrl} controls={false} />
+              ) : (
+                <img src={fullUrl} alt={`Mídia existente ${index + 1}`} />
+              )}
+              {/* Só permite remover se houver mais de uma mídia total */}
+              {totalMedia > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveKeptUrl(url)}
+                  className="remove-media-btn"
+                  title="Remover mídia"
+                >
+                  <FontAwesomeIcon icon={faTimes} />
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Nova mídia (File objects com preview) */}
+        {newMediaFiles.map((file, index) => {
+          const isVideo = file.type.startsWith("video/");
+          return (
+            <div key={`new-${index}`} className="edit-media-item">
+              {isVideo ? (
+                <video src={file.preview} controls={false} />
+              ) : (
+                <img src={file.preview} alt={file.name} />
+              )}
+              <button
+                type="button"
+                onClick={() => handleRemoveNewFile(index)}
+                className="remove-media-btn"
+                title="Remover mídia"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="post-editor-footer">
+        <div className="editor-actions-left">
+          <label
+            htmlFor={`edit-file-upload-${post.id}`}
+            className="file-upload-label small"
+          >
+            <FontAwesomeIcon icon={faImage} />
+            <span>Adicionar Mídia</span>
+          </label>
+          <input
+            id={`edit-file-upload-${post.id}`}
+            className="hidden-file-input"
+            type="file"
+            accept="image/*,video/*"
+            onChange={handleFileChange}
+            multiple
+          />
+        </div>
+        <div className="editor-actions">
+          <button className="cancel-btn" onClick={onCancel} disabled={isSaving}>
+            Cancelar
+          </button>
+          <button
+            className="publish-btn"
+            disabled={(!editedText.trim() && totalMedia === 0) || isSaving}
+            onClick={handleSaveClick}
+          >
+            {isSaving ? <FontAwesomeIcon icon={faSpinner} spin /> : "Salvar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =================================================================
+// COMPONENTE: COMMENTSECTION (Sem alterações)
 // =================================================================
 const CommentSection = ({
   postId,
@@ -265,27 +414,18 @@ const CommentSection = ({
   const handleSubmitComment = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-
     if (!isConnected || !stompClient) {
       alert("A conexão com o chat não está ativa. Tente novamente.");
       return;
     }
-
     setIsSubmitting(true);
-
-    const payload = {
-      conteudo: commentText,
-      parentId: null,
-    };
-
+    const payload = { conteudo: commentText, parentId: null };
     const destination = `/app/postagem/${postId}/comentar`;
-
     try {
       stompClient.publish({
         destination: destination,
         body: JSON.stringify(payload),
       });
-
       setCommentText("");
     } catch (error) {
       console.error("Erro ao enviar comentário via WebSocket:", error);
@@ -295,7 +435,6 @@ const CommentSection = ({
     }
   };
 
-  // ✅ JSX DO FORMULÁRIO ATUALIZADO
   return (
     <div className="comment-section">
       <form className="comment-form" onSubmit={handleSubmitComment}>
@@ -309,10 +448,9 @@ const CommentSection = ({
           onChange={(e) => setCommentText(e.target.value)}
           disabled={isSubmitting || !isConnected}
         />
-        {/* ✅ BOTÃO ATUALIZADO (NÃO MAIS OCULTO) */}
         <button
           type="submit"
-          className="comment-submit-btn" // Nova classe para estilizar
+          className="comment-submit-btn"
           disabled={isSubmitting || !commentText.trim() || !isConnected}
         >
           {isSubmitting ? (
@@ -323,7 +461,6 @@ const CommentSection = ({
         </button>
       </form>
 
-      {/* ... (resto do .comment-list, que está correto) ... */}
       <div className="comment-list">
         {comments.length > 0 ? (
           comments.map((comment) => (
@@ -363,78 +500,51 @@ const CommentSection = ({
 };
 
 // =================================================================
-// COMPONENTE MAINCONTENT (A lógica principal do feed)
+// COMPONENTE MAINCONTENT (Lógica principal atualizada)
 // =================================================================
 const MainContent = ({ currentUser }) => {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { stompClient, isConnected } = useWebSocket();
   const [activeCommentBox, setActiveCommentBox] = useState(null);
-
-  // ✅ NOVO ESTADO PARA CONTROLAR O SLIDE ATUAL DE CADA POST
-  // A chave é o postId, o valor é o index do slide (número)
   const [currentSlide, setCurrentSlide] = useState({});
 
-  // --- WebSocket useEffect (A LÓGICA QUE CORRIGE O BUG) ---
+  // ✅ NOVOS ESTADOS PARA EDIÇÃO E MENU
+  const [activePostMenu, setActivePostMenu] = useState(null);
+  const [editingPost, setEditingPost] = useState(null); // Guarda o post que está sendo editado
+
+  // --- WebSocket useEffect (Lógica de atualização em tempo real) ---
   useEffect(() => {
     const handleFeedUpdate = (message) => {
       try {
-        // ✅ O 'payload' agora é o PostagemSaidaDTO COMPLETO
         const payload = JSON.parse(message.body);
 
-        // ✅ CORREÇÃO: O backend agora envia o Post completo em vez de {tipo: "edicao", postagem: ...}
-        // Vamos checar se o payload é um post direto (novo post, curtida, comentário)
-        if (payload.id && payload.tipo === "atualizacao") {
-          const postId = payload.id;
+        if (payload.id && (payload.tipo === "atualizacao" || !payload.tipo)) {
+          const updatedPost = payload.postagem || payload; // Aceita ambos os formatos
+          const postId = updatedPost.id;
 
           setPosts((currentPosts) => {
             const postIndex = currentPosts.findIndex((p) => p.id === postId);
 
             if (postIndex > -1) {
-              // ===============================================
-              // ✅ ✅ ✅ A CORREÇÃO DE AMBOS OS BUGS ✅ ✅ ✅
-              // ===============================================
-              // O 'payload' é o post COMPLETO e atualizado
-              // enviado pelo CurtidaController OU ComentarioController.
-              // Nós simplesmente o substituímos no array.
+              // Atualiza o post existente
               const newPosts = [...currentPosts];
-              newPosts[postIndex] = payload;
+              newPosts[postIndex] = updatedPost;
               return newPosts;
             } else {
               // É um post novo (de outro usuário)
-              // ✅ CORREÇÃO: Inicializa o slide para o novo post
               setCurrentSlide((prevSlides) => ({
                 ...prevSlides,
-                [payload.id]: 0,
+                [updatedPost.id]: 0,
               }));
-              return [payload, ...currentPosts];
+              return [updatedPost, ...currentPosts];
             }
           });
         } else if (payload.tipo === "remocao") {
-          // Remove o post (lógica antiga ainda válida)
-          setPosts(
-            (currentPosts) =>
-              currentPosts.filter((p) => p.id !== payload.postagemId) // Ajuste se o backend mandar 'id' ou 'postagemId'
+          // Remove o post
+          setPosts((currentPosts) =>
+            currentPosts.filter((p) => p.id !== payload.postagemId)
           );
-        } else if (payload.tipo === "edicao") {
-          // Lógica de edição (se o backend mandar um payload diferente para edição)
-          const postAtualizado = payload.postagem;
-          // ✅ CORREÇÃO: Garante que o slide está inicializado
-          setCurrentSlide((prevSlides) => ({
-            ...prevSlides,
-            [postAtualizado.id]: prevSlides[postAtualizado.id] || 0,
-          }));
-          setPosts((currentPosts) => {
-            const postIndex = currentPosts.findIndex(
-              (p) => p.id === postAtualizado.id
-            );
-            if (postIndex > -1) {
-              const newPosts = [...currentPosts];
-              newPosts[postIndex] = postAtualizado;
-              return newPosts;
-            }
-            return currentPosts; // Não faz nada se o post editado não estava no feed
-          });
         }
       } catch (error) {
         console.error("Falha ao processar mensagem do WebSocket:", error);
@@ -442,7 +552,6 @@ const MainContent = ({ currentUser }) => {
     };
 
     if (isConnected && stompClient) {
-      // Se inscreve no tópico público para receber todas as atualizações
       const subscription = stompClient.subscribe(
         "/topic/publico",
         handleFeedUpdate
@@ -455,132 +564,149 @@ const MainContent = ({ currentUser }) => {
     }
   }, [isConnected, stompClient]);
 
-  // --- Busca inicial de posts (ao carregar a página) ---
+  // --- Busca inicial de posts ---
   useEffect(() => {
     const fetchPosts = async () => {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        alert("Sua sessão expirou. Por favor, faça login novamente.");
         setIsLoading(false);
-        // TODO: Redirecionar para a página de login
         return;
       }
-
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      };
+      const headers = { Authorization: `Bearer ${token}` };
 
       try {
-        // O backend (PostagemService) agora retorna os posts já com
-        // 'curtidoPeloUsuario' calculado.
         const response = await axios.get(
           "http://localhost:8080/api/chat/publico",
           { headers }
         );
-
-        // O backend já ordena, então só precisamos setar os dados
         setPosts(response.data);
-
-        // ✅ INICIALIZA OS SLIDES PARA CADA POST
         const initialSlides = {};
         response.data.forEach((post) => {
-          initialSlides[post.id] = 0; // Começa no primeiro slide (index 0)
+          initialSlides[post.id] = 0;
         });
         setCurrentSlide(initialSlides);
       } catch (error) {
         console.error("Erro ao carregar o feed:", error);
-        if (
-          error.response &&
-          (error.response.status === 401 || error.response.status === 403)
-        ) {
-          alert("Sua sessão expirou ou é inválida. Faça login novamente.");
-        }
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchPosts();
-  }, []); // Executa apenas uma vez
+  }, []);
 
   // =================================================================
   // HANDLERS (Funções de clique)
   // =================================================================
 
   const handleLike = async (postId) => {
-    // Endpoint correto do CurtidaController
     const likeEndpoint = `http://localhost:8080/curtidas/toggle`;
-
-    // Payload que o CurtidaEntradaDTO espera
-    const payload = {
-      postagemId: postId,
-      comentarioId: null, // null porque é um like no POST
-    };
-
+    const payload = { postagemId: postId, comentarioId: null };
     const token = localStorage.getItem("authToken");
-    if (!token) {
-      alert("Sua sessão expirou. Por favor, faça login novamente.");
-      return;
-    }
-
+    if (!token) return;
     const headers = {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     };
-
     try {
-      // Esta chamada apenas "notifica" o backend
       await axios.post(likeEndpoint, payload, { headers });
-
-      // Não fazemos mais nada aqui.
-      // O backend vai enviar a mensagem WebSocket,
-      // e o 'useEffect' acima vai cuidar da atualização.
-      console.log(`Like/unlike enviado para o post ${postId}`);
+      // A atualização da UI virá via WebSocket
     } catch (error) {
       console.error("Erro ao curtir post:", error);
-      if (
-        error.response &&
-        (error.response.status === 401 || error.response.status === 403)
-      ) {
-        alert("Sua sessão expirou ou é inválida. Faça login novamente.");
-      } else {
-        alert("Não foi possível curtir a postagem.");
-      }
+      alert("Não foi possível curtir a postagem.");
     }
   };
 
-  // Abre/Fecha a caixa de comentários
   const handleToggleComments = (postId) => {
     setActiveCommentBox((prevId) => (prevId === postId ? null : postId));
   };
 
-  // ✅ FUNÇÃO PARA AVANÇAR O SLIDE (CORRIGIDA)
-  const nextSlide = (postId, totalSlides) => {
-    setCurrentSlide((prevSlides) => {
-      // 1. Pega o índice atual. Se for undefined (bug), começa do 0.
-      const currentIndex = prevSlides[postId] || 0;
-      // 2. Calcula o próximo índice
-      const nextIndex = (currentIndex + 1) % totalSlides;
-      // 3. Retorna o novo estado
-      return {
-        ...prevSlides,
-        [postId]: nextIndex,
-      };
-    });
+  // ✅ NOVO: Abre/fecha o menu de 3 pontos
+  const handleTogglePostMenu = (postId) => {
+    setActivePostMenu((prevId) => (prevId === postId ? null : postId));
   };
 
-  // ✅ FUNÇÃO PARA VOLTAR O SLIDE (CORRIGIDA)
+  // ✅ NOVO: Define o post a ser editado
+  const handleEditPost = (post) => {
+    setEditingPost(post);
+    setActivePostMenu(null); // Fecha o menu
+  };
+
+  // ✅ NOVO: Lida com a exclusão do post
+  const handleDeletePost = async (postId) => {
+    setActivePostMenu(null); // Fecha o menu
+
+    const result = await Swal.fire({
+      title: "Você tem certeza?",
+      text: "Esta ação não pode ser revertida!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "var(--danger)",
+      cancelButtonColor: "var(--bg-quaternary)",
+      confirmButtonText: "Sim, excluir postagem",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      const deleteEndpoint = `http://localhost:8080/postagem/${postId}`;
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Sessão expirada.");
+        return;
+      }
+      const headers = { Authorization: `Bearer ${token}` };
+
+      try {
+        await axios.delete(deleteEndpoint, { headers });
+        // Remove o post do estado local (a notificação WS pode demorar)
+        setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
+        Swal.fire("Excluída!", "Sua postagem foi excluída.", "success");
+      } catch (error) {
+        console.error("Erro ao excluir post:", error);
+        alert("Não foi possível excluir a postagem.");
+      }
+    }
+  };
+
+  // ✅ NOVO: Salva a edição
+  const handleSaveEdit = async (formData, postId) => {
+    const updateEndpoint = `http://localhost:8080/postagem/${postId}`;
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      alert("Sessão expirada.");
+      return;
+    }
+
+    // O FormData cuida do Content-Type
+    const headers = { Authorization: `Bearer ${token}` };
+
+    try {
+      // Usamos PUT para atualização
+      const response = await axios.put(updateEndpoint, formData, { headers });
+
+      // Atualiza o post no estado local com a resposta do backend
+      setPosts((prevPosts) =>
+        prevPosts.map((p) => (p.id === postId ? response.data : p))
+      );
+      setEditingPost(null); // Fecha o modo de edição
+    } catch (error) {
+      console.error("Erro ao salvar edição:", error);
+      alert("Não foi possível salvar as alterações.");
+    }
+  };
+
+  // --- Funções do Carrossel (Sem alterações) ---
+  const nextSlide = (postId, totalSlides) => {
+    setCurrentSlide((prevSlides) => {
+      const currentIndex = prevSlides[postId] || 0;
+      const nextIndex = (currentIndex + 1) % totalSlides;
+      return { ...prevSlides, [postId]: nextIndex };
+    });
+  };
   const prevSlide = (postId, totalSlides) => {
     setCurrentSlide((prevSlides) => {
-      // 1. Pega o índice atual. Se for undefined (bug), começa do 0.
       const currentIndex = prevSlides[postId] || 0;
-      // 2. Calcula o índice anterior
       const prevIndex = (currentIndex - 1 + totalSlides) % totalSlides;
-      // 3. Retorna o novo estado
-      return {
-        ...prevSlides,
-        [postId]: prevIndex,
-      };
+      return { ...prevSlides, [postId]: prevIndex };
     });
   };
 
@@ -602,15 +728,26 @@ const MainContent = ({ currentUser }) => {
           </p>
         ) : (
           posts.map((post) => {
-            // Proteção para evitar posts "quebrados"
             if (!post || !post.id) {
               return null;
             }
 
-            const urlDoBackend = post.urlFotoAutor;
-            const autorAvatar = getCorrectImageUrl(urlDoBackend);
+            // ✅ NOVO: Verifica se o post está sendo editado
+            if (editingPost && editingPost.id === post.id) {
+              return (
+                <PostEditor
+                  key={post.id}
+                  post={editingPost}
+                  onCancel={() => setEditingPost(null)}
+                  onSave={handleSaveEdit}
+                />
+              );
+            }
+
+            // --- Renderização Padrão do Post ---
+            const autorAvatar = getCorrectImageUrl(post.urlFotoAutor);
             const totalMidia = post.urlsMidia ? post.urlsMidia.length : 0;
-            const currentPostSlide = currentSlide[post.id] || 0; // Garante que comece em 0
+            const currentPostSlide = currentSlide[post.id] || 0;
 
             return (
               <div className="post" key={post.id}>
@@ -621,21 +758,40 @@ const MainContent = ({ currentUser }) => {
                     </div>
                     <div className="post-info">
                       <h2>{post.nomeAutor || "Usuário"}</h2>
-                      {/* ✅ ALTERAÇÃO AQUI: Usando a nova função formatTimeAgo */}
                       <span>{formatTimeAgo(post.dataCriacao)}</span>
                     </div>
                   </div>
-                  <div className="post-options-btn">
-                    <FontAwesomeIcon icon={faEllipsisH} />
-                  </div>
+
+                  {/* ✅ NOVO: Botão de 3 pontos e Dropdown */}
+                  {currentUser && post.autorId === currentUser.id && (
+                    <div
+                      className="post-options-btn"
+                      onClick={() => handleTogglePostMenu(post.id)}
+                    >
+                      <FontAwesomeIcon icon={faEllipsisH} />
+                    </div>
+                  )}
+
+                  {activePostMenu === post.id && (
+                    <div className="post-options-dropdown">
+                      <button onClick={() => handleEditPost(post)}>
+                        <FontAwesomeIcon icon={faPen} /> Editar Postagem
+                      </button>
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="danger"
+                      >
+                        <FontAwesomeIcon icon={faTrash} /> Excluir Postagem
+                      </button>
+                    </div>
+                  )}
+                  {/* ✅ FIM DA ÁREA DO DROPDOWN */}
                 </div>
 
                 <p className="post-text">{post.conteudo}</p>
 
-                {/* ✅ LÓGICA DO CARROSSEL DE MÍDIA (INÍCIO) */}
                 {totalMidia > 0 && (
                   <div className="post-media-carousel">
-                    {/* Botão de navegação esquerda */}
                     {totalMidia > 1 && (
                       <button
                         className="carousel-button prev"
@@ -644,10 +800,8 @@ const MainContent = ({ currentUser }) => {
                         <FontAwesomeIcon icon={faChevronLeft} />
                       </button>
                     )}
-
                     <div
                       className="carousel-inner"
-                      // ✅ O estilo transform move o slide
                       style={{
                         transform: `translateX(-${currentPostSlide * 100}%)`,
                       }}
@@ -655,7 +809,6 @@ const MainContent = ({ currentUser }) => {
                       {post.urlsMidia.map((url, index) => {
                         const fullUrl = getCorrectImageUrl(url);
                         const isVideo = fullUrl.match(/\.(mp4|webm|ogg)$/i);
-
                         return (
                           <div key={index} className="carousel-item">
                             {isVideo ? (
@@ -667,8 +820,6 @@ const MainContent = ({ currentUser }) => {
                         );
                       })}
                     </div>
-
-                    {/* Botão de navegação direita */}
                     {totalMidia > 1 && (
                       <button
                         className="carousel-button next"
@@ -677,8 +828,6 @@ const MainContent = ({ currentUser }) => {
                         <FontAwesomeIcon icon={faChevronRight} />
                       </button>
                     )}
-
-                    {/* Indicadores de slide (pontinhos) */}
                     {totalMidia > 1 && (
                       <div className="carousel-indicators">
                         {Array.from({ length: totalMidia }).map((_, idx) => (
@@ -699,21 +848,15 @@ const MainContent = ({ currentUser }) => {
                     )}
                   </div>
                 )}
-                {/* ✅ LÓGICA DO CARROSSEL DE MÍDIA (FIM) */}
 
                 <div className="post-actions">
-                  {/* ======================================= */}
-                  {/* ✅ BOTÃO AZUL (A MÁGICA DO CSS) ✅ */}
-                  {/* ======================================= */}
                   <button
                     onClick={() => handleLike(post.id)}
-                    // Adiciona a classe 'liked' se o backend disse que você curtiu
                     className={post.curtidoPeloUsuario ? "liked" : ""}
                   >
                     <FontAwesomeIcon icon={faThumbsUp} />
                     Curtir ({post.totalCurtidas || 0})
                   </button>
-
                   <button onClick={() => handleToggleComments(post.id)}>
                     <FontAwesomeIcon icon={faComment} />
                     Comentar ({post.comentarios ? post.comentarios.length : 0})
