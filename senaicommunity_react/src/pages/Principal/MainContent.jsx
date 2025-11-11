@@ -9,7 +9,9 @@ import {
   faEllipsisH,
   faSpinner,
   faTimesCircle,
-  faPaperPlane, // ✅ ÍCONE ADICIONADO
+  faPaperPlane,
+  faChevronLeft, // ÍCONE ADICIONADO PARA NAVEGAÇÃO
+  faChevronRight, // ÍCONE ADICIONADO PARA NAVEGAÇÃO
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
@@ -369,6 +371,10 @@ const MainContent = ({ currentUser }) => {
   const { stompClient, isConnected } = useWebSocket();
   const [activeCommentBox, setActiveCommentBox] = useState(null);
 
+  // ✅ NOVO ESTADO PARA CONTROLAR O SLIDE ATUAL DE CADA POST
+  // A chave é o postId, o valor é o index do slide (número)
+  const [currentSlide, setCurrentSlide] = useState({});
+
   // --- WebSocket useEffect (A LÓGICA QUE CORRIGE O BUG) ---
   useEffect(() => {
     const handleFeedUpdate = (message) => {
@@ -395,7 +401,12 @@ const MainContent = ({ currentUser }) => {
               newPosts[postIndex] = payload;
               return newPosts;
             } else {
-              // É um post novo
+              // É um post novo (de outro usuário)
+              // ✅ CORREÇÃO: Inicializa o slide para o novo post
+              setCurrentSlide((prevSlides) => ({
+                ...prevSlides,
+                [payload.id]: 0,
+              }));
               return [payload, ...currentPosts];
             }
           });
@@ -408,6 +419,11 @@ const MainContent = ({ currentUser }) => {
         } else if (payload.tipo === "edicao") {
           // Lógica de edição (se o backend mandar um payload diferente para edição)
           const postAtualizado = payload.postagem;
+          // ✅ CORREÇÃO: Garante que o slide está inicializado
+          setCurrentSlide((prevSlides) => ({
+            ...prevSlides,
+            [postAtualizado.id]: prevSlides[postAtualizado.id] || 0,
+          }));
           setPosts((currentPosts) => {
             const postIndex = currentPosts.findIndex(
               (p) => p.id === postAtualizado.id
@@ -464,14 +480,20 @@ const MainContent = ({ currentUser }) => {
 
         // O backend já ordena, então só precisamos setar os dados
         setPosts(response.data);
+
+        // ✅ INICIALIZA OS SLIDES PARA CADA POST
+        const initialSlides = {};
+        response.data.forEach((post) => {
+          initialSlides[post.id] = 0; // Começa no primeiro slide (index 0)
+        });
+        setCurrentSlide(initialSlides);
       } catch (error) {
         console.error("Erro ao carregar o feed:", error);
         if (
           error.response &&
           (error.response.status === 401 || error.response.status === 403)
         ) {
-          alert("Sua sessão expirou. Faça login novamente.");
-          // TODO: Redirecionar para /login
+          alert("Sua sessão expirou ou é inválida. Faça login novamente.");
         }
       } finally {
         setIsLoading(false);
@@ -532,6 +554,36 @@ const MainContent = ({ currentUser }) => {
     setActiveCommentBox((prevId) => (prevId === postId ? null : postId));
   };
 
+  // ✅ FUNÇÃO PARA AVANÇAR O SLIDE (CORRIGIDA)
+  const nextSlide = (postId, totalSlides) => {
+    setCurrentSlide((prevSlides) => {
+      // 1. Pega o índice atual. Se for undefined (bug), começa do 0.
+      const currentIndex = prevSlides[postId] || 0;
+      // 2. Calcula o próximo índice
+      const nextIndex = (currentIndex + 1) % totalSlides;
+      // 3. Retorna o novo estado
+      return {
+        ...prevSlides,
+        [postId]: nextIndex,
+      };
+    });
+  };
+
+  // ✅ FUNÇÃO PARA VOLTAR O SLIDE (CORRIGIDA)
+  const prevSlide = (postId, totalSlides) => {
+    setCurrentSlide((prevSlides) => {
+      // 1. Pega o índice atual. Se for undefined (bug), começa do 0.
+      const currentIndex = prevSlides[postId] || 0;
+      // 2. Calcula o índice anterior
+      const prevIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+      // 3. Retorna o novo estado
+      return {
+        ...prevSlides,
+        [postId]: prevIndex,
+      };
+    });
+  };
+
   // =================================================================
   // RENDERIZAÇÃO
   // =================================================================
@@ -557,6 +609,8 @@ const MainContent = ({ currentUser }) => {
 
             const urlDoBackend = post.urlFotoAutor;
             const autorAvatar = getCorrectImageUrl(urlDoBackend);
+            const totalMidia = post.urlsMidia ? post.urlsMidia.length : 0;
+            const currentPostSlide = currentSlide[post.id] || 0; // Garante que comece em 0
 
             return (
               <div className="post" key={post.id}>
@@ -578,32 +632,74 @@ const MainContent = ({ currentUser }) => {
 
                 <p className="post-text">{post.conteudo}</p>
 
-                {post.urlsMidia && post.urlsMidia.length > 0 && (
-                  <div className="post-images">
-                    {post.urlsMidia.map((url, index) => {
-                      const fullUrl = getCorrectImageUrl(url);
+                {/* ✅ LÓGICA DO CARROSSEL DE MÍDIA (INÍCIO) */}
+                {totalMidia > 0 && (
+                  <div className="post-media-carousel">
+                    {/* Botão de navegação esquerda */}
+                    {totalMidia > 1 && (
+                      <button
+                        className="carousel-button prev"
+                        onClick={() => prevSlide(post.id, totalMidia)}
+                      >
+                        <FontAwesomeIcon icon={faChevronLeft} />
+                      </button>
+                    )}
 
-                      if (fullUrl.match(/\.(mp4|webm|ogg)$/i)) {
+                    <div
+                      className="carousel-inner"
+                      // ✅ O estilo transform move o slide
+                      style={{
+                        transform: `translateX(-${currentPostSlide * 100}%)`,
+                      }}
+                    >
+                      {post.urlsMidia.map((url, index) => {
+                        const fullUrl = getCorrectImageUrl(url);
+                        const isVideo = fullUrl.match(/\.(mp4|webm|ogg)$/i);
+
                         return (
-                          <video
-                            key={index}
-                            src={fullUrl}
-                            controls
-                            style={{ maxWidth: "100%", borderRadius: "8px" }}
-                          />
+                          <div key={index} className="carousel-item">
+                            {isVideo ? (
+                              <video src={fullUrl} controls />
+                            ) : (
+                              <img src={fullUrl} alt={`Mídia ${index + 1}`} />
+                            )}
+                          </div>
                         );
-                      } else {
-                        return (
-                          <img
-                            key={index}
-                            src={fullUrl}
-                            alt={`Mídia ${index + 1}`}
-                          />
-                        );
-                      }
-                    })}
+                      })}
+                    </div>
+
+                    {/* Botão de navegação direita */}
+                    {totalMidia > 1 && (
+                      <button
+                        className="carousel-button next"
+                        onClick={() => nextSlide(post.id, totalMidia)}
+                      >
+                        <FontAwesomeIcon icon={faChevronRight} />
+                      </button>
+                    )}
+
+                    {/* Indicadores de slide (pontinhos) */}
+                    {totalMidia > 1 && (
+                      <div className="carousel-indicators">
+                        {Array.from({ length: totalMidia }).map((_, idx) => (
+                          <span
+                            key={idx}
+                            className={`indicator-dot ${
+                              currentPostSlide === idx ? "active" : ""
+                            }`}
+                            onClick={() =>
+                              setCurrentSlide((prevSlides) => ({
+                                ...prevSlides,
+                                [post.id]: idx,
+                              }))
+                            }
+                          ></span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
+                {/* ✅ LÓGICA DO CARROSSEL DE MÍDIA (FIM) */}
 
                 <div className="post-actions">
                   {/* ======================================= */}

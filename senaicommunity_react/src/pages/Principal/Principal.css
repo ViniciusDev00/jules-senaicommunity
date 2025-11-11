@@ -208,16 +208,6 @@
   cursor: pointer;
 }
 
-/* O .post-options foi removido do JSX, então esses estilos não são mais necessários */
-/*
-.post-options { display: flex; align-items: center; justify-content: space-around; padding-top: 0.5rem; border-top: 1px solid var(--border-color); margin-top: 0.5rem; }
-.option-btn {
-    display: flex; align-items: center; gap: 0.5rem; background: none; border: none;
-    color: var(--text-secondary); padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; flex: 1; justify-content: center;
-}
-.option-btn:hover { background-color: var(--bg-tertiary); }
-*/
-
 .editor-header {
   margin-bottom: 1rem;
   font-size: 1.25rem;
@@ -274,10 +264,6 @@
   display: none;
 }
 
-/* * ✅ CORREÇÃO APLICADA:
- * Este CSS faz a 'label' parecer um BOTÃO PEQUENO,
- * e não uma caixa de drag-and-drop gigante.
-*/
 .file-upload-label {
   display: inline-flex; /* Faz ele se comportar como um botão */
   align-items: center;
@@ -304,9 +290,6 @@
   background-color: var(--bg-tertiary);
   border-color: var(--text-secondary);
 }
-
-/* * ✅ ESTILOS PARA AS MINIATURAS (100x100, lado a lado)
-*/
 
 /* Contêiner das miniaturas */
 .selected-files-preview {
@@ -411,11 +394,107 @@
   word-break: break-all; /* Garante a quebra em todos os casos */
 }
 
-.post-images img {
+/* ✅ ESTILOS DO CARROSSEL DE MÍDIA (CORRIGIDO) */
+.post-media-carousel {
+  position: relative;
   width: 100%;
+  /* ❌ REMOVIDO: max-width: 550px; */
+  /* ❌ REMOVIDO: height: 450px; (Este era o problema) */
+
+  /* ✅ ADICIONADO: Define a proporção para 16:9 (widescreen) */
+  aspect-ratio: 16 / 9;
+
+  margin: 1rem 0; /* Usa a largura total, sem 'auto' */
+  overflow: hidden;
   border-radius: var(--card-radius);
-  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  /* ✅ ADICIONADO: Fundo preto para o 'letterboxing' (barras pretas) */
+  background-color: #000;
 }
+
+.carousel-inner {
+  display: flex; /* Coloca os itens lado a lado */
+  height: 100%;
+  transition: transform 0.5s ease-in-out; /* Animação de transição */
+}
+
+.carousel-item {
+  min-width: 100%; /* Cada item ocupa 100% da largura do carousel-inner */
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Impede que os itens encolham */
+}
+
+.carousel-item img,
+.carousel-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* ✅ 'contain' para mostrar a imagem inteira sem cortar */
+  display: block;
+  /* ❌ REMOVIDO: border-radius: var(--card-radius); (O container já tem) */
+}
+
+.carousel-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.5); /* Fundo semi-transparente */
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  z-index: 10; /* Para ficar acima da imagem */
+  border-radius: 50%; /* Botões redondos */
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+}
+
+.carousel-button:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.carousel-button.prev {
+  left: 10px;
+}
+
+.carousel-button.next {
+  right: 10px;
+}
+
+.carousel-indicators {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 10;
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s ease, width 0.3s ease;
+}
+
+.indicator-dot.active {
+  background-color: var(--accent-primary); /* Ponto ativo mais visível */
+  /* ✅ Deixei os pontos do mesmo tamanho para um visual mais limpo */
+  /* width: 12px; */
+  /* height: 12px; */
+}
+/* ✅ ESTILOS DO CARROSSEL DE MÍDIA (FIM) */
+
 .post-actions {
   display: flex;
   justify-content: space-around;
