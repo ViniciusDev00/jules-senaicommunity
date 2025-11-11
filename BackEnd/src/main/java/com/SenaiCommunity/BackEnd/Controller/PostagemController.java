@@ -29,18 +29,28 @@ public class PostagemController {
     private SimpMessagingTemplate messagingTemplate;
 
     @PostMapping("/upload-mensagem")
-    public ResponseEntity<PostagemSaidaDTO> uploadComMensagem(
-            @RequestPart("postagem") PostagemEntradaDTO dto,
-            @RequestPart(value = "arquivos", required = false) List<MultipartFile> arquivos,
-            Principal principal) throws IOException {
+    public ResponseEntity<?> uploadComMensagem( // ✅ Alterado para ResponseEntity<?>
+                                                @RequestPart("postagem") PostagemEntradaDTO dto,
+                                                @RequestPart(value = "arquivos", required = false) List<MultipartFile> arquivos,
+                                                Principal principal) { // ✅ Removido 'throws IOException'
 
-        PostagemSaidaDTO postagemCriada = postagemService.criarPostagem(principal.getName(), dto, arquivos);
+        // ✅ Bloco try-catch adicionado
+        try {
+            PostagemSaidaDTO postagemCriada = postagemService.criarPostagem(principal.getName(), dto, arquivos);
 
-        // Garantir que os comentários venham ordenados (destacados primeiro, depois por data)
-        postagemCriada = postagemService.ordenarComentarios(postagemCriada);
+            // Garantir que os comentários venham ordenados (destacados primeiro, depois por data)
+            postagemCriada = postagemService.ordenarComentarios(postagemCriada);
 
-        messagingTemplate.convertAndSend("/topic/publico", postagemCriada);
-        return ResponseEntity.ok(postagemCriada);
+            messagingTemplate.convertAndSend("/topic/publico", postagemCriada);
+            return ResponseEntity.ok(postagemCriada);
+
+        } catch (RuntimeException e) {
+            // Pega a exceção que o PostagemService lança (ex: falha no upload do Cloudinary)
+            // e retorna uma mensagem de erro clara para o frontend
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro ao criar postagem (provável falha no upload): " + e.getMessage());
+        }
     }
 
     @PutMapping(path = "/{id}", consumes = "multipart/form-data")
