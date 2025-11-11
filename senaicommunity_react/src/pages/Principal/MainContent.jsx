@@ -9,6 +9,7 @@ import {
   faEllipsisH,
   faSpinner,
   faTimesCircle,
+  faPaperPlane, // ✅ ÍCONE ADICIONADO
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
@@ -31,6 +32,43 @@ const getCorrectImageUrl = (url) => {
   }
   // Fallback para um padrão antigo que você possa ter
   return `http://localhost:8080/alunoPictures/${url}`;
+};
+
+// =================================================================
+// FUNÇÃO HELPER (Para formatar a data)
+// =================================================================
+const formatTimeAgo = (dateString) => {
+  if (!dateString) return "";
+
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) {
+    return seconds + "s";
+  }
+
+  let interval = seconds / 31536000; // Anos
+  if (interval > 1) {
+    return Math.floor(interval) + "a";
+  }
+  interval = seconds / 2592000; // Meses
+  if (interval > 1) {
+    return Math.floor(interval) + "m"; // 'm' para meses
+  }
+  interval = seconds / 86400; // Dias
+  if (interval > 1) {
+    return Math.floor(interval) + "d";
+  }
+  interval = seconds / 3600; // Horas
+  if (interval > 1) {
+    return Math.floor(interval) + "h";
+  }
+  interval = seconds / 60; // Minutos
+  if (interval > 1) {
+    return Math.floor(interval) + "min"; // 'min' para minutos
+  }
+  return Math.floor(seconds) + "s";
 };
 
 // =================================================================
@@ -255,7 +293,7 @@ const CommentSection = ({
     }
   };
 
-  // ✅ DESIGN ATUALIZADO (Formulário de Comentário)
+  // ✅ JSX DO FORMULÁRIO ATUALIZADO
   return (
     <div className="comment-section">
       <form className="comment-form" onSubmit={handleSubmitComment}>
@@ -269,17 +307,22 @@ const CommentSection = ({
           onChange={(e) => setCommentText(e.target.value)}
           disabled={isSubmitting || !isConnected}
         />
-        {/* O botão de submit fica escondido (envio com Enter) */}
+        {/* ✅ BOTÃO ATUALIZADO (NÃO MAIS OCULTO) */}
         <button
           type="submit"
+          className="comment-submit-btn" // Nova classe para estilizar
           disabled={isSubmitting || !commentText.trim() || !isConnected}
         >
-          {isSubmitting ? <FontAwesomeIcon icon={faSpinner} spin /> : "Enviar"}
+          {isSubmitting ? (
+            <FontAwesomeIcon icon={faSpinner} spin />
+          ) : (
+            <FontAwesomeIcon icon={faPaperPlane} />
+          )}
         </button>
       </form>
 
+      {/* ... (resto do .comment-list, que está correto) ... */}
       <div className="comment-list">
-        {/* ✅ DESIGN ATUALIZADO (Lista de Comentários) */}
         {comments.length > 0 ? (
           comments.map((comment) => (
             <div className="comment-item" key={comment.id}>
@@ -289,23 +332,13 @@ const CommentSection = ({
                   alt={comment.nomeAutor}
                 />
               </div>
-              {/* Novo 'comment-body' para agrupar a bolha e as ações */}
               <div className="comment-body">
-                {/* A "bolha" cinza estilo Facebook */}
                 <div className="comment-content">
                   <strong>{comment.nomeAutor}</strong>
                   <p>{comment.conteudo}</p>
                 </div>
-                {/* Ações (data, curtir, etc.) abaixo da bolha */}
                 <div className="comment-actions-below">
-                  {/* Formatando a data de forma mais curta */}
-                  <span>
-                    {new Date(comment.dataCriacao).toLocaleString("pt-BR", {
-                      timeStyle: "short",
-                      dateStyle: "short",
-                    })}
-                  </span>
-                  {/* Você pode adicionar botões de "Curtir" e "Responder" aqui no futuro */}
+                  <span>{formatTimeAgo(comment.dataCriacao)}</span>
                 </div>
               </div>
             </div>
@@ -342,18 +375,12 @@ const MainContent = ({ currentUser }) => {
       try {
         // ✅ O 'payload' agora é o PostagemSaidaDTO COMPLETO
         const payload = JSON.parse(message.body);
-        const postId = payload.id;
 
-        // Ignora se não for uma postagem válida
-        if (!postId || !payload.tipo) return;
+        // ✅ CORREÇÃO: O backend agora envia o Post completo em vez de {tipo: "edicao", postagem: ...}
+        // Vamos checar se o payload é um post direto (novo post, curtida, comentário)
+        if (payload.id && payload.tipo === "atualizacao") {
+          const postId = payload.id;
 
-        if (payload.tipo === "remocao") {
-          // Remove o post
-          setPosts((currentPosts) =>
-            currentPosts.filter((p) => p.id !== postId)
-          );
-        } else {
-          // (payload.tipo === "atualizacao" ou um novo post)
           setPosts((currentPosts) => {
             const postIndex = currentPosts.findIndex((p) => p.id === postId);
 
@@ -371,6 +398,26 @@ const MainContent = ({ currentUser }) => {
               // É um post novo
               return [payload, ...currentPosts];
             }
+          });
+        } else if (payload.tipo === "remocao") {
+          // Remove o post (lógica antiga ainda válida)
+          setPosts(
+            (currentPosts) =>
+              currentPosts.filter((p) => p.id !== payload.postagemId) // Ajuste se o backend mandar 'id' ou 'postagemId'
+          );
+        } else if (payload.tipo === "edicao") {
+          // Lógica de edição (se o backend mandar um payload diferente para edição)
+          const postAtualizado = payload.postagem;
+          setPosts((currentPosts) => {
+            const postIndex = currentPosts.findIndex(
+              (p) => p.id === postAtualizado.id
+            );
+            if (postIndex > -1) {
+              const newPosts = [...currentPosts];
+              newPosts[postIndex] = postAtualizado;
+              return newPosts;
+            }
+            return currentPosts; // Não faz nada se o post editado não estava no feed
           });
         }
       } catch (error) {
@@ -520,9 +567,8 @@ const MainContent = ({ currentUser }) => {
                     </div>
                     <div className="post-info">
                       <h2>{post.nomeAutor || "Usuário"}</h2>
-                      <span>
-                        {new Date(post.dataCriacao).toLocaleString("pt-BR")}
-                      </span>
+                      {/* ✅ ALTERAÇÃO AQUI: Usando a nova função formatTimeAgo */}
+                      <span>{formatTimeAgo(post.dataCriacao)}</span>
                     </div>
                   </div>
                   <div className="post-options-btn">

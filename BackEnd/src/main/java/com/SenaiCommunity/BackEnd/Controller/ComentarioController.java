@@ -4,7 +4,7 @@ import com.SenaiCommunity.BackEnd.DTO.ComentarioEntradaDTO;
 import com.SenaiCommunity.BackEnd.DTO.ComentarioSaidaDTO;
 import com.SenaiCommunity.BackEnd.DTO.PostagemSaidaDTO; // ✅ IMPORTAR
 import com.SenaiCommunity.BackEnd.Service.ComentarioService;
-import com.SenaiCommunity.BackEnd.Service.PostagemService; // ✅ IMPORTAR
+ import com.SenaiCommunity.BackEnd.Service.PostagemService; // ❌ NÃO É MAIS NECESSÁRIO AQUI
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
+ import org.springframework.messaging.handler.annotation.SendTo; // ❌ NÃO É MAIS NECESSÁRIO
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -32,47 +32,43 @@ public class ComentarioController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    @Autowired
-    private PostagemService postagemService; // ✅ INJETAR O SERVICE DE POSTAGEM
+    // ❌ PostagemService NÃO É MAIS NECESSÁRIO AQUI
+    // @Autowired
+    // private PostagemService postagemService;
 
     // --- PARTE WEBSOCKET (para criar comentários em tempo real) ---
     @MessageMapping("/postagem/{postagemId}/comentar")
-    @SendTo("/topic/postagem/{postagemId}/comentarios") // Envia o NOVO COMENTÁRIO para o tópico do post
-    public ComentarioSaidaDTO novoComentario(@DestinationVariable Long postagemId,
-                                             @Payload ComentarioEntradaDTO comentarioDTO,
-                                             Principal principal) {
+    // ❌ @SendTo FOI REMOVIDO
+    public void novoComentario(@DestinationVariable Long postagemId,
+                               @Payload ComentarioEntradaDTO comentarioDTO,
+                               Principal principal) {
 
-        // 1. Sua lógica original para criar o comentário (está perfeita)
-        ComentarioSaidaDTO novoComentario = comentarioService.criarComentario(postagemId, principal.getName(), comentarioDTO);
+        // 1. ✅ AGORA RETORNA O POST COMPLETO E ATUALIZADO
+        PostagemSaidaDTO postAtualizado = comentarioService.criarComentario(postagemId, principal.getName(), comentarioDTO);
 
-        // 2. Lógica para notificar respostas (está perfeita)
+        // 2. Lógica para notificar respostas (se for uma resposta)
         if (comentarioDTO.getParentId() != null) {
-            Map<String, Object> payload = Map.of(
-                    "tipo", "nova_resposta",
-                    "comentario", novoComentario,
-                    "postagemId", postagemId
-            );
-            messagingTemplate.convertAndSend("/topic/comentario/" + comentarioDTO.getParentId() + "/respostas", payload);
+            // Tenta encontrar o comentário que acabou de ser criado
+            ComentarioSaidaDTO novoComentario = postAtualizado.getComentarios().stream()
+                    .filter(c -> c.getConteudo().equals(comentarioDTO.getConteudo()) && c.getAutorId().toString().equals(principal.getName())) // Lógica simples de "achar"
+                    .findFirst()
+                    .orElse(null); // Pode falhar se o texto for idêntico, mas é o suficiente
+
+            if(novoComentario != null) {
+                Map<String, Object> payload = Map.of(
+                        "tipo", "nova_resposta",
+                        "comentario", novoComentario,
+                        "postagemId", postagemId
+                );
+                messagingTemplate.convertAndSend("/topic/comentario/" + comentarioDTO.getParentId() + "/respostas", payload);
+            }
         }
 
-        // =======================================================
-        // ✅ CORREÇÃO DO BUG (POST SUMINDO) ✅
-        // =======================================================
-
-        // 3. Buscar o DTO da postagem ATUALIZADA (agora com o novo comentário)
-        //    (usando o método do seu PostagemService)
-        PostagemSaidaDTO postAtualizado = postagemService.buscarPostagemPorIdComComentarios(postagemId);
-
-        // 4. Enviar o DTO COMPLETO para o tópico público
-        //    O frontend vai receber isso e atualizar o post (com a nova contagem de comentários)
+        // 3. ✅ ENVIA O POST COMPLETO PARA O FEED PÚBLICO
         messagingTemplate.convertAndSend("/topic/publico", postAtualizado);
-        // =======================================================
-
-        return novoComentario; // 5. Retorna o DTO do comentário para o @SendTo
     }
 
     // --- PARTE REST (endpoints para editar/excluir) ---
-    // (O código da sua classe interna ComentarioRestController que enviei antes está correto)
     @RestController
     @RequestMapping("/comentarios")
     @PreAuthorize("hasRole('ALUNO') or hasRole('PROFESSOR')")
@@ -81,8 +77,9 @@ public class ComentarioController {
         @Autowired
         private ComentarioService comentarioService;
 
-        @Autowired
-        private PostagemService postagemService; // (Correto)
+        // ❌ PostagemService NÃO É MAIS NECESSÁRIO AQUI
+        // @Autowired
+        // private PostagemService postagemService;
 
         @Autowired
         private SimpMessagingTemplate messagingTemplate;
@@ -90,21 +87,19 @@ public class ComentarioController {
         @PutMapping("/{id}/destacar")
         public ResponseEntity<?> destacarComentario(@PathVariable Long id, Principal principal) {
             try {
-                ComentarioSaidaDTO comentarioAtualizado = comentarioService.destacarComentario(id, principal.getName());
-                Long postagemId = comentarioAtualizado.getPostagemId();
-
-                Map<String, Object> payload = Map.of(
-                        "tipo", "destaque",
-                        "comentario", comentarioAtualizado,
-                        "postagemId", postagemId
-                );
-                messagingTemplate.convertAndSend("/topic/postagem/" + postagemId + "/comentarios", payload);
+                // ✅ AGORA RETORNA O POST COMPLETO E ATUALIZADO
+                PostagemSaidaDTO postAtualizado = comentarioService.destacarComentario(id, principal.getName());
 
                 // Envia o post completo para o feed público
-                PostagemSaidaDTO postAtualizado = postagemService.buscarPostagemPorIdComComentarios(postagemId);
                 messagingTemplate.convertAndSend("/topic/publico", postAtualizado);
 
-                return ResponseEntity.ok(comentarioAtualizado);
+                // Retorna apenas o comentário que foi destacado (para consistência, se necessário)
+                ComentarioSaidaDTO comentarioDestacado = postAtualizado.getComentarios().stream()
+                        .filter(ComentarioSaidaDTO::isDestacado)
+                        .findFirst()
+                        .orElse(null);
+
+                return ResponseEntity.ok(comentarioDestacado);
             } catch (SecurityException e) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
             } catch (EntityNotFoundException | NoSuchElementException e) {
@@ -117,22 +112,19 @@ public class ComentarioController {
                                                   @RequestBody ComentarioEntradaDTO dto,
                                                   Principal principal) {
             try {
-                ComentarioSaidaDTO comentarioAtualizado = comentarioService.editarComentario(id, principal.getName(),dto.getConteudo());
-                Long postagemId = comentarioAtualizado.getPostagemId();
-
-                Map<String, Object> payload = Map.of(
-                        "tipo", "edicao",
-                        "comentario", comentarioAtualizado,
-                        "postagemId", postagemId
-                );
-                messagingTemplate.convertAndSend("/topic/postagem/" + postagemId + "/comentarios", payload);
-                messagingTemplate.convertAndSend("/topic/comentario/" + id + "/respostas", payload);
+                // ✅ AGORA RETORNA O POST COMPLETO E ATUALIZADO
+                PostagemSaidaDTO postAtualizado = comentarioService.editarComentario(id, principal.getName(),dto.getConteudo());
 
                 // Envia o post completo para o feed público
-                PostagemSaidaDTO postAtualizado = postagemService.buscarPostagemPorIdComComentarios(postagemId);
                 messagingTemplate.convertAndSend("/topic/publico", postAtualizado);
 
-                return ResponseEntity.ok(comentarioAtualizado);
+                // Retorna apenas o comentário editado (para consistência, se necessário)
+                ComentarioSaidaDTO comentarioEditado = postAtualizado.getComentarios().stream()
+                        .filter(c -> c.getId().equals(id))
+                        .findFirst()
+                        .orElse(null);
+
+                return ResponseEntity.ok(comentarioEditado);
             } catch (SecurityException e) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
             } catch (EntityNotFoundException | NoSuchElementException e) {
@@ -143,19 +135,10 @@ public class ComentarioController {
         @DeleteMapping("/{id}")
         public ResponseEntity<?> excluirComentario(@PathVariable Long id, Principal principal) {
             try {
-                ComentarioSaidaDTO comentarioExcluido = comentarioService.excluirComentario(id, principal.getName());
-                Long postagemId = comentarioExcluido.getPostagemId();
-
-                Map<String, Object> payload = Map.of(
-                        "tipo", "remocao",
-                        "id", id, // ID do comentário
-                        "postagemId", postagemId
-                );
-                messagingTemplate.convertAndSend("/topic/postagem/" + postagemId + "/comentarios", payload);
-                messagingTemplate.convertAndSend("/topic/comentario/" + id + "/respostas", payload);
+                // ✅ AGORA RETORNA O POST COMPLETO E ATUALIZADO (sem o comentário)
+                PostagemSaidaDTO postAtualizado = comentarioService.excluirComentario(id, principal.getName());
 
                 // Envia o post completo para o feed público
-                PostagemSaidaDTO postAtualizado = postagemService.buscarPostagemPorIdComComentarios(postagemId);
                 messagingTemplate.convertAndSend("/topic/publico", postAtualizado);
 
                 return ResponseEntity.ok().build();

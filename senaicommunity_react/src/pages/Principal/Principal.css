@@ -158,6 +158,21 @@
   gap: 1rem;
 }
 
+/* * ✅ CORREÇÃO LINHA BRANCA (INÍCIO)
+ * Adicionando estilos para o separador que está no MainContent.jsx
+*/
+.feed-separator {
+  margin: 0.5rem 0; /* Ajusta o espaçamento */
+  padding: 0;
+  height: 1px; /* Define uma altura */
+}
+.feed-separator hr {
+  border: none; /* Remove a borda padrão do browser (a linha branca) */
+  height: 1px;
+  background-color: var(--border-color); /* Usa a cor da borda do tema */
+}
+/* ✅ CORREÇÃO LINHA BRANCA (FIM) */
+
 .post-creator-expanded {
   display: none;
 }
@@ -547,10 +562,14 @@
     transform: translateX(0);
   }
 }
-/* O container principal da seção de comentários */
+/* * ============================================
+ * ✅ SEÇÃO DE COMENTÁRIOS COM DARK MODE CORRIGIDO
+ * ============================================
+*/
 .comment-section {
   padding-top: 12px;
-  border-top: 1px solid #e5e5e5; /* Linha separadora sutil */
+  /* ATUALIZADO: Usa variável de borda */
+  border-top: 1px solid var(--border-color);
   margin-top: 12px;
 }
 
@@ -566,7 +585,10 @@
 .comment-form input[type="text"] {
   flex-grow: 1; /* Faz o input ocupar o espaço restante */
   border: none;
-  background-color: #f0f2f5; /* Cor de fundo cinza claro (estilo Facebook) */
+  /* ATUALIZADO: Usa variável de fundo */
+  background-color: var(--bg-tertiary);
+  /* ATUALIZADO: Usa variável de texto */
+  color: var(--text-primary);
   border-radius: 20px; /* Bordas arredondadas */
   padding: 10px 16px;
   font-size: 0.9rem;
@@ -575,13 +597,33 @@
 }
 
 .comment-form input[type="text"]:focus {
-  /* Borda sutil vermelha (SENAI) ao focar */
-  box-shadow: 0 0 0 1px #ff0000;
+  /* ✅ CORREÇÃO AQUI: Trocado --highlight (vermelho) por --accent-primary (azul) */
+  box-shadow: 0 0 0 1px var(--accent-primary);
 }
 
-/* Esconde o botão "Enviar" (o usuário usa Enter) */
-.comment-form button[type="submit"] {
-  display: none;
+/* ✅ ESTILO DO BOTÃO DE ENVIAR ATUALIZADO */
+.comment-form .comment-submit-btn {
+  display: flex; /* Remove o 'display: none' */
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--accent-primary); /* Cor azul */
+  font-size: 1.1rem; /* Tamanho do ícone */
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0; /* Impede que o botão encolha */
+}
+
+.comment-form .comment-submit-btn:hover:not(:disabled) {
+  background-color: var(--background-hover);
+}
+
+.comment-form .comment-submit-btn:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
 }
 
 /* A lista de comentários */
@@ -623,7 +665,8 @@
 
 /* A "bolha" cinza que contém o texto */
 .comment-content {
-  background-color: #f0f2f5; /* Cor da bolha */
+  /* ATUALIZADO: Usa variável de fundo */
+  background-color: var(--bg-tertiary);
   border-radius: 18px; /* Arredondamento da bolha */
   padding: 10px 14px;
   max-width: 90%; /* Impede que a bolha fique muito larga */
@@ -633,12 +676,14 @@
   display: block; /* Faz o nome ficar em sua própria linha */
   font-size: 0.85rem;
   font-weight: 600;
-  color: #050505; /* Cor do nome (preto suave) */
+  /* ATUALIZADO: Usa variável de texto */
+  color: var(--text-primary);
 }
 
 .comment-content p {
   font-size: 0.9rem;
-  color: #1c1e21; /* Cor do texto (preto mais escuro) */
+  /* ATUALIZADO: Usa variável de texto */
+  color: var(--text-primary);
   margin: 2px 0 0 0;
   padding: 0;
   /* Permite que o texto quebre palavras longas */
@@ -649,4 +694,7 @@
 /* Ações abaixo da bolha (data, curtir, responder) */
 .comment-actions-below {
   padding: 4px 0 0 12px; /* Alinha com o texto da bolha */
+  /* ✅ CORREÇÃO: Usa cor de texto secundária */
+  color: var(--text-secondary);
+  font-size: 0.8rem; /* Tamanho da data */
 }

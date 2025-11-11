@@ -2,6 +2,7 @@ package com.SenaiCommunity.BackEnd.Service;
 
 import com.SenaiCommunity.BackEnd.DTO.ComentarioEntradaDTO;
 import com.SenaiCommunity.BackEnd.DTO.ComentarioSaidaDTO;
+import com.SenaiCommunity.BackEnd.DTO.PostagemSaidaDTO; // ✅ IMPORTAR
 import com.SenaiCommunity.BackEnd.Entity.Comentario;
 import com.SenaiCommunity.BackEnd.Entity.Postagem;
 import com.SenaiCommunity.BackEnd.Entity.Usuario;
@@ -12,7 +13,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Transactional; // ✅ IMPORTAR
 
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
@@ -29,8 +30,12 @@ public class ComentarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private PostagemService postagemService; // ✅ INJETAR O SERVICE DE POSTAGEM
+
     @Transactional
-    public ComentarioSaidaDTO criarComentario(Long postagemId, String autorUsername, ComentarioEntradaDTO comentarioDTO) {
+    // ✅ MODIFICADO: Agora retorna o Post completo
+    public PostagemSaidaDTO criarComentario(Long postagemId, String autorUsername, ComentarioEntradaDTO comentarioDTO) {
         Usuario autor = usuarioRepository.findByEmail(autorUsername)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
@@ -52,12 +57,16 @@ public class ComentarioService {
                 .destacado(false)
                 .build();
 
-        Comentario comentarioSalvo = comentarioRepository.save(comentario);
-        return toDTO(comentarioSalvo); // Usa o 'toDTO' que adicionamos abaixo
+        comentarioRepository.save(comentario);
+
+        // ✅ MODIFICADO: Em vez de retornar o DTO do comentário,
+        // busca o post ATUALIZADO (com o novo comentário) dentro da mesma transação.
+        return postagemService.buscarPostagemPorIdComComentarios(postagemId);
     }
 
     @Transactional
-    public ComentarioSaidaDTO editarComentario(Long id, String username, String novoConteudo) {
+    // ✅ MODIFICADO: Agora retorna o Post completo
+    public PostagemSaidaDTO editarComentario(Long id, String username, String novoConteudo) {
         Comentario comentario = comentarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Comentário não encontrado"));
 
@@ -67,11 +76,13 @@ public class ComentarioService {
 
         comentario.setConteudo(novoConteudo);
         comentarioRepository.save(comentario);
-        return toDTO(comentario); // Usa o 'toDTO'
+        // ✅ MODIFICADO: Retorna o post atualizado
+        return postagemService.buscarPostagemPorIdComComentarios(comentario.getPostagem().getId());
     }
 
     @Transactional
-    public ComentarioSaidaDTO destacarComentario(Long id, String username) {
+    // ✅ MODIFICADO: Agora retorna o Post completo
+    public PostagemSaidaDTO destacarComentario(Long id, String username) {
         Comentario comentario = comentarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Comentário não encontrado"));
 
@@ -86,16 +97,13 @@ public class ComentarioService {
         // Marca o comentário atual
         comentario.setDestacado(true);
         comentarioRepository.save(comentario);
-        return toDTO(comentario); // Usa o 'toDTO'
+        // ✅ MODIFICADO: Retorna o post atualizado
+        return postagemService.buscarPostagemPorIdComComentarios(postagem.getId());
     }
 
-    /**
-     * ✅ MÉTODO CORRIGIDO:
-     * Agora retorna o ComentarioSaidaDTO (como o Controller espera)
-     * em vez de 'void'.
-     */
     @Transactional
-    public ComentarioSaidaDTO excluirComentario(Long id, String username) {
+    // ✅ MODIFICADO: Agora retorna o Post completo
+    public PostagemSaidaDTO excluirComentario(Long id, String username) {
         Comentario comentario = comentarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Comentário não encontrado"));
 
@@ -103,12 +111,13 @@ public class ComentarioService {
             throw new SecurityException("Você não tem permissão para excluir este comentário.");
         }
 
-        // Converte para DTO ANTES de deletar, para podermos retornar
-        ComentarioSaidaDTO dto = toDTO(comentario);
+        // Pega o ID do post ANTES de deletar o comentário
+        Long postagemId = comentario.getPostagem().getId();
 
         comentarioRepository.delete(comentario);
 
-        return dto; // Retorna o DTO do comentário excluído
+        // ✅ MODIFICADO: Retorna o post atualizado (sem o comentário)
+        return postagemService.buscarPostagemPorIdComComentarios(postagemId);
     }
 
     /**
