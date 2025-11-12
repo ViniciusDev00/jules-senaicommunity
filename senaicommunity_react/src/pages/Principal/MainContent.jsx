@@ -1,5 +1,4 @@
-// @ts-nocheck
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 // Importa o WebSocketContext do local correto (.tsx)
 import { useWebSocket } from "../../contexts/WebSocketContext.tsx";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,12 +12,13 @@ import {
   faPaperPlane,
   faChevronLeft,
   faChevronRight,
-  faPen, // ✅ ÍCONE ADICIONADO
-  faTrash, // ✅ ÍCONE ADICIONADO
-  faTimes, // ✅ ÍCONE ADICIONADO
+  faPen,
+  faTrash,
+  faTimes,
+  faReply,
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
-import Swal from "sweetalert2"; // ✅ IMPORTADO PARA CONFIRMAÇÃO
+import Swal from "sweetalert2";
 
 // =================================================================
 // FUNÇÃO HELPER (Para corrigir URLs de imagem)
@@ -33,7 +33,6 @@ const getCorrectImageUrl = (url) => {
     return url;
   }
   if (url.startsWith("blob:")) {
-    // ✅ Adicionado para suportar previews de edição
     return url;
   }
   if (url.startsWith("/")) {
@@ -77,7 +76,41 @@ const formatTimeAgo = (dateString) => {
 };
 
 // =================================================================
-// COMPONENTE POSTCREATOR (O criador de postagens)
+// FUNÇÃO HELPER (Para aninhar os comentários)
+// =================================================================
+const buildCommentTree = (comments) => {
+  if (!comments || comments.length === 0) return [];
+
+  const commentsMap = {};
+  const tree = [];
+
+  // 1. Mapeia todos os comentários por ID e adiciona um array 'replies'
+  comments.forEach((comment) => {
+    commentsMap[comment.id] = { ...comment, replies: [] };
+  });
+
+  // 2. Itera sobre o mapa e aninha os filhos em seus pais
+  Object.values(commentsMap).forEach((comment) => {
+    if (comment.parentId) {
+      const parent = commentsMap[comment.parentId];
+      if (parent) {
+        // Adiciona a resposta ao seu pai
+        parent.replies.push(comment);
+      } else {
+        // Se o pai não for encontrado (ex: órfão), trata como nível 1
+        tree.push(comment);
+      }
+    } else {
+      // Comentário de nível 1 (não é uma resposta)
+      tree.push(comment);
+    }
+  });
+
+  return tree; // Retorna apenas os comentários de nível 1 (com filhos aninhados)
+};
+
+// =================================================================
+// COMPONENTE POSTCREATOR (O criador de postagens) - Sem alterações
 // =================================================================
 const PostCreator = ({ currentUser }) => {
   const [postType, setPostType] = useState(null);
@@ -240,19 +273,15 @@ const PostCreator = ({ currentUser }) => {
 };
 
 // =================================================================
-// ✅ NOVO COMPONENTE: POSTEDITOR (para edição inline)
+// COMPONENTE: POSTEDITOR (Lógica de remoção de arquivos corrigida)
 // =================================================================
 const PostEditor = ({ post, onCancel, onSave }) => {
   const [editedText, setEditedText] = useState(post.conteudo);
   const [keptMediaUrls, setKeptMediaUrls] = useState(post.urlsMidia || []);
   const [newMediaFiles, setNewMediaFiles] = useState([]);
-  
-  // ✅ 1. ADICIONAR NOVO ESTADO para rastrear mídias a remover
   const [urlsParaRemover, setUrlsParaRemover] = useState([]);
-
   const [isSaving, setIsSaving] = useState(false);
 
-  // Limpa os ObjectURLs quando o componente é desmontado
   useEffect(() => {
     return () => {
       newMediaFiles.forEach((file) => URL.revokeObjectURL(file.preview));
@@ -270,12 +299,8 @@ const PostEditor = ({ post, onCancel, onSave }) => {
     }
   };
 
-  // ✅ 2. ATUALIZAR FUNÇÃO DE REMOÇÃO
   const handleRemoveKeptUrl = (urlToRemove) => {
-    // Remove da lista de exibição (para atualizar a UI)
     setKeptMediaUrls(keptMediaUrls.filter((url) => url !== urlToRemove));
-    
-    // Adiciona à lista de URLs que o backend deve deletar
     setUrlsParaRemover((prev) => [...prev, urlToRemove]);
   };
 
@@ -285,33 +310,25 @@ const PostEditor = ({ post, onCancel, onSave }) => {
     );
   };
 
-  // ✅ 3. CORRIGIR FUNÇÃO DE SALVAR
   const handleSaveClick = async () => {
     setIsSaving(true);
     const formData = new FormData();
 
-    // 1. Adiciona o conteúdo de texto E a lista de remoção no DTO
-    const postData = { 
+    const postData = {
       conteudo: editedText,
-      urlsParaRemover: urlsParaRemover // <--- CORREÇÃO AQUI
+      urlsParaRemover: urlsParaRemover,
     };
-    
+
     formData.append(
       "postagem",
       new Blob([JSON.stringify(postData)], { type: "application/json" })
     );
 
-    // 2. A linha abaixo estava incorreta e foi removida.
-    // formData.append("urlsMidiaParaManter", JSON.stringify(keptMediaUrls));
-
-    // 3. Adiciona os novos arquivos de mídia (isso já estava correto)
     newMediaFiles.forEach((file) => {
-      formData.append("arquivos", file); // Envia o File object
+      formData.append("arquivos", file);
     });
 
-    // Chama a função onSave passada pelo MainContent
     await onSave(formData, post.id);
-
     setIsSaving(false);
   };
 
@@ -325,9 +342,7 @@ const PostEditor = ({ post, onCancel, onSave }) => {
         onChange={(e) => setEditedText(e.target.value)}
         autoFocus
       />
-
       <div className="edit-media-container">
-        {/* Mídia existente (URLs) */}
         {keptMediaUrls.map((url, index) => {
           const fullUrl = getCorrectImageUrl(url);
           const isVideo = fullUrl.match(/\.(mp4|webm|ogg)$/i);
@@ -338,7 +353,6 @@ const PostEditor = ({ post, onCancel, onSave }) => {
               ) : (
                 <img src={fullUrl} alt={`Mídia existente ${index + 1}`} />
               )}
-              {/* O botão agora chama a função correta */}
               <button
                 type="button"
                 onClick={() => handleRemoveKeptUrl(url)}
@@ -350,8 +364,6 @@ const PostEditor = ({ post, onCancel, onSave }) => {
             </div>
           );
         })}
-
-        {/* Nova mídia (File objects com preview) */}
         {newMediaFiles.map((file, index) => {
           const isVideo = file.type.startsWith("video/");
           return (
@@ -373,7 +385,6 @@ const PostEditor = ({ post, onCancel, onSave }) => {
           );
         })}
       </div>
-
       <div className="post-editor-footer">
         <div className="editor-actions-left">
           <label
@@ -410,18 +421,136 @@ const PostEditor = ({ post, onCancel, onSave }) => {
 };
 
 // =================================================================
-// COMPONENTE: COMMENTSECTION (Sem alterações)
+// COMPONENTE: CommentItem (para renderização recursiva)
+// =================================================================
+const CommentItem = ({
+  comment,
+  currentUser,
+  onLikeComment,
+  onReplyClick,
+  postId,
+  depth = 1, // Define a profundidade padrão
+}) => {
+  const [repliesVisible, setRepliesVisible] = useState(false);
+  const hasReplies = comment.replies && comment.replies.length > 0;
+
+  // Lógica de visibilidade:
+  // O botão "Ver Respostas" SÓ aparece no Nível 1 (depth === 1)
+  const showViewRepliesButton = hasReplies && depth === 1;
+
+  // As respostas são exibidas se:
+  //   1. Estamos no Nível 1 E o usuário clicou (repliesVisible)
+  //   2. Estamos no Nível 2 ou mais (depth > 1) - as respostas aparecem direto
+  const areRepliesShown = (depth === 1 && repliesVisible) || depth > 1;
+
+  return (
+    <div className="comment-item">
+      <div className="avatar-small">
+        <img
+          src={getCorrectImageUrl(comment.urlFotoAutor)}
+          alt={comment.nomeAutor}
+        />
+      </div>
+      <div className="comment-body">
+        <div className="comment-content">
+          <strong>{comment.nomeAutor}</strong>
+          <p>
+            {comment.replyingToName && (
+              <strong className="reply-tag">@{comment.replyingToName}</strong>
+            )}{" "}
+            {comment.conteudo}
+          </p>
+        </div>
+        <div className="comment-actions-below">
+          <span>{formatTimeAgo(comment.dataCriacao)}</span>
+          ·
+          <button
+            className={`comment-action-btn ${
+              comment.curtidoPeloUsuario ? "liked" : ""
+            }`}
+            onClick={() => onLikeComment(postId, comment.id)}
+          >
+            <FontAwesomeIcon icon={faThumbsUp} /> (
+            {Number.isInteger(comment.totalCurtidas)
+              ? comment.totalCurtidas
+              : 0}
+            )
+          </button>
+          ·
+          <button
+            className="comment-action-btn"
+            onClick={() => onReplyClick(comment)} // Passa este comentário como o "pai"
+          >
+            <FontAwesomeIcon icon={faReply} />
+            Responder
+          </button>
+        </div>
+
+        {/* --- Lógica de Respostas Aninhadas --- */}
+
+        {/* 1. Botão "Ver Respostas" - SÓ APARECE NO NÍVEL 1 */}
+        {showViewRepliesButton && !repliesVisible && (
+          <button
+            className="comment-view-replies"
+            onClick={() => setRepliesVisible(true)}
+          >
+            Ver {comment.replies.length} resposta
+            {comment.replies.length > 1 ? "s" : ""}
+          </button>
+        )}
+
+        {/* 2. Contêiner de Respostas */}
+        {hasReplies && areRepliesShown && (
+          // ✅✅✅ MUDANÇA PRINCIPAL AQUI (LINHA 534) ✅✅✅
+          // Nós SEMPRE usamos a classe "comment-replies".
+          // A nova lógica de CSS no Principal.css vai cuidar do resto.
+          <div className="comment-replies">
+            
+            {/* Botão "Ocultar" - SÓ APARECE NO NÍVEL 1 */}
+            {showViewRepliesButton && repliesVisible && (
+              <button
+                className="comment-view-replies"
+                onClick={() => setRepliesVisible(false)}
+              >
+                Ocultar respostas
+              </button>
+            )}
+
+            {/* Renderização Recursiva: Mapeia as respostas e cria um CommentItem para CADA UMA */}
+            {comment.replies.map((reply) => (
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                currentUser={currentUser}
+                onLikeComment={onLikeComment}
+                onReplyClick={onReplyClick}
+                postId={postId}
+                depth={depth + 1} // Incrementa a profundidade (ainda precisamos disso)
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// =================================================================
+// COMPONENTE: COMMENTSECTION (Passa a prop 'depth')
 // =================================================================
 const CommentSection = ({
   postId,
-  comments = [],
+  comments = [], // Espera a ÁRVORE de comentários
   currentUser,
   stompClient,
   isConnected,
+  onLikeComment,
 }) => {
   const [commentText, setCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const userImage = getCorrectImageUrl(currentUser?.urlFotoPerfil);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const commentInputRef = useRef(null);
 
   const handleSubmitComment = async (e) => {
     e.preventDefault();
@@ -431,14 +560,20 @@ const CommentSection = ({
       return;
     }
     setIsSubmitting(true);
-    const payload = { conteudo: commentText, parentId: null };
+
+    const payload = {
+      conteudo: commentText,
+      parentId: replyingTo ? replyingTo.id : null,
+    };
     const destination = `/app/postagem/${postId}/comentar`;
+
     try {
       stompClient.publish({
         destination: destination,
         body: JSON.stringify(payload),
       });
       setCommentText("");
+      setReplyingTo(null);
     } catch (error) {
       console.error("Erro ao enviar comentário via WebSocket:", error);
       alert("Falha ao comentar.");
@@ -447,52 +582,68 @@ const CommentSection = ({
     }
   };
 
+  const handleReplyClick = (comment) => {
+    setReplyingTo(comment);
+    if (commentInputRef.current) {
+      commentInputRef.current.focus();
+    }
+  };
+
   return (
     <div className="comment-section">
       <form className="comment-form" onSubmit={handleSubmitComment}>
-        <div className="avatar-small">
-          <img src={userImage} alt="Seu Perfil" />
+        {replyingTo && (
+          <div className="replying-to-banner">
+            <span>
+              Respondendo a <strong>@{replyingTo.nomeAutor}</strong>
+            </span>
+            <button
+              type="button"
+              className="cancel-reply-btn"
+              onClick={() => setReplyingTo(null)}
+            >
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+        )}
+        <div className="comment-input-wrapper">
+          <div className="avatar-small">
+            <img src={userImage} alt="Seu Perfil" />
+          </div>
+          <input
+            ref={commentInputRef}
+            type="text"
+            placeholder="Escreva um comentário..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            disabled={isSubmitting || !isConnected}
+          />
+          <button
+            type="submit"
+            className="comment-submit-btn"
+            disabled={isSubmitting || !commentText.trim() || !isConnected}
+          >
+            {isSubmitting ? (
+              <FontAwesomeIcon icon={faSpinner} spin />
+            ) : (
+              <FontAwesomeIcon icon={faPaperPlane} />
+            )}
+          </button>
         </div>
-        <input
-          type="text"
-          placeholder="Escreva um comentário..."
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          disabled={isSubmitting || !isConnected}
-        />
-        <button
-          type="submit"
-          className="comment-submit-btn"
-          disabled={isSubmitting || !commentText.trim() || !isConnected}
-        >
-          {isSubmitting ? (
-            <FontAwesomeIcon icon={faSpinner} spin />
-          ) : (
-            <FontAwesomeIcon icon={faPaperPlane} />
-          )}
-        </button>
       </form>
 
       <div className="comment-list">
         {comments.length > 0 ? (
           comments.map((comment) => (
-            <div className="comment-item" key={comment.id}>
-              <div className="avatar-small">
-                <img
-                  src={getCorrectImageUrl(comment.urlFotoAutor)}
-                  alt={comment.nomeAutor}
-                />
-              </div>
-              <div className="comment-body">
-                <div className="comment-content">
-                  <strong>{comment.nomeAutor}</strong>
-                  <p>{comment.conteudo}</p>
-                </div>
-                <div className="comment-actions-below">
-                  <span>{formatTimeAgo(comment.dataCriacao)}</span>
-                </div>
-              </div>
-            </div>
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              currentUser={currentUser}
+              onLikeComment={onLikeComment}
+              onReplyClick={handleReplyClick}
+              postId={postId}
+              depth={1} // Passa a profundidade inicial (Nível 1)
+            />
           ))
         ) : (
           <p
@@ -512,7 +663,7 @@ const CommentSection = ({
 };
 
 // =================================================================
-// COMPONENTE MAINCONTENT (Lógica principal atualizada)
+// COMPONENTE MAINCONTENT (Lógica principal com correção do BUG DE LIKE)
 // =================================================================
 const MainContent = ({ currentUser }) => {
   const [posts, setPosts] = useState([]);
@@ -521,43 +672,83 @@ const MainContent = ({ currentUser }) => {
   const [activeCommentBox, setActiveCommentBox] = useState(null);
   const [currentSlide, setCurrentSlide] = useState({});
 
-  // ✅ NOVOS ESTADOS PARA EDIÇÃO E MENU
   const [activePostMenu, setActivePostMenu] = useState(null);
-  const [editingPost, setEditingPost] = useState(null); // Guarda o post que está sendo editado
+  const [editingPost, setEditingPost] = useState(null);
 
   // --- WebSocket useEffect (Lógica de atualização em tempo real) ---
   useEffect(() => {
+    // Lógica para mesclar atualizações de WS sem bugar os likes
     const handleFeedUpdate = (message) => {
       try {
         const payload = JSON.parse(message.body);
-
-        if (payload.id && (payload.tipo === "atualizacao" || !payload.tipo)) {
-          const updatedPost = payload.postagem || payload; // Aceita ambos os formatos
-          const postId = updatedPost.id;
-
-          setPosts((currentPosts) => {
-            const postIndex = currentPosts.findIndex((p) => p.id === postId);
-
-            if (postIndex > -1) {
-              // Atualiza o post existente
-              const newPosts = [...currentPosts];
-              newPosts[postIndex] = updatedPost;
-              return newPosts;
-            } else {
-              // É um post novo (de outro usuário)
-              setCurrentSlide((prevSlides) => ({
-                ...prevSlides,
-                [updatedPost.id]: 0,
-              }));
-              return [updatedPost, ...currentPosts];
-            }
-          });
-        } else if (payload.tipo === "remocao") {
-          // Remove o post
-          setPosts((currentPosts) =>
-            currentPosts.filter((p) => p.id !== payload.postagemId)
-          );
+        const updatedPost = payload.postagem || payload;
+        
+        if (!updatedPost || !updatedPost.id) {
+           if (payload.tipo === "remocao" && payload.postagemId) {
+             setPosts((currentPosts) =>
+               currentPosts.filter((p) => p.id !== payload.postagemId)
+             );
+           }
+           return;
         }
+
+        const postId = updatedPost.id;
+
+        setPosts((currentPosts) => {
+          const postIndex = currentPosts.findIndex((p) => p.id === postId);
+
+          if (postIndex > -1) {
+            // Post existe, vamos mesclar
+            const newPosts = [...currentPosts];
+            const oldPost = currentPosts[postIndex];
+
+            // ✅✅✅ A CORREÇÃO ESTÁ AQUI ✅✅✅
+            // Nós iteramos sobre a NOVA lista de comentários (do WebSocket)
+            const mergedComentarios = (updatedPost.comentarios || []).map(newComment => {
+              // E tentamos achar o comentário correspondente no ESTADO LOCAL
+              const oldComment = (oldPost.comentarios || []).find(c => c.id === newComment.id);
+              
+              if (oldComment) {
+                // SE ACHOU: Nós usamos o novo comentário (do WS) como base,
+                // mas FORÇAMOS o 'curtidoPeloUsuario' a ser o do estado local.
+                return {
+                    ...newComment,
+                    curtidoPeloUsuario: oldComment.curtidoPeloUsuario
+                };
+              }
+              
+              // SE NÃO ACHOU (é um comentário 100% novo):
+              // Usamos o do WS, mas garantimos que 'curtidoPeloUsuario' seja falso,
+              // pois o usuário local não poderia ter curtido ainda.
+              return {
+                ...newComment,
+                curtidoPeloUsuario: false
+              }; 
+            });
+            // ===================================================
+
+            // Aqui mesclamos o post, preservando também o like DO POST
+            const mergedPost = {
+                ...updatedPost,
+                comentarios: mergedComentarios,
+                curtidoPeloUsuario: oldPost.curtidoPeloUsuario 
+            };
+            
+            newPosts[postIndex] = mergedPost;
+            return newPosts;
+          
+          } else if (payload.tipo !== "remocao") {
+            // Post novo
+            setCurrentSlide((prevSlides) => ({
+              ...prevSlides,
+              [updatedPost.id]: 0,
+            }));
+            return [updatedPost, ...currentPosts];
+          }
+          
+          return currentPosts;
+        });
+
       } catch (error) {
         console.error("Falha ao processar mensagem do WebSocket:", error);
       }
@@ -576,33 +767,37 @@ const MainContent = ({ currentUser }) => {
     }
   }, [isConnected, stompClient]);
 
-  // --- Busca inicial de posts ---
-  useEffect(() => {
-    const fetchPosts = async () => {
+  // --- Função para recarregar posts (usada para reverter erros) ---
+  const fetchPosts = async () => {
       const token = localStorage.getItem("authToken");
       if (!token) {
         setIsLoading(false);
         return;
       }
       const headers = { Authorization: `Bearer ${token}` };
-
       try {
         const response = await axios.get(
           "http://localhost:8080/api/chat/publico",
           { headers }
         );
         setPosts(response.data);
-        const initialSlides = {};
-        response.data.forEach((post) => {
-          initialSlides[post.id] = 0;
-        });
-        setCurrentSlide(initialSlides);
+        if (isLoading) {
+          const initialSlides = {};
+          response.data.forEach((post) => {
+            initialSlides[post.id] = 0;
+          });
+          setCurrentSlide(initialSlides);
+        }
       } catch (error) {
         console.error("Erro ao carregar o feed:", error);
       } finally {
         setIsLoading(false);
       }
-    };
+  };
+
+  // --- Busca inicial de posts ---
+  useEffect(() => {
+    setIsLoading(true);
     fetchPosts();
   }, []);
 
@@ -619,33 +814,85 @@ const MainContent = ({ currentUser }) => {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     };
+    
+    // Atualização Otimista
+    setPosts(currentPosts => currentPosts.map(p => {
+      if (p.id === postId) {
+        const curtidas = Number.isInteger(p.totalCurtidas) ? p.totalCurtidas : 0;
+        return {
+          ...p,
+          curtidoPeloUsuario: !p.curtidoPeloUsuario,
+          totalCurtidas: p.curtidoPeloUsuario ? curtidas - 1 : curtidas + 1
+        };
+      }
+      return p;
+    }));
+
     try {
       await axios.post(likeEndpoint, payload, { headers });
-      // A atualização da UI virá via WebSocket
     } catch (error) {
       console.error("Erro ao curtir post:", error);
       alert("Não foi possível curtir a postagem.");
+      fetchPosts(); // Reverte em caso de erro
     }
   };
+
+  const handleLikeComment = async (postId, commentId) => {
+    const likeEndpoint = `http://localhost:8080/curtidas/toggle`;
+    const payload = { postagemId: null, comentarioId: commentId };
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+
+    // Atualização Otimista
+    setPosts(currentPosts => currentPosts.map(p => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          comentarios: p.comentarios.map(c => {
+            if (c.id === commentId) {
+              const curtidas = Number.isInteger(c.totalCurtidas) ? c.totalCurtidas : 0;
+              return {
+                ...c,
+                curtidoPeloUsuario: !c.curtidoPeloUsuario,
+                totalCurtidas: c.curtidoPeloUsuario ? curtidas - 1 : curtidas + 1
+              };
+            }
+            return c;
+          })
+        };
+      }
+      return p;
+    }));
+
+    try {
+      await axios.post(likeEndpoint, payload, { headers });
+    } catch (error) {
+      console.error("Erro ao curtir comentário:", error);
+      alert("Não foi possível curtir o comentário.");
+      fetchPosts(); // Reverte em caso de erro
+    }
+  };
+
 
   const handleToggleComments = (postId) => {
     setActiveCommentBox((prevId) => (prevId === postId ? null : postId));
   };
 
-  // ✅ NOVO: Abre/fecha o menu de 3 pontos
   const handleTogglePostMenu = (postId) => {
     setActivePostMenu((prevId) => (prevId === postId ? null : postId));
   };
 
-  // ✅ NOVO: Define o post a ser editado
   const handleEditPost = (post) => {
     setEditingPost(post);
-    setActivePostMenu(null); // Fecha o menu
+    setActivePostMenu(null); 
   };
 
-  // ✅ NOVO: Lida com a exclusão do post
   const handleDeletePost = async (postId) => {
-    setActivePostMenu(null); // Fecha o menu
+    setActivePostMenu(null); 
 
     const result = await Swal.fire({
       title: "Você tem certeza?",
@@ -669,7 +916,6 @@ const MainContent = ({ currentUser }) => {
 
       try {
         await axios.delete(deleteEndpoint, { headers });
-        // Remove o post do estado local (a notificação WS pode demorar)
         setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
         Swal.fire("Excluída!", "Sua postagem foi excluída.", "success");
       } catch (error) {
@@ -679,7 +925,6 @@ const MainContent = ({ currentUser }) => {
     }
   };
 
-  // ✅ NOVO: Salva a edição
   const handleSaveEdit = async (formData, postId) => {
     const updateEndpoint = `http://localhost:8080/postagem/${postId}`;
     const token = localStorage.getItem("authToken");
@@ -687,24 +932,17 @@ const MainContent = ({ currentUser }) => {
       alert("Sessão expirada.");
       return;
     }
-
-    // O FormData cuida do Content-Type
     const headers = { Authorization: `Bearer ${token}` };
 
     try {
-      // Usamos PUT para atualização
-      const response = await axios.put(updateEndpoint, formData, { headers });
-
-      // Atualiza o post no estado local com a resposta do backend
-      setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? response.data : p))
-      );
-      setEditingPost(null); // Fecha o modo de edição
+      await axios.put(updateEndpoint, formData, { headers });
+      setEditingPost(null); 
     } catch (error) {
       console.error("Erro ao salvar edição:", error);
       alert("Não foi possível salvar as alterações.");
     }
   };
+
 
   // --- Funções do Carrossel (Sem alterações) ---
   const nextSlide = (postId, totalSlides) => {
@@ -744,7 +982,6 @@ const MainContent = ({ currentUser }) => {
               return null;
             }
 
-            // ✅ NOVO: Verifica se o post está sendo editado
             if (editingPost && editingPost.id === post.id) {
               return (
                 <PostEditor
@@ -756,10 +993,15 @@ const MainContent = ({ currentUser }) => {
               );
             }
 
-            // --- Renderização Padrão do Post ---
             const autorAvatar = getCorrectImageUrl(post.urlFotoAutor);
             const totalMidia = post.urlsMidia ? post.urlsMidia.length : 0;
             const currentPostSlide = currentSlide[post.id] || 0;
+            
+            const totalCurtidas = Number.isInteger(post.totalCurtidas) ? post.totalCurtidas : 0;
+            
+            // ✅ ATUALIZADO: Constrói a árvore de comentários aqui
+            const commentTree = buildCommentTree(post.comentarios);
+            const totalComentarios = Array.isArray(post.comentarios) ? post.comentarios.length : 0;
 
             return (
               <div className="post" key={post.id}>
@@ -774,7 +1016,6 @@ const MainContent = ({ currentUser }) => {
                     </div>
                   </div>
 
-                  {/* ✅ NOVO: Botão de 3 pontos e Dropdown */}
                   {currentUser && post.autorId === currentUser.id && (
                     <div
                       className="post-options-btn"
@@ -797,7 +1038,6 @@ const MainContent = ({ currentUser }) => {
                       </button>
                     </div>
                   )}
-                  {/* ✅ FIM DA ÁREA DO DROPDOWN */}
                 </div>
 
                 <p className="post-text">{post.conteudo}</p>
@@ -867,21 +1107,22 @@ const MainContent = ({ currentUser }) => {
                     className={post.curtidoPeloUsuario ? "liked" : ""}
                   >
                     <FontAwesomeIcon icon={faThumbsUp} />
-                    Curtir ({post.totalCurtidas || 0})
+                    Curtir ({totalCurtidas})
                   </button>
                   <button onClick={() => handleToggleComments(post.id)}>
                     <FontAwesomeIcon icon={faComment} />
-                    Comentar ({post.comentarios ? post.comentarios.length : 0})
+                    Comentar ({totalComentarios})
                   </button>
                 </div>
 
                 {activeCommentBox === post.id && (
                   <CommentSection
                     postId={post.id}
-                    comments={post.comentarios}
+                    comments={commentTree} 
                     currentUser={currentUser}
                     stompClient={stompClient}
                     isConnected={isConnected}
+                    onLikeComment={handleLikeComment}
                   />
                 )}
               </div>
