@@ -115,7 +115,7 @@ const buildCommentTree = (comments) => {
 const PostCreator = ({ currentUser }) => {
   const [postType, setPostType] = useState(null);
   const [postText, setPostText] = useState("");
-  const [postFiles, setPostFiles] = useState([]);
+  const [postFiles, setPostFiles] = useState([]); // <-- AQUI ESTÁ O SETTER CORRETO
   const [isPublishing, setIsPublishing] = useState(false);
 
   const userImage = getCorrectImageUrl(currentUser?.urlFotoPerfil);
@@ -126,15 +126,29 @@ const PostCreator = ({ currentUser }) => {
     setPostFiles([]);
   };
 
-  const handleFileChange = (e) => {
+const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setPostFiles((prevFiles) => [
-        ...prevFiles,
-        ...Array.from(e.target.files),
-      ]);
+      const selectedFiles = Array.from(e.target.files);
+      
+      // Diferenciação: Filtra imagens e vídeos separadamente.
+      const imageFiles = selectedFiles.filter(file => file.type.startsWith("image/"));
+      const videoFiles = selectedFiles.filter(file => file.type.startsWith("video/"));
+
+      // 1. Alerta específico se vídeos foram selecionados
+      if (videoFiles.length > 0) {
+        alert("AVISO: Detectamos que você selecionou vídeos. O upload de vídeos está temporariamente bloqueado devido ao limite excedido na moderação do servidor (Google AI Video Moderation). Apenas as fotos serão adicionadas à postagem.");
+      }
+
+      // 2. Adiciona APENAS as imagens à lista de postagem
+      if (imageFiles.length > 0) {
+        // ✅ CORREÇÃO: Usar setPostFiles, não setNewMediaFiles
+        setPostFiles((prevFiles) => [...prevFiles, ...imageFiles]);
+      }
+      
+      // Reseta o valor do input para permitir nova seleção
+      e.target.value = null; 
     }
   };
-
   const handleRemoveFile = (indexToRemove) => {
     setPostFiles((prevFiles) =>
       prevFiles.filter((_, index) => index !== indexToRemove)
@@ -171,7 +185,15 @@ const PostCreator = ({ currentUser }) => {
       handleClose();
     } catch (error) {
       console.error("Erro ao publicar:", error);
-      alert("Não foi possível publicar a postagem.");
+      
+      // ✅ MUDANÇA APLICADA AQUI: Extrai a mensagem de erro do corpo da resposta 500
+      const detailedErrorMessage = 
+        error.response && error.response.data 
+          ? error.response.data // Usa a mensagem detalhada do backend
+          : "Não foi possível publicar a postagem. Verifique sua conexão e tente novamente.";
+          
+      alert(detailedErrorMessage);
+      
     } finally {
       setIsPublishing(false);
     }
@@ -394,11 +416,11 @@ const PostEditor = ({ post, onCancel, onSave }) => {
             <FontAwesomeIcon icon={faImage} />
             <span>Adicionar Mídia</span>
           </label>
-          <input
+         <input
             id={`edit-file-upload-${post.id}`}
             className="hidden-file-input"
             type="file"
-            accept="image/*,video/*"
+            accept="image/*,video/*" // ✅ Agora aceita ambos novamente
             onChange={handleFileChange}
             multiple
           />

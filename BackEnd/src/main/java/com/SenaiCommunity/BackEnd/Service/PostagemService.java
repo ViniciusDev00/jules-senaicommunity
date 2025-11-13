@@ -56,7 +56,9 @@ public class PostagemService {
                             .build();
                     midias.add(midia);
                 } catch (IOException e) {
-                    throw new RuntimeException("Erro ao fazer upload do arquivo: " + file.getOriginalFilename(), e);
+                    // ✅ MUDANÇA: Lança a RuntimeException com a MENSAGEM ORIGINAL do erro (e.getMessage())
+                    // Isso garantirá que nosso "O upload de vídeos está..." chegue ao frontend.
+                    throw new RuntimeException("Erro ao fazer upload do arquivo: " + file.getOriginalFilename() + ". Causa: " + e.getMessage(), e);
                 }
             }
             novaPostagem.setArquivos(midias);
