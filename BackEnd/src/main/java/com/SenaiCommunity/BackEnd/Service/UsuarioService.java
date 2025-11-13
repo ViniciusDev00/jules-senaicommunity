@@ -8,7 +8,7 @@ import com.SenaiCommunity.BackEnd.Entity.Amizade;
 import com.SenaiCommunity.BackEnd.Entity.Usuario;
 import com.SenaiCommunity.BackEnd.Repository.AmizadeRepository;
 import com.SenaiCommunity.BackEnd.Repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Value;
+// import org.springframework.beans.factory.annotation.Value; // 🗑️ Removida importação não utilizada
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,9 +18,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+// 🗑️ Removidas importações de java.nio.file.Files, java.nio.file.Path, java.nio.file.Paths
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,8 +37,13 @@ public class UsuarioService {
     @Autowired
     private UserStatusService userStatusService;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    // ✅ NOVO: Injeção do serviço Cloudinary
+    @Autowired
+    private ArquivoMidiaService arquivoMidiaService;
+
+    // 🗑️ REMOVIDO: Propriedade não é mais necessária para Cloudinary
+    // @Value("${file.upload-dir}")
+    // private String uploadDir;
 
     /**
      * método público para buscar usuário por email.
@@ -82,25 +85,52 @@ public class UsuarioService {
         return new UsuarioSaidaDTO(usuarioAtualizado);
     }
 
+    /**
+     * ✅ ATUALIZADO: Lógica para fazer upload no Cloudinary.
+     */
     public UsuarioSaidaDTO atualizarFotoPerfil(Authentication authentication, MultipartFile foto) throws IOException {
         if (foto == null || foto.isEmpty()) {
             throw new IllegalArgumentException("Arquivo de foto não pode ser vazio.");
         }
 
         Usuario usuario = getUsuarioFromAuthentication(authentication);
-        String nomeArquivo = salvarFoto(foto);
-        // Assumindo que o campo é 'urlFotoPerfil'. Se for 'fotoPerfil', ajuste aqui.
-        usuario.setFotoPerfil(nomeArquivo);
+
+        // 1. Opcional: Deletar a foto antiga no Cloudinary (se for uma URL)
+        // Isso evita que fotos antigas permaneçam no Cloudinary
+        if (usuario.getFotoPerfil() != null && usuario.getFotoPerfil().startsWith("http")) {
+            try {
+                arquivoMidiaService.deletar(usuario.getFotoPerfil());
+            } catch (Exception e) {
+                // Logar o erro, mas não bloquear o novo upload.
+                System.err.println("Aviso: Falha ao deletar foto antiga no Cloudinary: " + e.getMessage());
+            }
+        }
+
+        // 2. Fazer upload para o Cloudinary e obter a URL segura
+        String urlFoto = arquivoMidiaService.upload(foto);
+
+        // 3. Salvar a URL completa do Cloudinary na entidade Usuario
+        usuario.setFotoPerfil(urlFoto);
 
         Usuario usuarioAtualizado = usuarioRepository.save(usuario);
         return new UsuarioSaidaDTO(usuarioAtualizado);
     }
 
     /**
-     * Deleta a conta do usuário logado.
+     * ✅ ATUALIZADO: Adicionada lógica para deletar a foto do Cloudinary.
      */
     public void deletarUsuarioLogado(Authentication authentication) {
         Usuario usuario = getUsuarioFromAuthentication(authentication);
+
+        // Opcional: Deletar a foto do Cloudinary ao deletar o usuário
+        if (usuario.getFotoPerfil() != null && usuario.getFotoPerfil().startsWith("http")) {
+            try {
+                arquivoMidiaService.deletar(usuario.getFotoPerfil());
+            } catch (IOException e) {
+                System.err.println("Aviso: Falha ao deletar foto do Cloudinary durante a exclusão do usuário: " + e.getMessage());
+            }
+        }
+
         usuarioRepository.deleteById(usuario.getId());
     }
 
@@ -116,20 +146,23 @@ public class UsuarioService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o email do token: " + email));
     }
 
-    private String salvarFoto(MultipartFile foto) throws IOException {
-        String nomeArquivo = System.currentTimeMillis() + "_" + StringUtils.cleanPath(foto.getOriginalFilename());
-
-        // Garante que o diretório de upload exista
-        Path diretorioUpload = Paths.get(uploadDir);
-        Files.createDirectories(diretorioUpload);
-
-        Path caminhoDoArquivo = diretorioUpload.resolve(nomeArquivo);
-        foto.transferTo(caminhoDoArquivo);
-
-        // Retorna APENAS o nome do arquivo.
-        // O restante da URL será montado no frontend ou no DTO.
-        return nomeArquivo;
-    }
+    /**
+     * 🗑️ REMOVIDO: Método obsoleto que salvava foto no disco local.
+     */
+    // private String salvarFoto(MultipartFile foto) throws IOException {
+    //     String nomeArquivo = System.currentTimeMillis() + "_" + StringUtils.cleanPath(foto.getOriginalFilename());
+    //
+    //     // Garante que o diretório de upload exista
+    //     Path diretorioUpload = Paths.get(uploadDir);
+    //     Files.createDirectories(diretorioUpload);
+    //
+    //     Path caminhoDoArquivo = diretorioUpload.resolve(nomeArquivo);
+    //     foto.transferTo(caminhoDoArquivo);
+    //
+    //     // Retorna APENAS o nome do arquivo.
+    //     // O restante da URL será montado no frontend ou no DTO.
+    //     return nomeArquivo;
+    // }
 
     /**
      * Busca usuários por nome e determina o status de amizade com o usuário logado.
@@ -145,13 +178,14 @@ public class UsuarioService {
     }
 
     /**
-     * Converte uma entidade Usuario para UsuarioBuscaDTO, incluindo o status de amizade.
+     * ✅ ATUALIZADO: Converte uma entidade Usuario para UsuarioBuscaDTO, incluindo o status de amizade.
      */
     private UsuarioBuscaDTO toBuscaDTO(Usuario usuario, Usuario usuarioLogado) {
         UsuarioBuscaDTO.StatusAmizadeRelacao status = determinarStatusAmizade(usuario, usuarioLogado);
 
+        // O campo fotoPerfil agora contém a URL completa do Cloudinary.
         String urlFoto = usuario.getFotoPerfil() != null && !usuario.getFotoPerfil().isBlank()
-                ? "/api/arquivos/" + usuario.getFotoPerfil()
+                ? usuario.getFotoPerfil()
                 : "/images/default-avatar.png";
 
         return new UsuarioBuscaDTO(
