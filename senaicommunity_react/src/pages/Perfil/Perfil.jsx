@@ -51,7 +51,7 @@ const Perfil = ({ onLogout }) => {
         setCurrentUser(prevUser => ({
             ...prevUser,
             nome: novosDados.nome,
-            urlFotoPerfil: novosDados.urlFotoPerfil,
+            urlFotoPerfil: novosDados.urlFotoPerfil, // A URL aqui é o 'preview' (pode ser blob: ou a URL antiga)
             bio: novosDados.bio
         }));
         
@@ -67,7 +67,20 @@ const Perfil = ({ onLogout }) => {
         return <div>Carregando perfil...</div>;
     }
 
-    const userImage = currentUser.urlFotoPerfil || "https://via.placeholder.com/150";
+    // ✅ CORREÇÃO PRINCIPAL AQUI
+    // Esta lógica agora lida com caminhos relativos (do backend) e blobs (do modal).
+    let userImage;
+    if (currentUser.urlFotoPerfil && (currentUser.urlFotoPerfil.startsWith('http') || currentUser.urlFotoPerfil.startsWith('blob:'))) {
+        // Se já for uma URL completa (blob ou http), use-a diretamente
+        userImage = currentUser.urlFotoPerfil;
+    } else if (currentUser.urlFotoPerfil) {
+        // Se for um caminho relativo (ex: /uploads/...), adicione o host
+        userImage = `http://localhost:8080${currentUser.urlFotoPerfil}`;
+    } else {
+        // Fallback se não houver foto
+        userImage = "https://via.placeholder.com/150";
+    }
+
     const userDob = currentUser.dataNascimento
         ? new Date(currentUser.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
         : 'Não informado';
@@ -86,6 +99,7 @@ const Perfil = ({ onLogout }) => {
                             </div>
                             <div className="profile-details">
                                 <div className="profile-picture-container">
+                                    {/* A tag 'img' agora usa a variável 'userImage' corrigida */}
                                     <img src={userImage} alt="Foto do Perfil" id="profile-pic-img" />
                                 </div>
                                 <div className="profile-info-actions">

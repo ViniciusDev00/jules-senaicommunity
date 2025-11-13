@@ -11,7 +11,21 @@ const EditarPerfilModal = ({ user, onClose, onSave }) => {
     const [bio, setBio] = useState(user.bio || '');
     
     // --- Lógica da Foto ---
-    const [preview, setPreview] = useState(user.urlFotoPerfil || "https://via.placeholder.com/150");
+
+    // ✅ CORREÇÃO AQUI: Garante que a foto inicial
+    // seja construída corretamente antes de ser usada no 'useState'.
+    const getInitialPreview = () => {
+        if (!user.urlFotoPerfil) {
+            return "https://via.placeholder.com/150";
+        }
+        if (user.urlFotoPerfil.startsWith('http') || user.urlFotoPerfil.startsWith('blob:')) {
+            return user.urlFotoPerfil;
+        }
+        // Constrói a URL completa para caminhos relativos
+        return `http://localhost:8080${user.urlFotoPerfil}`;
+    };
+
+    const [preview, setPreview] = useState(getInitialPreview());
     const fileInputRef = useRef(null); // Referência para o input de arquivo escondido
 
     // Limpa o URL do 'blob' da memória quando o componente é desmontado
@@ -47,7 +61,7 @@ const EditarPerfilModal = ({ user, onClose, onSave }) => {
         // Chama a função 'onSave' do Perfil.jsx com os novos dados
         onSave({
             nome: nome,
-            urlFotoPerfil: preview, // Passa a nova URL (seja a antiga ou o novo blob)
+            urlFotoPerfil: preview, // Passa a nova URL (seja a antiga, o blob ou a construída)
             bio: bio
         });
     };
@@ -69,7 +83,7 @@ const EditarPerfilModal = ({ user, onClose, onSave }) => {
                             <label>Foto de Perfil</label>
                             <div className="foto-edit-container">
                                 <img 
-                                    src={preview} 
+                                    src={preview} // 'preview' agora começa com a URL correta
                                     alt="Pré-visualização" 
                                     className="modal-preview-img" 
                                 />
