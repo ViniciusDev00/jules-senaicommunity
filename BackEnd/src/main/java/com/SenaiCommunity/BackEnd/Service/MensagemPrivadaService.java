@@ -42,6 +42,8 @@ public class MensagemPrivadaService {
                 .destinatarioId(mensagem.getDestinatario().getId())
                 .nomeDestinatario(mensagem.getDestinatario().getNome())
                 .destinatarioEmail(mensagem.getDestinatario().getEmail())
+                // ✅ Adicionado campo de data de edição para o frontend
+                .dataEdicao(mensagem.getDataEdicao())
                 .build();
     }
 
@@ -73,6 +75,8 @@ public class MensagemPrivadaService {
         return toDTO(mensagemSalva);
     }
 
+    // ✅ CORREÇÃO: Método de Edição
+    @Transactional
     public MensagemPrivadaSaidaDTO editarMensagemPrivada(Long id, String novoConteudo, String autorUsername) {
         MensagemPrivada mensagem = mensagemPrivadaRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Mensagem não encontrada"));
@@ -82,16 +86,19 @@ public class MensagemPrivadaService {
         }
 
         mensagem.setConteudo(novoConteudo);
+        mensagem.setDataEdicao(LocalDateTime.now()); // Define a data de edição
         MensagemPrivada mensagemSalva = mensagemPrivadaRepository.save(mensagem);
         return toDTO(mensagemSalva); // Retorna o DTO
     }
 
+    // ✅ CORREÇÃO: Método de Exclusão
+    @Transactional
     public MensagemPrivadaSaidaDTO excluirMensagemPrivada(Long id, String autorUsername) {
         MensagemPrivada mensagem = mensagemPrivadaRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Mensagem não encontrada"));
 
         if (!mensagem.getRemetente().getEmail().equals(autorUsername)) {
-            throw new SecurityException("Você не pode excluir esta mensagem.");
+            throw new SecurityException("Você não pode excluir esta mensagem.");
         }
 
         mensagemPrivadaRepository.delete(mensagem);

@@ -1,4 +1,4 @@
-// src/pages/Mensagens/Mensagens.jsx (COMPLETO E CORRIGIDO)
+// src/pages/Mensagens/Mensagens.jsx (CÓDIGO FINAL E COMPLETO)
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
@@ -7,7 +7,11 @@ import Sidebar from '../../components/Layout/Sidebar';
 import Swal from 'sweetalert2';
 import './Mensagens.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faEllipsisV, faSearch, faSpinner, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { 
+    faPaperPlane, faEllipsisV, faSearch, faSpinner, 
+    faArrowLeft, faTrash, faPen, faTimes 
+} from '@fortawesome/free-solid-svg-icons';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
 
@@ -26,22 +30,100 @@ const ConversationListItem = ({ conversa, ativa, onClick }) => (
 );
 
 // --- COMPONENTE MessageBubble ---
-const MessageBubble = ({ mensagem, isMe }) => (
+const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick }) => {
+    const [menuOpen, setMenuOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    // Fecha o menu se clicar fora dele
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+    
+    // Verifica se a data de edição é diferente da data de envio
+    const hasBeenEdited = mensagem.dataEdicao && new Date(mensagem.dataEnvio).getTime() !== new Date(mensagem.dataEdicao).getTime();
+
+    return (
      <div className={`message-bubble-wrapper ${isMe ? 'me' : 'other'}`}>
         <div className="message-bubble">
-            {/* Mostra o nome do autor se for um chat de grupo e a msg não for minha */}
+            
+            {/* Ícone de Menu (só aparece para mim) */}
+            {isMe && (
+                <div className="message-menu-trigger" onClick={() => setMenuOpen(prev => !prev)}>
+                    <FontAwesomeIcon icon={faEllipsisV} />
+                </div>
+            )}
+
+            {/* Menu Dropdown */}
+            {menuOpen && isMe && (
+                <div className="message-menu-dropdown" ref={menuRef}>
+                    <button onClick={() => { onEditClick(mensagem); setMenuOpen(false); }}>
+                        <FontAwesomeIcon icon={faPen} /> Editar
+                    </button>
+                    <button className="danger" onClick={() => { onDeleteClick(mensagem); setMenuOpen(false); }}>
+                        <FontAwesomeIcon icon={faTrash} /> Excluir
+                    </button>
+                </div>
+            )}
+
+            {/* Conteúdo da Mensagem */}
             {!isMe && mensagem.tipo === 'grupo' && (
                 <strong className="message-author">{mensagem.nomeAutor || 'Sistema'}</strong>
             )}
             <p className="message-text">{mensagem.conteudo}</p>
             <span className="message-time">
+                {hasBeenEdited && <span className="edited-indicator">(editado) </span>}
                 {new Date(mensagem.dataEnvio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </span>
         </div>
     </div>
-);
+    );
+};
 
-// --- COMPONENTE PRINCIPAL DA PÁGINA ---
+
+// --- NOVO COMPONENTE: MessageEditForm ---
+const MessageEditForm = ({ mensagem, onSave, onCancel }) => {
+    const [editedContent, setEditedContent] = useState(mensagem.conteudo);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (editedContent.trim() && editedContent.trim() !== mensagem.conteudo) {
+            onSave(mensagem, editedContent.trim());
+        } else {
+            onCancel();
+        }
+    };
+
+    return (
+        <div className="message-bubble-wrapper me">
+            <form className="message-edit-form" onSubmit={handleSubmit}>
+                <input
+                    type="text"
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Escape' && onCancel()}
+                />
+                <div className="edit-form-actions">
+                    <button type="button" className="btn-cancel" onClick={onCancel}>
+                        <FontAwesomeIcon icon={faTimes} /> Cancelar
+                    </button>
+                    <button type="submit" className="btn-save" disabled={!editedContent.trim()}>
+                        <FontAwesomeIcon icon={faPen} /> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
+
+// --- COMPONENTE PRINCIPAL DA PÁGINA (CÓDIGO FINAL CORRIGIDO) ---
 const Mensagens = ({ onLogout }) => {
     const [conversas, setConversas] = useState([]);
     const [conversaAtiva, setConversaAtiva] = useState(null); 
@@ -51,6 +133,8 @@ const Mensagens = ({ onLogout }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [novaMensagem, setNovaMensagem] = useState('');
     
+    const [editingMessage, setEditingMessage] = useState(null);
+
     const { stompClient, isConnected } = useWebSocket(); 
     const messagesEndRef = useRef(null);
 
@@ -66,25 +150,20 @@ const Mensagens = ({ onLogout }) => {
                 id: proj.id, 
                 nome: proj.titulo,
                 tipo: 'grupo',
-                // ✅ CORREÇÃO IMAGEM GRUPO: Tentando o caminho /arquivos/ seguido pelo nome da pasta de uploads
                 avatar: proj.imagemUrl
-                    ? `http://localhost:8080/arquivos/projeto-pictures/${proj.imagemUrl}`
+                    ? `http://localhost:8080/projetos/imagens/${proj.imagemUrl}` 
                     : `https://placehold.co/50/30363d/8b949e?text=${proj.titulo.substring(0, 2)}`,
                 ultimaMensagem: 'Chat do projeto', 
             }));
 
-            // Endpoint de amigos já corrigido para /api/amizades/
             const amigosRes = await axios.get('http://localhost:8080/api/amizades/'); 
-            
-            // Filtro para garantir que amigo.usuario.id exista (previne TypeError)
-            const validAmigos = amigosRes.data.filter(amigo => amigo && amigo.usuario && amigo.usuario.id);
+            const validAmigos = amigosRes.data.filter(amigo => amigo && amigo.idUsuario);
 
             const conversasDMs = validAmigos.map(amigo => ({
-                id: amigo.usuario.id, 
-                nome: amigo.usuario.nome,
+                id: amigo.idUsuario, 
+                nome: amigo.nome,
                 tipo: 'dm',
-                // Caminho DM: assume que fotoPerfil retorna um caminho relativo (ex: /uploads/alunoPictures/...)
-                avatar: amigo.usuario.fotoPerfil ? `http://localhost:8080${amigo.usuario.fotoPerfil}` : `https://i.pravatar.cc/50?u=${amigo.usuario.id}`,
+                avatar: amigo.fotoPerfil ? `http://localhost:8080${amigo.fotoPerfil}` : `https://i.pravatar.cc/50?u=${amigo.idUsuario}`,
                 ultimaMensagem: 'Conversa privada', 
             }));
 
@@ -106,16 +185,16 @@ const Mensagens = ({ onLogout }) => {
 
     // --- FUNÇÃO DE SELECIONAR CONVERSA ---
     const selecionarConversa = useCallback(async (conversa, user, atualizarUrl = true) => {
-        // ... (lógica de seleção de conversa, mantida igual)
         if (!conversa) return;
 
         setConversaAtiva(conversa);
         setLoadingMensagens(true);
         setMensagens([]);
+        setEditingMessage(null); // Cancela edição ao trocar de chat
 
         if (atualizarUrl) {
             const params = new URLSearchParams();
-            params.set(conversa.tipo, conversa.id);
+            params.set(conversa.tipo === 'grupo' ? 'grupo' : 'dm', conversa.id);
             navigate(`/mensagens?${params.toString()}`, { replace: true });
         }
 
@@ -199,55 +278,159 @@ const Mensagens = ({ onLogout }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [mensagens]);
 
-    // Efeito para o WebSocket
+    // Efeito para o WebSocket (Escuta de mensagens em tempo real)
     useEffect(() => {
         if (isConnected && stompClient && conversaAtiva && currentUser) {
-            // Tópico que o Backend USA no MensagemGrupoService
-            const topic = conversaAtiva.tipo === 'grupo'
+            
+            // 1. Tópico de Inscrição: Direto para o grupo OU a fila privada do usuário
+            const topicToSubscribe = conversaAtiva.tipo === 'grupo'
                 ? `/topic/grupo/${conversaAtiva.id}` 
-                : `/topic/chat/privado/${currentUser.id}/${conversaAtiva.id}`;
+                : `/user/queue/mensagens-privadas`; 
 
-            const subscription = stompClient.subscribe(topic, (message) => {
-                const newMessage = JSON.parse(message.body);
+            const subscription = stompClient.subscribe(topicToSubscribe, (message) => {
+                const payload = JSON.parse(message.body);
                 
-                // Adiciona a mensagem recebida (que já vem salva com ID do Backend)
-                setMensagens((prevMessages) => [...prevMessages, newMessage]);
+                // 2. Filtro de Conversa Ativa (CRÍTICO)
+                const isForActiveChat = (() => {
+                    if (conversaAtiva.tipo === 'grupo') {
+                        // GRUPO: A mensagem deve ter o ID do grupo ativo.
+                        return payload.grupoId === conversaAtiva.id;
+                    } else {
+                        // DM: A mensagem deve envolver o partnerId e o currentUser.id
+                        const partnerId = conversaAtiva.id;
+
+                        // Verifica se é uma mensagem (com remetente/destinatário) OU uma remoção
+                        const isDMMessage = (payload.remetenteId === partnerId && payload.destinatarioId === currentUser.id) || 
+                                            (payload.remetenteId === currentUser.id && payload.destinatarioId === partnerId);
+                        
+                        return isDMMessage || payload.tipo === 'remocao';
+                    }
+                })();
+
+                if (!isForActiveChat) return;
+
+                // 3. Atualização da UI
+                if (payload.tipo === 'remocao') {
+                    // Remove a mensagem
+                    setMensagens((prev) => prev.filter(m => m.id !== payload.id));
+                
+                } else {
+                    // É uma nova mensagem ou edição (payload contém o DTO completo atualizado)
+                    setMensagens((prev) => {
+                        const existingIndex = prev.findIndex(m => m.id === payload.id);
+                        // Adiciona 'tipo' para que o MessageBubble saiba se é grupo ou dm
+                        const messageWithContext = { ...payload, tipo: conversaAtiva.tipo };
+                        
+                        if (existingIndex > -1) {
+                            // Edição
+                            return prev.map((m, index) => index === existingIndex ? messageWithContext : m);
+                        } else {
+                            // Nova mensagem
+                            return [...prev, messageWithContext];
+                        }
+                    });
+                }
             });
 
             return () => {
+                // Remove a inscrição ao desmontar ou trocar de chat
                 subscription.unsubscribe();
             };
         }
     }, [isConnected, stompClient, conversaAtiva, currentUser]);
 
-    // Função de enviar (Removida a atualização Otimista)
+
+    // --- FUNÇÕES DE AÇÃO ---
+
     const handleEnviarMensagem = async (e) => {
         e.preventDefault();
         if (!novaMensagem.trim() || !conversaAtiva || !currentUser || !stompClient || !isConnected) return;
 
+        // Endpoint de envio (DM/GRUPO)
         const endpoint = conversaAtiva.tipo === 'grupo'
             ? `/app/chat/grupo/${conversaAtiva.id}`
             : `/app/chat/privado/${conversaAtiva.id}`;
 
-        const mensagemParaEnviar = {
-            conteudo: novaMensagem,
-            dataEnvio: new Date().toISOString(),
-        };
+        let mensagemParaEnviar;
+
+        if (conversaAtiva.tipo === 'grupo') {
+            // MensagemGrupoEntradaDTO precisa só de 'conteudo'
+            mensagemParaEnviar = {
+                conteudo: novaMensagem,
+            };
+        } else {
+            // MensagemPrivadaEntradaDTO precisa de 'conteudo' e 'destinatarioId'
+            mensagemParaEnviar = {
+                conteudo: novaMensagem,
+                destinatarioId: conversaAtiva.id, 
+            };
+        }
+        
+        setNovaMensagem(''); // Limpa o input imediatamente
 
         try {
+            // Publica a mensagem via WebSocket. O servidor vai ecoar a mensagem salva de volta.
             stompClient.publish({
                 destination: endpoint,
                 body: JSON.stringify(mensagemParaEnviar),
             });
             
-            // REMOÇÃO DA ATUALIZAÇÃO OPTIMISTA: O WebSocket trará a mensagem salva
-            setNovaMensagem('');
-
         } catch (error) {
              console.error("Erro ao publicar mensagem via WebSocket:", error);
              Swal.fire('Erro', 'Falha ao enviar mensagem.', 'error');
+             // Se houver falha, restaurar o texto no input
+             setNovaMensagem(mensagemParaEnviar.conteudo); 
         }
     };
+
+    // ✅ Excluir Mensagem (USANDO API REST DO BACKEND)
+    const handleDeleteMessage = async (mensagem) => {
+        const url = conversaAtiva.tipo === 'grupo'
+            ? `http://localhost:8080/api/chat/grupo/${mensagem.id}`
+            : `http://localhost:8080/api/chat/privado/${mensagem.id}`;
+
+        const result = await Swal.fire({
+            title: 'Excluir mensagem?',
+            text: "Esta ação não pode ser desfeita.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sim, excluir!',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                // DELETE REST. O backend envia a notificação 'remocao' via WebSocket.
+                await axios.delete(url);
+            } catch (error) {
+                console.error("Erro ao excluir mensagem:", error);
+                const msg = error.response?.data?.message || 'Não foi possível excluir a mensagem.';
+                Swal.fire('Erro', msg, 'error');
+            }
+        }
+    };
+
+    // ✅ Salvar Edição (USANDO API REST DO BACKEND)
+    const handleSaveEdit = async (mensagem, novoConteudo) => {
+        const url = conversaAtiva.tipo === 'grupo'
+            ? `http://localhost:8080/api/chat/grupo/${mensagem.id}`
+            : `http://localhost:8080/api/chat/privado/${mensagem.id}`;
+        
+        try {
+            // PUT REST. O backend envia o DTO atualizado via WebSocket.
+            await axios.put(url, novoConteudo, {
+                headers: { 'Content-Type': 'text/plain' } // O backend espera texto puro
+            });
+            setEditingMessage(null); // Fecha o formulário de edição
+        } catch (error) {
+            console.error("Erro ao editar mensagem:", error);
+            const msg = error.response?.data?.message || 'Não foi possível salvar a edição.';
+            Swal.fire('Erro', msg, 'error');
+        }
+    };
+
 
     // Função para voltar para a lista no mobile
     const handleVoltarParaLista = () => {
@@ -274,7 +457,7 @@ const Mensagens = ({ onLogout }) => {
                                     <ConversationListItem
                                         key={`${c.tipo}-${c.id}`}
                                         conversa={c}
-                                        ativa={conversaAtiva?.id === c.id}
+                                        ativa={conversaAtiva?.id === c.id && conversaAtiva?.tipo === c.tipo}
                                         onClick={() => selecionarConversa(c, currentUser)}
                                     />
                                 ))
@@ -301,11 +484,22 @@ const Mensagens = ({ onLogout }) => {
                                 {loadingMensagens ? <p className="loading-state"><FontAwesomeIcon icon={faSpinner} spin /> Carregando...</p> :
                                     mensagens.length > 0 ? (
                                         mensagens.map((msg, index) => (
-                                            <MessageBubble
-                                                key={msg.id || index} 
-                                                mensagem={msg}
-                                                isMe={msg.autorId === currentUser?.id}
-                                            />
+                                            (editingMessage && editingMessage.id === msg.id) ? (
+                                                <MessageEditForm
+                                                    key={`edit-${msg.id}`}
+                                                    mensagem={msg}
+                                                    onSave={handleSaveEdit}
+                                                    onCancel={() => setEditingMessage(null)}
+                                                />
+                                            ) : (
+                                                <MessageBubble
+                                                    key={msg.id || index} 
+                                                    mensagem={msg}
+                                                    isMe={msg.autorId === currentUser?.id || msg.remetenteId === currentUser?.id}
+                                                    onDeleteClick={handleDeleteMessage}
+                                                    onEditClick={(msg) => setEditingMessage(msg)}
+                                                />
+                                            )
                                         ))
                                     ) : (
                                         <p className="empty-state">Ainda não há mensagens. Diga oi!</p>
@@ -322,8 +516,9 @@ const Mensagens = ({ onLogout }) => {
                                     value={novaMensagem}
                                     onChange={(e) => setNovaMensagem(e.target.value)}
                                     autoComplete="off"
+                                    disabled={!isConnected}
                                 />
-                                <button type="submit" disabled={!novaMensagem.trim()}><FontAwesomeIcon icon={faPaperPlane} /></button>
+                                <button type="submit" disabled={!novaMensagem.trim() || !isConnected}><FontAwesomeIcon icon={faPaperPlane} /></button>
                             </form>
                         </div>
                    ) : (

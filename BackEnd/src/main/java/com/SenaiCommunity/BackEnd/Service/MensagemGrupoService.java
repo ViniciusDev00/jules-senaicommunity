@@ -30,7 +30,6 @@ public class MensagemGrupoService {
     @Autowired
     private NotificacaoService notificacaoService;
 
-    // ✅ INJETAR O MESSAGINGTEMPLATE (para notificar o chat em tempo real)
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
@@ -46,6 +45,7 @@ public class MensagemGrupoService {
                 .grupoId(mensagem.getProjeto().getId())
                 .autorId(autorId)
                 .nomeAutor(nomeAutor)
+                .dataEdicao(mensagem.getDataEdicao()) // Inclui o campo dataEdicao
                 .build();
     }
 
@@ -101,13 +101,12 @@ public class MensagemGrupoService {
                         "Nova mensagem no projeto '" + projeto.getTitulo() + "': " + autor.getNome() + " disse..."
                 ));
 
-        // ✅ NOTIFICA O WEBSOCKET
+        // NOTIFICA O WEBSOCKET
         messagingTemplate.convertAndSend("/topic/grupo/" + projetoId, dtoSaida);
 
         return dtoSaida;
     }
 
-    // ✅ --- NOVO MÉTODO PARA MENSAGEM DE SISTEMA ---
     @Transactional
     public void criarMensagemDeSistema(Projeto projeto, String conteudo) {
         MensagemGrupo mensagemSistema = MensagemGrupo.builder()
@@ -121,27 +120,39 @@ public class MensagemGrupoService {
         // Envia a mensagem de sistema para o tópico do grupo no WebSocket
         messagingTemplate.convertAndSend("/topic/grupo/" + projeto.getId(), toDTO(msgSalva));
     }
-    // --- FIM DO NOVO MÉTODO ---
 
 
-    public MensagemGrupo editarMensagemGrupo(Long id, String novoConteudo, String autorUsername) {
+    @Transactional // ✅ Adicionado @Transactional para o save
+    // ✅ CORRIGIDO: Retorna MensagemGrupoSaidaDTO
+    public MensagemGrupoSaidaDTO editarMensagemGrupo(Long id, String novoConteudo, String autorUsername) {
         MensagemGrupo mensagem = mensagemGrupoRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Mensagem não encontrada"));
         if (!mensagem.getAutorUsername().equals(autorUsername)) {
             throw new SecurityException("Você não pode editar esta mensagem.");
         }
         mensagem.setConteudo(novoConteudo);
-        return mensagemGrupoRepository.save(mensagem);
+        mensagem.setDataEdicao(LocalDateTime.now()); // ✅ Adiciona data de edição
+        MensagemGrupo mensagemAtualizada = mensagemGrupoRepository.save(mensagem);
+
+        return toDTO(mensagemAtualizada); // ✅ Retorna o DTO
     }
 
-    public MensagemGrupo excluirMensagemGrupo(Long id, String autorUsername) {
+
+    @Transactional // ✅ Adicionado @Transactional para o delete
+    // ✅ CORRIGIDO: Retorna MensagemGrupoSaidaDTO (da mensagem excluída para pegar o grupoId)
+    public MensagemGrupoSaidaDTO excluirMensagemGrupo(Long id, String autorUsername) {
         MensagemGrupo mensagem = mensagemGrupoRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Mensagem não encontrada"));
+
         if (!mensagem.getAutorUsername().equals(autorUsername)) {
             throw new SecurityException("Você não pode excluir esta mensagem.");
         }
+
+        MensagemGrupoSaidaDTO dtoExcluido = toDTO(mensagem); // ✅ Converte ANTES de deletar
+
         mensagemGrupoRepository.delete(mensagem);
-        return mensagem;
+
+        return dtoExcluido; // ✅ Retorna o DTO
     }
 
     public List<MensagemGrupoSaidaDTO> buscarMensagensPorProjeto(Long projetoId) {

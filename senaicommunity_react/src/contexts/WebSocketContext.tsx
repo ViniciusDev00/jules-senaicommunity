@@ -1,3 +1,6 @@
+// src/contexts/WebSocketContext.tsx (COMPLETO)
+//
+
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { Client, IFrame } from '@stomp/stompjs'; // Importar IFrame
 import SockJS from 'sockjs-client';

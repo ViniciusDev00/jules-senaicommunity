@@ -2,7 +2,6 @@ package com.SenaiCommunity.BackEnd.Controller;
 
 import com.SenaiCommunity.BackEnd.DTO.MensagemPrivadaEntradaDTO;
 import com.SenaiCommunity.BackEnd.DTO.MensagemPrivadaSaidaDTO;
-import com.SenaiCommunity.BackEnd.Entity.MensagemPrivada;
 import com.SenaiCommunity.BackEnd.Service.MensagemPrivadaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,23 +27,24 @@ public class MensagemPrivadaController {
     @Autowired
     private MensagemPrivadaService mensagemPrivadaService;
 
-    @MessageMapping("/privado/{destinatarioId}")
+    @MessageMapping("/chat/privado/{destinatarioId}")
     public void enviarPrivado(@DestinationVariable Long destinatarioId,
-                              @Payload MensagemPrivadaEntradaDTO dto, // <-- Recebe DTO de Entrada
+                              @Payload MensagemPrivadaEntradaDTO dto,
                               Principal principal) {
 
-        dto.setDestinatarioId(destinatarioId); // Garante que o ID do destinatário está no DTO
+        dto.setDestinatarioId(destinatarioId);
 
+        // Salva a mensagem no banco de dados e obtém o DTO de saída
         MensagemPrivadaSaidaDTO dtoSalvo = mensagemPrivadaService.salvarMensagemPrivada(dto, principal.getName());
 
-        messagingTemplate.convertAndSendToUser(dtoSalvo.getDestinatarioEmail(), "/queue/usuario", dtoSalvo);
+        // 1. Envia para o DESTINATÁRIO
+        messagingTemplate.convertAndSendToUser(dtoSalvo.getDestinatarioEmail(), "/queue/mensagens-privadas", dtoSalvo);
 
-        // Notifica o próprio remetente para atualizar a UI
-        messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/usuario", dtoSalvo);
+        // 2. ✅ CRÍTICO: Envia o ECO de volta para o REMETENTE
+        messagingTemplate.convertAndSendToUser(dtoSalvo.getRemetenteEmail(), "/queue/mensagens-privadas", dtoSalvo);
     }
 
-    // Os métodos abaixo são REST, então precisam estar em um controller com @RestController
-    // Considere mover para um controller separado ou manter @RestController e anotar os métodos @MessageMapping em uma classe @Controller separada.
+    // Os métodos abaixo são REST (para Editar e Excluir)
     @RestController
     @RequestMapping("/api/chat/privado")
     public static class MensagemPrivadaRestController {
@@ -60,12 +60,11 @@ public class MensagemPrivadaController {
                                                 @RequestBody String novoConteudo,
                                                 Principal principal) {
             try {
-                // Agora recebe o DTO corretamente
                 MensagemPrivadaSaidaDTO atualizada = mensagemPrivadaService.editarMensagemPrivada(id, novoConteudo, principal.getName());
 
-                // Notifica ambos os usuários usando o email (que está no DTO)
-                messagingTemplate.convertAndSendToUser(atualizada.getDestinatarioEmail(), "/queue/usuario", atualizada);
-                messagingTemplate.convertAndSendToUser(atualizada.getRemetenteEmail(), "/queue/usuario", atualizada);
+                // Envia para o tópico do destinatário E do remetente
+                messagingTemplate.convertAndSendToUser(atualizada.getDestinatarioEmail(), "/queue/mensagens-privadas", atualizada);
+                messagingTemplate.convertAndSendToUser(atualizada.getRemetenteEmail(), "/queue/mensagens-privadas", atualizada);
 
                 return ResponseEntity.ok(atualizada);
             } catch (SecurityException e) {
@@ -79,14 +78,13 @@ public class MensagemPrivadaController {
         public ResponseEntity<?> excluirMensagem(@PathVariable Long id,
                                                  Principal principal) {
             try {
-                // Agora recebe o DTO corretamente
                 MensagemPrivadaSaidaDTO mensagemExcluida = mensagemPrivadaService.excluirMensagemPrivada(id, principal.getName());
 
                 Map<String, Object> payload = Map.of("tipo", "remocao", "id", id);
 
-                // Notifica ambos os usuários usando o email (que está no DTO)
-                messagingTemplate.convertAndSendToUser(mensagemExcluida.getDestinatarioEmail(), "/queue/usuario", payload);
-                messagingTemplate.convertAndSendToUser(mensagemExcluida.getRemetenteEmail(), "/queue/usuario", payload);
+                // Envia para o tópico do destinatário E do remetente
+                messagingTemplate.convertAndSendToUser(mensagemExcluida.getDestinatarioEmail(), "/queue/mensagens-privadas", payload);
+                messagingTemplate.convertAndSendToUser(mensagemExcluida.getRemetenteEmail(), "/queue/mensagens-privadas", payload);
 
                 return ResponseEntity.ok().build();
             } catch (SecurityException e) {
