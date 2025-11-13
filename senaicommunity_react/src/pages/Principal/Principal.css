@@ -1041,29 +1041,7 @@ button:focus-visible,
  * =================================================================
 */
 
-/* Nível 1 (Resposta ao post) - TEM indentação e linha */
-.comment-replies {
-  margin-top: 12px;
-  padding-left: 15px; /* Espaçamento que empurra as respostas */
-  border-left: 2px solid var(--border-color); /* Linha vertical */
-  display: flex;
-  flex-direction: column;
-  gap: 12px; /* Espaço entre as respostas */
-}
 
-/*
- * Nível 2+ (Resposta da resposta) - RESETA a indentação
- * Esta regra CSS diz:
- * "Qualquer .comment-replies QUE ESTEJA DENTRO de outro .comment-replies"
-*/
-.comment-replies .comment-replies {
-  margin-top: 12px;
-  padding-left: 0 !important;   /* FORÇA sem indentação */
-  border-left: none !important; /* FORÇA sem linha */
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
 
 /* Botão "Ver respostas" / "Ocultar respostas" */

@@ -421,7 +421,7 @@ const PostEditor = ({ post, onCancel, onSave }) => {
 };
 
 // =================================================================
-// COMPONENTE: CommentItem (para renderização recursiva)
+// COMPONENTE: CommentItem (CÓDIGO COMPLETO E CORRIGIDO)
 // =================================================================
 const CommentItem = ({
   comment,
@@ -435,112 +435,105 @@ const CommentItem = ({
   const hasReplies = comment.replies && comment.replies.length > 0;
 
   // Lógica de visibilidade:
-  // O botão "Ver Respostas" SÓ aparece no Nível 1 (depth === 1)
   const showViewRepliesButton = hasReplies && depth === 1;
-
-  // As respostas são exibidas se:
-  //   1. Estamos no Nível 1 E o usuário clicou (repliesVisible)
-  //   2. Estamos no Nível 2 ou mais (depth > 1) - as respostas aparecem direto
   const areRepliesShown = (depth === 1 && repliesVisible) || depth > 1;
 
+  // ✅ 1. Todo o componente é envolvido por um Fragmento (<>)
   return (
-    <div className="comment-item">
-      <div className="avatar-small">
-        <img
-          src={getCorrectImageUrl(comment.urlFotoAutor)}
-          alt={comment.nomeAutor}
-        />
-      </div>
-      <div className="comment-body">
-        <div className="comment-content">
-          <strong>{comment.nomeAutor}</strong>
-          <p>
-            {comment.replyingToName && (
-              <strong className="reply-tag">@{comment.replyingToName}</strong>
-            )}{" "}
-            {comment.conteudo}
-          </p>
+    <>
+      {/* Este é o item do comentário (avatar + bolha) */}
+      <div className="comment-item">
+        <div className="avatar-small">
+          <img
+            src={getCorrectImageUrl(comment.urlFotoAutor)}
+            alt={comment.nomeAutor}
+          />
         </div>
-        <div className="comment-actions-below">
-          <span>{formatTimeAgo(comment.dataCriacao)}</span>
-          ·
-          <button
-            className={`comment-action-btn ${
-              comment.curtidoPeloUsuario ? "liked" : ""
-            }`}
-            onClick={() => onLikeComment(postId, comment.id)}
-          >
-            <FontAwesomeIcon icon={faThumbsUp} /> (
-            {Number.isInteger(comment.totalCurtidas)
-              ? comment.totalCurtidas
-              : 0}
-            )
-          </button>
-          ·
-          <button
-            className="comment-action-btn"
-            onClick={() => onReplyClick(comment)} // Passa este comentário como o "pai"
-          >
-            <FontAwesomeIcon icon={faReply} />
-            Responder
-          </button>
+        <div className="comment-body">
+          <div className="comment-content">
+            <strong>{comment.nomeAutor}</strong>
+            <p>
+              {comment.replyingToName && (
+                <strong className="reply-tag">@{comment.replyingToName}</strong>
+              )}{" "}
+              {comment.conteudo}
+            </p>
+          </div>
+          <div className="comment-actions-below">
+            <span>{formatTimeAgo(comment.dataCriacao)}</span>
+            ·
+            <button
+              className={`comment-action-btn ${
+                comment.curtidoPeloUsuario ? "liked" : ""
+              }`}
+              onClick={() => onLikeComment(postId, comment.id)}
+            >
+              <FontAwesomeIcon icon={faThumbsUp} /> (
+              {Number.isInteger(comment.totalCurtidas)
+                ? comment.totalCurtidas
+                : 0}
+              )
+            </button>
+            ·
+            <button
+              className="comment-action-btn"
+              onClick={() => onReplyClick(comment)} // Passa este comentário como o "pai"
+            >
+              <FontAwesomeIcon icon={faReply} />
+              Responder
+            </button>
+          </div>
+
+          {/* --- Lógica de Respostas Aninhadas (SÓ OS BOTÕES) --- */}
+          {/* Os botões de Ver/Ocultar ficam AQUI DENTRO do comment-body */}
+
+          {/* 1. Botão "Ver Respostas" */}
+          {showViewRepliesButton && !repliesVisible && (
+            <button
+              className="comment-view-replies"
+              onClick={() => setRepliesVisible(true)}
+            >
+              Ver {comment.replies.length} resposta
+              {comment.replies.length > 1 ? "s" : ""}
+            </button>
+          )}
+
+          {/* 2. Botão "Ocultar" */}
+          {showViewRepliesButton && repliesVisible && (
+            <button
+              className="comment-view-replies"
+              onClick={() => setRepliesVisible(false)}
+            >
+              Ocultar respostas
+            </button>
+          )}
+
+        </div> {/* Fim do comment-body */}
+      </div> {/* Fim do comment-item */}
+
+
+      {/* ✅ 2. A Renderização das Respostas (o .map) é MOVIDA PARA FORA */}
+      {/* Agora ela é "irmã" do "comment-item" e não "filha" do "comment-body" */}
+      {hasReplies && areRepliesShown && (
+        
+        // Esta div receberá o padding de 15px do CSS que você pediu
+        <div className="comment-replies-list"> 
+          {comment.replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              currentUser={currentUser}
+              onLikeComment={onLikeComment}
+              onReplyClick={onReplyClick}
+              postId={postId}
+              depth={depth + 1} // Incrementa a profundidade
+            />
+          ))}
         </div>
-
-        {/* --- Lógica de Respostas Aninhadas --- */}
-
-        {/* 1. Botão "Ver Respostas" - SÓ APARECE NO NÍVEL 1 */}
-        {showViewRepliesButton && !repliesVisible && (
-          <button
-            className="comment-view-replies"
-            onClick={() => setRepliesVisible(true)}
-          >
-            Ver {comment.replies.length} resposta
-            {comment.replies.length > 1 ? "s" : ""}
-          </button>
-        )}
-
-        {/* 2. Contêiner de Respostas */}
-        {hasReplies && areRepliesShown && (
-          
-          // ✅✅✅ MUDANÇA APLICADA AQUI (LINHA ~534) ✅✅✅
-          //
-          // O 'div className="comment-replies"' FOI REMOVIDO
-          // e substituído por um Fragmento React (<>).
-          //
-          // Isso impede que o CSS aplique qualquer recuo (indentação)
-          // às respostas, removendo todos os "níveis".
-          //
-          <>
-            
-            {/* Botão "Ocultar" - SÓ APARECE NO NÍVEL 1 */}
-            {showViewRepliesButton && repliesVisible && (
-              <button
-                className="comment-view-replies"
-                onClick={() => setRepliesVisible(false)}
-              >
-                Ocultar respostas
-              </button>
-            )}
-
-            {/* Renderização Recursiva: Mapeia as respostas e cria um CommentItem para CADA UMA */}
-            {comment.replies.map((reply) => (
-              <CommentItem
-                key={reply.id}
-                comment={reply}
-                currentUser={currentUser}
-                onLikeComment={onLikeComment}
-                onReplyClick={onReplyClick}
-                postId={postId}
-                depth={depth + 1} // Incrementa a profundidade (ainda precisamos disso)
-              />
-            ))}
-          </>
-          // ✅✅✅ FIM DA MUDANÇA ✅✅✅
-        )}
-      </div>
-    </div>
+      )}
+    </>
   );
-};
+}; // <-- ESTA É A CHAVE FINAL DO COMPONENTE
 
 // =================================================================
 // COMPONENTE: COMMENTSECTION (Passa a prop 'depth')
