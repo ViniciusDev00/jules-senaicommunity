@@ -35,8 +35,7 @@ const Perfil = ({ onLogout }) => {
         } catch (error) {
             console.error("Erro ao buscar dados do usuário:", error);
             
-            // ✅✅✅ A CORREÇÃO FINAL ESTÁ AQUI (LINHA 35) ✅✅✅
-            // REMOVEMOS O onLogout() daqui.
+            // ✅ CORREÇÃO APLICADA AQUI (LINHA 35) ✅
             // Se o 'fetch' falhar (ex: erro 500), não queremos deslogar o usuário
             // que JÁ ESTÁ logado. Apenas logamos o erro.
             // onLogout(); // LINHA REMOVIDA
@@ -52,6 +51,9 @@ const Perfil = ({ onLogout }) => {
     }, [onLogout]);
 
     
+    // ===================================================================
+    // FUNÇÃO handleSaveProfile CORRIGIDA
+    // ===================================================================
     const handleSaveProfile = async (novosDados) => {
         const { nome, bio, arquivoFoto } = novosDados;
         const token = localStorage.getItem('authToken');
@@ -61,41 +63,37 @@ const Perfil = ({ onLogout }) => {
         setIsSaving(true); 
 
         try {
-            // --- 1. Atualizar Nome e Bio (PUT /usuarios/me) ---
+            // --- 1. Atualizar Nome e Bio (Isto estava correto) ---
             await axios.put('http://localhost:8080/usuarios/me', { nome, bio });
 
-            // --- 2. Atualizar Foto (se houver) (POST /arquivos/upload/...) ---
+            // --- 2. Atualizar Foto (SEÇÃO CORRIGIDA) ---
             if (arquivoFoto) {
                 const formData = new FormData();
-                formData.append('file', arquivoFoto);
-
-                let uploadUrl = 'http://localhost:8080/arquivos/upload/';
                 
-                // Usa 'aluno' ou 'professor' em MINÚSCULAS (Corrigindo o 404)
-                if (currentUser.tipoUsuario === 'ALUNO') {
-                    uploadUrl += 'aluno';
-                } else if (currentUser.tipoUsuario === 'PROFESSOR') {
-                    uploadUrl += 'professor';
-                } else {
-                    console.error('Tipo de usuário não suportado para upload de foto');
-                }
+                // O back-end espera 'foto' (baseado no seu JS antigo)
+                // O seu código React estava enviando 'file'
+                formData.append('foto', arquivoFoto); 
 
-                // Sem 'headers' customizado (Corrigindo o 403)
-                await axios.post(uploadUrl, formData);
+                // A rota e o método corretos.
+                // Esta rota atualiza a foto do usuário "logado" (me)
+                await axios.put('http://localhost:8080/usuarios/me/foto', formData);
             }
 
-            // --- 3. Refetchar dados do usuário ---
-            await fetchCurrentUser(); // Isso agora é seguro
+            // --- 3. Refetchar dados do usuário (Isto estava correto) ---
+            await fetchCurrentUser(); 
             setIsModalOpen(false); 
             
         } catch (error)
         {
+            // O erro 404 não deve mais acontecer aqui
             console.error("Erro ao salvar perfil:", error);
         } finally {
             setIsSaving(false); 
         }
     };
-    
+    // ===================================================================
+    // FIM DA CORREÇÃO
+    // ===================================================================
 
     if (isLoading || !currentUser) {
         return <div>Carregando perfil...</div>;

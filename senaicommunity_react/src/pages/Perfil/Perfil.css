@@ -18,19 +18,23 @@
     flex-direction: column; /* Organiza banner e detalhes verticalmente */
 }
 
+/* * ✅ CORREÇÃO APLICADA AQUI
+ * Aponta para a sua imagem: /images/senai_facebook.png
+ * (Assumindo que guardou a imagem em public/images/senai_facebook.png)
+*/
 .profile-banner {
     width: 100%;
-    height: 220px;
-    /* REMOVIDO: background-color: var(--bg-quaternary); */
-    /* Se a imagem não carregar, esta área ficará transparente ou usará o background do body */
-    background-color: var(--bg-tertiary); /* Adicionei uma cor de fallback */
+    height: 200px; /* Altura do banner. Pode ajustar se precisar. */
+    background-image: url('/images/senai_facebook.png'); /* ✅ Caminho para a imagem */
+    background-size: cover; /* Faz a imagem cobrir todo o banner */
+    background-repeat: no-repeat; /* Evita que a imagem se repita */
+    background-position: center center; /* Centraliza a imagem */
+    background-color: #dc3545; /* Cor de fundo (fallback) */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
 }
+/* --- FIM DA CORREÇÃO --- */
 
-.profile-banner img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
 
 .profile-details {
     display: flex;
