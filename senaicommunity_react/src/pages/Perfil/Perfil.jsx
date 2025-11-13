@@ -10,74 +10,104 @@ import Topbar from '../../components/Layout/Topbar';
 import Sidebar from '../../components/Layout/Sidebar';
 
 // Estilos
-import '../../pages/Principal/Principal.css'; // Estilo principal do layout
-import './Perfil.css'; // Estilos específicos da página de perfil
-import EditarPerfilModal from './EditarPerfilModal'; // <-- ADICIONADO
-import './EditarPerfilModal.css'; // <-- ADICIONADO
+import '../../pages/Principal/Principal.css';
+import './Perfil.css';
+import EditarPerfilModal from './EditarPerfilModal';
+import './EditarPerfilModal.css';
 
 const Perfil = ({ onLogout }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false); // <-- ADICIONADO (Controla o modal)
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false); 
+
+    const fetchCurrentUser = async () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            onLogout(); // Se NÃO tem token, desloga (correto)
+            return;
+        }
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        try {
+            const response = await axios.get('http://localhost:8080/usuarios/me');
+            setCurrentUser(response.data);
+        } catch (error) {
+            console.error("Erro ao buscar dados do usuário:", error);
+            
+            // ✅✅✅ A CORREÇÃO FINAL ESTÁ AQUI (LINHA 35) ✅✅✅
+            // REMOVEMOS O onLogout() daqui.
+            // Se o 'fetch' falhar (ex: erro 500), não queremos deslogar o usuário
+            // que JÁ ESTÁ logado. Apenas logamos o erro.
+            // onLogout(); // LINHA REMOVIDA
+            
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
         document.title = 'Senai Community | Meu Perfil';
-
-        const fetchCurrentUser = async () => {
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                onLogout();
-                return;
-            }
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-            try {
-                const response = await axios.get('http://localhost:8080/usuarios/me');
-                setCurrentUser(response.data);
-            } catch (error) {
-                console.error("Erro ao buscar dados do usuário:", error);
-                onLogout();
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchCurrentUser();
     }, [onLogout]);
 
-    // <-- ADICIONADO (Função para salvar os dados do modal SÓ NO FRONT-END) -->
-    const handleSaveProfile = (novosDados) => {
-        // Atualiza o estado 'currentUser' com os novos dados
-        setCurrentUser(prevUser => ({
-            ...prevUser,
-            nome: novosDados.nome,
-            urlFotoPerfil: novosDados.urlFotoPerfil, // A URL aqui é o 'preview' (pode ser blob: ou a URL antiga)
-            bio: novosDados.bio
-        }));
+    
+    const handleSaveProfile = async (novosDados) => {
+        const { nome, bio, arquivoFoto } = novosDados;
+        const token = localStorage.getItem('authToken');
         
-        // Fecha o modal
-        setIsModalOpen(false);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        // No futuro, você adicionará o axios.put() aqui
-        // console.log("Novos dados para enviar ao backend:", novosDados);
+        setIsSaving(true); 
+
+        try {
+            // --- 1. Atualizar Nome e Bio (PUT /usuarios/me) ---
+            await axios.put('http://localhost:8080/usuarios/me', { nome, bio });
+
+            // --- 2. Atualizar Foto (se houver) (POST /arquivos/upload/...) ---
+            if (arquivoFoto) {
+                const formData = new FormData();
+                formData.append('file', arquivoFoto);
+
+                let uploadUrl = 'http://localhost:8080/arquivos/upload/';
+                
+                // Usa 'aluno' ou 'professor' em MINÚSCULAS (Corrigindo o 404)
+                if (currentUser.tipoUsuario === 'ALUNO') {
+                    uploadUrl += 'aluno';
+                } else if (currentUser.tipoUsuario === 'PROFESSOR') {
+                    uploadUrl += 'professor';
+                } else {
+                    console.error('Tipo de usuário não suportado para upload de foto');
+                }
+
+                // Sem 'headers' customizado (Corrigindo o 403)
+                await axios.post(uploadUrl, formData);
+            }
+
+            // --- 3. Refetchar dados do usuário ---
+            await fetchCurrentUser(); // Isso agora é seguro
+            setIsModalOpen(false); 
+            
+        } catch (error)
+        {
+            console.error("Erro ao salvar perfil:", error);
+        } finally {
+            setIsSaving(false); 
+        }
     };
-    // <-- FIM DA FUNÇÃO ADICIONADA -->
+    
 
     if (isLoading || !currentUser) {
         return <div>Carregando perfil...</div>;
     }
 
-    // ✅ CORREÇÃO PRINCIPAL AQUI
-    // Esta lógica agora lida com caminhos relativos (do backend) e blobs (do modal).
+    // Lógica da imagem de perfil (sem alterações)
     let userImage;
     if (currentUser.urlFotoPerfil && (currentUser.urlFotoPerfil.startsWith('http') || currentUser.urlFotoPerfil.startsWith('blob:'))) {
-        // Se já for uma URL completa (blob ou http), use-a diretamente
         userImage = currentUser.urlFotoPerfil;
     } else if (currentUser.urlFotoPerfil) {
-        // Se for um caminho relativo (ex: /uploads/...), adicione o host
         userImage = `http://localhost:8080${currentUser.urlFotoPerfil}`;
     } else {
-        // Fallback se não houver foto
         userImage = "https://via.placeholder.com/150";
     }
 
@@ -95,26 +125,26 @@ const Perfil = ({ onLogout }) => {
                     <div className="profile-page">
                         <div className="profile-header">
                             <div className="profile-banner">
-                                {/* Pode adicionar uma imagem de banner aqui se quiser */}
                             </div>
                             <div className="profile-details">
                                 <div className="profile-picture-container">
-                                    {/* A tag 'img' agora usa a variável 'userImage' corrigida */}
                                     <img src={userImage} alt="Foto do Perfil" id="profile-pic-img" />
-                                </div>
+                                </div> 
                                 <div className="profile-info-actions">
                                     <div className="profile-info">
                                         <h1 id="profile-name">{currentUser.nome}</h1>
                                         <p id="profile-title">{currentUser.tipoUsuario}</p>
                                     </div>
                                     <div className="profile-actions">
-                                        {/* <-- MODIFICADO: Adicionado 'onClick' para abrir o modal --> */}
                                         <button 
                                             className="btn btn-primary" 
                                             id="edit-profile-btn-page" 
                                             onClick={() => setIsModalOpen(true)}
+                                            disabled={isSaving} 
                                         >
-                                            <FontAwesomeIcon icon={faPen} /> Editar Perfil
+                                            {isSaving ? 'Salvando...' : (
+                                                <><FontAwesomeIcon icon={faPen} /> Editar Perfil</>
+                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -135,7 +165,7 @@ const Perfil = ({ onLogout }) => {
                 </main>
             </div>
 
-            {/* <-- ADICIONADO: Renderiza o modal se 'isModalOpen' for true --> */}
+            {/* Renderização do Modal */}
             {isModalOpen && (
                 <EditarPerfilModal
                     user={currentUser}
