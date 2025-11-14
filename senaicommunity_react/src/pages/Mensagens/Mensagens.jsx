@@ -16,8 +16,9 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
 
-// ✅ IMPORTA O NOVO MODAL
+// ✅ IMPORTA OS NOVOS COMPONENTES
 import EditarMensagemModal from './EditarMensagemModal.jsx';
+import InfoSidebar from './InfoSidebar.jsx';
 
 // --- COMPONENTE CONVERSATIONListItem ---
 const ConversationListItem = ({ conversa, ativa, onClick }) => (
@@ -35,27 +36,16 @@ const ConversationListItem = ({ conversa, ativa, onClick }) => (
 
 
 // --- COMPONENTE MessageBubble ---
-// ✅ ATUALIZADO com nova lógica de menu/reação
+// ✅ ATUALIZADO com nova lógica de menu/reação e posicionamento
 const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick, onReactClick, reactions }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
     const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
-
-    // Fecha o menu se clicar fora dele
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setMenuOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
     
     // Verifica se a data de edição é diferente da data de envio
     const hasBeenEdited = mensagem.dataEdicao && new Date(mensagem.dataEnvio).getTime() !== new Date(mensagem.dataEdicao).getTime();
 
-    // Agrupa reações (ex: ['👍', '👍', '❤️'] => [{emoji: '👍', count: 2}, {emoji: '❤️', count: 1}])
+    // Agrupa reações
     const aggregatedReactions = (reactions || []).reduce((acc, emoji) => {
         const found = acc.find(r => r.emoji === emoji);
         if (found) {
@@ -72,60 +62,49 @@ const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick, onReactClic
     };
 
     return (
-     <div className={`message-bubble-wrapper ${isMe ? 'me' : 'other'}`}>
-        <div className="message-bubble">
-            
-            {/* ✅ Botão de 3 pontos (aparece para todos) */}
-            <div className="message-menu-trigger" onClick={() => setMenuOpen(prev => !prev)}>
-                <FontAwesomeIcon icon={faEllipsisV} />
+     <div className={`message-container ${isMe ? 'me' : 'other'}`}>
+        <div className="message-bubble-wrapper">
+            <div className="message-bubble">
+                {!isMe && mensagem.tipo === 'grupo' && (
+                    <strong className="message-author">{mensagem.nomeAutor || 'Sistema'}</strong>
+                )}
+                <p className="message-text">{mensagem.conteudo}</p>
+                <span className="message-time">
+                    {hasBeenEdited && <span className="edited-indicator">(editado) </span>}
+                    {new Date(mensagem.dataEnvio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
             </div>
 
-            {/* ✅ Menu Dropdown (Conteúdo condicional) */}
-            {menuOpen && (
-                <div className="message-menu-dropdown" ref={menuRef}>
-                    
-                    {/* Se a mensagem for MINHA, mostro Editar/Excluir */}
-                    {isMe && (
-                        <>
-                            <button onClick={() => { onEditClick(mensagem); setMenuOpen(false); }}>
-                                <FontAwesomeIcon icon={faPen} /> Editar
-                            </button>
-                            <button className="danger" onClick={() => { onDeleteClick(mensagem); setMenuOpen(false); }}>
-                                <FontAwesomeIcon icon={faTrash} /> Excluir
-                            </button>
-                        </>
-                    )}
-
-                    {/* Se a mensagem for DE OUTRO, mostro Reações */}
-                    {!isMe && (
-                        <div className="emoji-react-list">
-                            {emojis.map(emoji => (
-                                <span
-                                    key={emoji}
-                                    className="emoji-react-item"
-                                    onClick={() => handleReact(emoji)}
-                                >
-                                    {emoji}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-
+            <div className="message-actions" ref={menuRef}>
+                <div className="message-menu-trigger" onClick={() => setMenuOpen(prev => !prev)}>
+                    <FontAwesomeIcon icon={faEllipsisV} />
                 </div>
-            )}
 
-            {/* Conteúdo da Mensagem */}
-            {!isMe && mensagem.tipo === 'grupo' && (
-                <strong className="message-author">{mensagem.nomeAutor || 'Sistema'}</strong>
-            )}
-            <p className="message-text">{mensagem.conteudo}</p>
-            <span className="message-time">
-                {hasBeenEdited && <span className="edited-indicator">(editado) </span>}
-                {new Date(mensagem.dataEnvio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            </span>
+                {menuOpen && (
+                    <div className="message-menu-dropdown">
+                        {isMe ? (
+                            <>
+                                <button onClick={(e) => { e.stopPropagation(); onEditClick(mensagem); setMenuOpen(false); }}>
+                                    <FontAwesomeIcon icon={faPen} /> Editar
+                                </button>
+                                <button className="danger" onClick={(e) => { e.stopPropagation(); onDeleteClick(mensagem); setMenuOpen(false); }}>
+                                    <FontAwesomeIcon icon={faTrash} /> Excluir
+                                </button>
+                            </>
+                        ) : (
+                            <div className="emoji-react-list">
+                                {emojis.map(emoji => (
+                                    <span key={emoji} className="emoji-react-item" onClick={() => handleReact(emoji)}>
+                                        {emoji}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
 
-        {/* Área de Reações Renderizadas */}
         {aggregatedReactions.length > 0 && (
             <div className="message-reactions">
                 {aggregatedReactions.map(r => (
@@ -154,6 +133,10 @@ const Mensagens = ({ onLogout }) => {
     // ✅ Estados para o Modal de Edição
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [messageToEdit, setMessageToEdit] = useState(null);
+
+    // ✅ Estado para o Painel de Informações
+    const [isInfoSidebarOpen, setIsInfoSidebarOpen] = useState(false);
+    const [conversaInfo, setConversaInfo] = useState(null); // Para membros do grupo, etc.
 
     const { stompClient, isConnected } = useWebSocket(); 
     const messagesEndRef = useRef(null);
@@ -210,9 +193,10 @@ const Mensagens = ({ onLogout }) => {
         setConversaAtiva(conversa);
         setLoadingMensagens(true);
         setMensagens([]);
-        // Cancela modais/pickers ao trocar de chat
+        // Cancela modais/pickers/sidebars ao trocar de chat
         setIsEditModalOpen(false);
         setMessageToEdit(null);
+        setIsInfoSidebarOpen(false);
 
         if (atualizarUrl) {
             const params = new URLSearchParams();
@@ -336,7 +320,7 @@ const Mensagens = ({ onLogout }) => {
                     setMensagens((prev) => {
                         const existingIndex = prev.findIndex(m => m.id === payload.id);
                         
-                        // ✅ Simula reações (remova quando o back-end enviar)
+                        // ✅ Simula reações (remova isso quando o back-end enviar)
                         // const dummyReactions = payload.id % 5 === 0 ? ['👍'] : (payload.id % 3 === 0 ? ['❤️', '❤️', '😂'] : []);
                         
                         const messageWithContext = { 
@@ -419,15 +403,20 @@ const Mensagens = ({ onLogout }) => {
                  Swal.fire('Erro', 'Não conectado ao chat. Tente novamente.', 'error');
                  return;
             }
+
+            // Atualização Otimista da UI
+            setMensagens((prev) => prev.filter(m => m.id !== mensagem.id));
+
             try {
-                // ✅ Publica para o endpoint de exclusão do WebSocket
-                // O back-end NÃO espera um body para exclusão
+                // Publica para o endpoint de exclusão do WebSocket
                 stompClient.publish({ 
                     destination: url 
                 });
             } catch (error) {
-                console.error("Erro ao excluir mensagem via WebSocket:", error);
-                Swal.fire('Erro', 'Não foi possível excluir a mensagem.', 'error');
+                console.error("Erro ao enviar pedido de exclusão via WebSocket:", error);
+                // Reverte a UI se a publicação falhar
+                setMensagens((prev) => [...prev, mensagem].sort((a, b) => new Date(a.dataEnvio) - new Date(b.dataEnvio)));
+                Swal.fire('Erro', 'A solicitação de exclusão falhou.', 'error');
             }
         }
     };
@@ -489,17 +478,46 @@ const Mensagens = ({ onLogout }) => {
         navigate('/mensagens', { replace: true }); 
     };
 
+    // ✅ Função para buscar dados do grupo/contato e abrir/fechar o painel
+    const toggleInfoSidebar = async () => {
+        // Se estiver fechando, apenas fecha
+        if (isInfoSidebarOpen) {
+            setIsInfoSidebarOpen(false);
+            setConversaInfo(null); // Limpa os dados
+            return;
+        }
+
+        // Se estiver abrindo, busca os dados primeiro
+        if (conversaAtiva) {
+            try {
+                let infoData = { ...conversaAtiva };
+                if (conversaAtiva.tipo === 'grupo') {
+                    const response = await axios.get(`http://localhost:8080/projetos/${conversaAtiva.id}`);
+                    infoData.membros = response.data.membros || [];
+                    infoData.descricao = response.data.descricao || 'Sem descrição.';
+                }
+                // (Opcional) Adicionar busca de dados para DM/usuário aqui se necessário
+
+                setConversaInfo(infoData);
+                setIsInfoSidebarOpen(true);
+            } catch (error) {
+                console.error("Erro ao buscar detalhes da conversa:", error);
+                Swal.fire('Erro', 'Não foi possível carregar os detalhes do grupo.', 'error');
+            }
+        }
+    };
+
     return (
         <div className="layout-mensagens">
             <Topbar onLogout={onLogout} currentUser={currentUser} />
-            <div className="container container-chat">
+            <div className={`container container-chat ${isInfoSidebarOpen ? 'info-open' : ''}`}>
                 <Sidebar currentUser={currentUser}/>
 
                 <aside className={`chat-conversations-sidebar ${conversaAtiva ? 'hidden-mobile' : ''}`}>
                     <div className="conv-sidebar-header"><h2>Mensagens</h2></div>
                     <div className="conv-search">
-                         <FontAwesomeIcon icon={faSearch} />
-                         <input type="text" placeholder="Pesquisar conversas..." />
+                        <FontAwesomeIcon icon={faSearch} />
+                        <input type="text" placeholder="Pesquisar conversas..." />
                     </div>
                     <div className="conversations-list">
                         {loadingConversas ? <p className="loading-state"><FontAwesomeIcon icon={faSpinner} spin /> Carregando...</p> :
@@ -521,14 +539,14 @@ const Mensagens = ({ onLogout }) => {
                    {conversaAtiva ? (
                         <div className="chat-active-card">
                             <header className="chat-header-area">
-                                <button className="chat-back-btn" onClick={handleVoltarParaLista}>
+                                <button className="chat-back-btn" onClick={(e) => { e.stopPropagation(); handleVoltarParaLista(); }}>
                                     <FontAwesomeIcon icon={faArrowLeft} />
                                 </button>
-                                <div className="chat-header-info">
+                                <div className="chat-header-info" onClick={toggleInfoSidebar} style={{cursor: 'pointer'}}>
                                     <img src={conversaAtiva.avatar} className="avatar" alt="avatar" />
                                     <h3>{conversaAtiva.nome}</h3>
                                 </div>
-                                <button className="chat-options-btn"><FontAwesomeIcon icon={faEllipsisV} /></button>
+                                <button className="chat-options-btn" onClick={(e) => e.stopPropagation()}><FontAwesomeIcon icon={faEllipsisV} /></button>
                             </header>
 
                             <div className="chat-messages-area">
@@ -577,6 +595,8 @@ const Mensagens = ({ onLogout }) => {
                        </div>
                    )}
                 </main>
+
+                {isInfoSidebarOpen && <InfoSidebar conversa={conversaInfo} onClose={toggleInfoSidebar} />}
             </div>
 
             {/* ✅ Renderiza o Modal de Edição */}
