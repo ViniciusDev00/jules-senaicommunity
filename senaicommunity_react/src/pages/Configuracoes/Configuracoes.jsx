@@ -14,6 +14,7 @@ import './Configuracoes.css'; // Estilos específicos da página
 
 // --- Componente ToggleSwitch ---
 const ToggleSwitch = ({ id, label, checked, onChange }) => {
+    // ... (Código do ToggleSwitch não muda) ...
     return (
         <div className="toggle-switch">
             <input
@@ -45,6 +46,9 @@ const Configuracoes = ({ onLogout }) => {
     // ✅ NOVOS ESTADOS DE ACESSIBILIDADE
     const [altoContraste, setAltoContraste] = useState(false);
     const [tamanhoFonte, setTamanhoFonte] = useState('normal'); // 'normal', 'grande', 'extra-grande'
+
+    // ✅ 1. Adiciona o estado do menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         document.title = 'Senai Community | Configurações';
@@ -85,6 +89,7 @@ const Configuracoes = ({ onLogout }) => {
     }, [altoContraste]);
 
     const handleSaveChanges = () => {
+        // ... (Código do handleSaveChanges não muda) ...
         // Lógica para salvar as configurações no backend
         // Incluir altoContraste e tamanhoFonte nos dados enviados
 
@@ -98,6 +103,7 @@ const Configuracoes = ({ onLogout }) => {
     };
 
      const handleDeleteAccount = () => {
+        // ... (Código do handleDeleteAccount não muda) ...
         Swal.fire({
             title: 'Você tem certeza?',
             text: "Esta ação não pode ser revertida! Todos os seus dados serão permanentemente excluídos.",
@@ -125,9 +131,27 @@ const Configuracoes = ({ onLogout }) => {
 
     return (
         <>
-            <Topbar onLogout={onLogout} currentUser={currentUser} />
+            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            <Topbar 
+                onLogout={onLogout} 
+                currentUser={currentUser} 
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* ✅ 3. Adiciona o overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container config-container">
-                <Sidebar currentUser={currentUser} />
+                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser} 
+                    isOpen={isSidebarOpen}
+                />
 
                 <main className="main-content">
                     <div className="widget-card config-page-card">

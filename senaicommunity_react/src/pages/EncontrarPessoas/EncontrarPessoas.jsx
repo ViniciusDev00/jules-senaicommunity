@@ -15,6 +15,7 @@ import Swal from 'sweetalert2'; // Importar Swal para mensagens de erro
 
 // --- COMPONENTE UserCard MELHORADO ---
 const UserCard = ({ user, onAddFriend, currentUser }) => {
+    // ... (Código do UserCard não muda) ...
     // Estado local para o status, permitindo atualização imediata na UI
     const [statusAmizade, setStatusAmizade] = useState(user.statusAmizade);
 
@@ -85,6 +86,9 @@ const EncontrarPessoas = ({ onLogout }) => {
     const [loading, setLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState(null); // ✅ INTEGRAÇÃO
     const [message, setMessage] = useState('Comece a digitar para encontrar pessoas.');
+
+    // ✅ 1. Adiciona o estado do menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // ✅ INTEGRAÇÃO: Busca o usuário logado
     useEffect(() => {
@@ -177,10 +181,27 @@ const EncontrarPessoas = ({ onLogout }) => {
 
     return (
         <div>
-            {/* Passa currentUser para Topbar e Sidebar */}
-            <Topbar onLogout={onLogout} currentUser={currentUser}/>
+            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            <Topbar 
+                onLogout={onLogout} 
+                currentUser={currentUser}
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* ✅ 3. Adiciona o overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container">
-                <Sidebar currentUser={currentUser}/>
+                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser}
+                    isOpen={isSidebarOpen}
+                />
                 <main className="main-content">
                     <section className="widget-card search-header-card">
                         <h3 className="widget-title">Encontrar Pessoas na Comunidade</h3>

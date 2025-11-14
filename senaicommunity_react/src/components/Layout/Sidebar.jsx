@@ -4,7 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHome, faCommentDots, faUsers, faBriefcase, faCalendarCheck, faUserPlus, faUserFriends } from '@fortawesome/free-solid-svg-icons';
 import './Sidebar.css';
 
-const Sidebar = ({ currentUser }) => {
+// 1. Recebe a nova prop 'isOpen'
+const Sidebar = ({ currentUser, isOpen }) => {
 
     // ✅ MELHORIA: A URL da foto é construída corretamente
     const userImage = currentUser?.urlFotoPerfil
@@ -14,7 +15,8 @@ const Sidebar = ({ currentUser }) => {
     const userTitle = currentUser?.tipoUsuario === 'ALUNO' ? 'Aluno(a)' : 'Professor(a)';
 
     return (
-        <aside className="sidebar">
+        // 2. Adiciona a classe 'is-open' dinamicamente
+        <aside className={`sidebar ${isOpen ? 'is-open' : ''}`}>
             {/* ✅ CORREÇÃO: O link do perfil agora usa <Link> */}
             <Link to="/perfil" className="user-info-link">
                 <div className="user-info">

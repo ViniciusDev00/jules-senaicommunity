@@ -21,6 +21,9 @@ const Perfil = ({ onLogout }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false); 
 
+    // ✅ 1. Adiciona o estado para o menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     const fetchCurrentUser = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) {
@@ -115,9 +118,27 @@ const Perfil = ({ onLogout }) => {
 
     return (
         <>
-            <Topbar onLogout={onLogout} currentUser={currentUser} />
+            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            <Topbar 
+                onLogout={onLogout} 
+                currentUser={currentUser} 
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* ✅ 3. Adiciona o overlay (para fechar ao clicar fora) */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container">
-                <Sidebar currentUser={currentUser} />
+                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser} 
+                    isOpen={isSidebarOpen}
+                />
 
                 <main className="main-content">
                     <div className="profile-page">

@@ -88,6 +88,7 @@ interface ProjetosPageProps {
 
 // --- COMPONENTE ProjetoCard ---
 const ProjetoCard: React.FC<ProjetoCardProps> = ({ projeto, onVerDetalhes }) => {
+    // ... (Código do ProjetoCard não muda) ...
     const imageUrl = projeto.imagemUrl
         ? `http://localhost:8080/projetos/imagens/${projeto.imagemUrl}`
         : 'https://placehold.co/600x400/161b22/8b949e?text=Projeto';
@@ -124,6 +125,7 @@ const ProjetoCard: React.FC<ProjetoCardProps> = ({ projeto, onVerDetalhes }) => 
 
 // --- COMPONENTE MODAL DE NOVO PROJETO ---
 const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, onProjectCreated }) => {
+    // ... (Código do NovoProjetoModal não muda) ...
     const [titulo, setTitulo] = useState('');
     const [descricao, setDescricao] = useState('');
     const [foto, setFoto] = useState<File | null>(null); // Tipado
@@ -299,7 +301,7 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
 
 // --- COMPONENTE MODAL DE DETALHES DO PROJETO ---
 const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, currentUser, onClose, onGoToChat, onProjetoAtualizado, onProjetoExcluido }) => {
-
+    // ... (Código do ProjetoDetalheModal não muda) ...
     const [searchTermParticipante, setSearchTermParticipante] = useState('');
     const [buscaResultados, setBuscaResultados] = useState<Usuario[]>([]); // Tipado
     const [isSearching, setIsSearching] = useState(false);
@@ -443,7 +445,7 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
                                 {projeto.linksUteis.map((link, index) => (
                                     <a href={link} target="_blank" rel="noopener noreferrer" className="link-util-item" key={index}>
                                         <FontAwesomeIcon icon={faExternalLinkAlt} />
-                                        <span>{link.replace(/^(https?:\/\/)?(www\.)?/, '')}</span>
+                                        <span>{link.replace(/^(httpsC?:\/\/)?(www\.)?/, '')}</span>
                                     </a>
                                 ))}
                             </div>
@@ -521,6 +523,9 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
+    // ✅ 1. Adiciona o estado do menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     const [projetoSelecionado, setProjetoSelecionado] = useState<Projeto | null>(null); // Tipado
     const navigate = useNavigate();
 
@@ -592,9 +597,27 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
 
     return (
         <div>
-            <Topbar onLogout={onLogout} currentUser={currentUser} />
+            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            <Topbar 
+                onLogout={onLogout} 
+                currentUser={currentUser} 
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* ✅ 3. Adiciona o overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container">
-                <Sidebar currentUser={currentUser} />
+                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser} 
+                    isOpen={isSidebarOpen}
+                />
                 <main className="main-content">
                     <header className="projetos-header">
                         <div className="header-text">

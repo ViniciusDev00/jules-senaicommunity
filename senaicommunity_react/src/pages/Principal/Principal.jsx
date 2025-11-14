@@ -16,6 +16,9 @@ const Principal = ({ onLogout }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // 1. Adiciona o estado para controlar o menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     useEffect(() => {
         document.title = 'Senai Community | Principal';
 
@@ -54,9 +57,27 @@ const Principal = ({ onLogout }) => {
 
     return (
         <div>
-            <Topbar onLogout={handleLogout} currentUser={currentUser} />
+            {/* 2. Passa a função de toggle para o Topbar */}
+            <Topbar 
+                onLogout={handleLogout} 
+                currentUser={currentUser}
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* 3. Adiciona o overlay que escurece o fundo (só aparece se o menu estiver aberto) */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container">
-                <Sidebar currentUser={currentUser} />
+                {/* 4. Passa o estado 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser} 
+                    isOpen={isSidebarOpen} 
+                />
                 <MainContent currentUser={currentUser} />
                 <RightSidebar />
             </div>
