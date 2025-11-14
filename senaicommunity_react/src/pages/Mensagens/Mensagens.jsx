@@ -99,6 +99,10 @@ const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick, onReactClic
                                     <FontAwesomeIcon icon={faPen} /> Editar
                                 </button>
                                 <button className="danger" onClick={(e) => { e.stopPropagation(); onDeleteClick(mensagem); }}>
+                                <button onClick={() => { onEditClick(mensagem); setMenuOpen(false); }}>
+                                    <FontAwesomeIcon icon={faPen} /> Editar
+                                </button>
+                                <button className="danger" onClick={() => { onDeleteClick(mensagem); setMenuOpen(false); }}>
                                     <FontAwesomeIcon icon={faTrash} /> Excluir
                                 </button>
                             </>
@@ -522,6 +526,7 @@ const Mensagens = ({ onLogout }) => {
         <div className="layout-mensagens">
             <Topbar onLogout={onLogout} currentUser={currentUser} />
             <div className={`container container-chat`}>
+            <div className={`container container-chat ${isInfoSidebarOpen ? 'info-open' : ''}`}>
                 <Sidebar currentUser={currentUser}/>
 
                 {isInfoSidebarOpen && conversaInfo ? (
@@ -555,6 +560,8 @@ const Mensagens = ({ onLogout }) => {
                         <div className="chat-active-card">
                             <header className="chat-header-area">
                                 <button className="chat-back-btn" onClick={(e) => { e.stopPropagation(); handleVoltarParaLista(); }}>
+                            <header className="chat-header-area" onClick={toggleInfoSidebar} style={{cursor: 'pointer'}}>
+                                <button className="chat-back-btn" onClick={handleVoltarParaLista}>
                                     <FontAwesomeIcon icon={faArrowLeft} />
                                 </button>
                                 <div className="chat-header-info" onClick={toggleInfoSidebar} style={{cursor: 'pointer'}}>
@@ -611,6 +618,7 @@ const Mensagens = ({ onLogout }) => {
                    )}
                 </main>
 
+                {isInfoSidebarOpen && <InfoSidebar conversa={conversaInfo} onClose={toggleInfoSidebar} />}
             </div>
 
             {/* ✅ Renderiza o Modal de Edição */}

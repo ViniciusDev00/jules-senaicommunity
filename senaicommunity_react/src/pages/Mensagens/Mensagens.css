@@ -18,6 +18,10 @@
     transition: grid-template-columns 0.3s ease-in-out;
 }
 
+/* Novo layout quando a sidebar de info está aberta */
+.container-chat.info-open {
+    grid-template-columns: 280px 1fr 320px;
+}
     flex-grow: 1;
     height: calc(100vh - 70px); /* Altura do Topbar é 70px */
     max-height: calc(100vh - 70px);
