@@ -1,3 +1,4 @@
+
 /* src/pages/Mensagens/Mensagens.css (COMPLETO E FINAL) */
 
 /* --- Layout Principal da Página de Mensagens --- */
@@ -80,10 +81,24 @@
 }
 
 /* Bolha de Mensagem */
-.message-bubble-wrapper { display: flex; max-width: 70%; word-wrap: break-word; }
-.message-bubble-wrapper.me { justify-content: flex-end; margin-left: auto; }
-.message-bubble-wrapper.other { justify-content: flex-start; margin-right: auto; }
-.message-bubble { padding: 0.75rem 1rem; border-radius: 18px; line-height: 1.4; position: relative; }
+.message-bubble-wrapper { 
+    display: flex; 
+    max-width: 70%; 
+    word-wrap: break-word; 
+    flex-direction: column;
+}
+.message-bubble-wrapper.me { justify-content: flex-end; margin-left: auto; align-items: flex-end; }
+.message-bubble-wrapper.other { justify-content: flex-start; margin-right: auto; align-items: flex-start; }
+
+.message-bubble { 
+    padding: 0.75rem 1rem; 
+    border-radius: 18px; 
+    line-height: 1.4; 
+    position: relative; 
+    /* ✅ Adiciona espaço para os 3 pontos */
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+}
 .message-bubble-wrapper.me .message-bubble { background: var(--accent-primary); color: #fff; border-bottom-right-radius: 4px; }
 .message-bubble-wrapper.other .message-bubble { background: var(--bg-tertiary); color: var(--text-primary); border-bottom-left-radius: 4px; }
 .message-text { margin: 0; }
@@ -172,4 +187,164 @@
         /* Aumenta o padding inferior para compensar o input */
         padding-bottom: 8rem;
     }
+}
+
+
+/*
+=================================================
+  CSS PARA AÇÕES DE MENSAGEM (EDITAR, EXCLUIR, REAGIR)
+=================================================
+*/
+
+/* --- 1. Gatilho de 3 pontos --- */
+.message-menu-trigger {
+    position: absolute;
+    top: 6px;
+    padding: 4px 8px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: 6px;
+    z-index: 5;
+    
+    /* Oculta por padrão e mostra ao passar o mouse */
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+/* Mostra o gatilho quando o mouse está sobre o balão */
+.message-bubble:hover .message-menu-trigger {
+    opacity: 1;
+}
+
+.message-menu-trigger:hover {
+    background-color: var(--bg-elevation-hover);
+    color: var(--text-primary);
+}
+
+/* ✅ CORREÇÃO: Posição dos 3 pontos para NOSSAS mensagens (direita) */
+.message-bubble-wrapper.me .message-menu-trigger {
+    left: 8px; /* Posiciona à esquerda DENTRO do balão */
+    right: auto;
+}
+
+/* ✅ CORREÇÃO: Posição dos 3 pontos para mensagens DOS OUTROS (esquerda) */
+.message-bubble-wrapper.other .message-menu-trigger {
+    right: 8px; /* Posiciona à direita DENTRO do balão */
+    left: auto;
+}
+
+/* --- 2. Menu Dropdown (Contêiner) --- */
+.message-menu-dropdown {
+    position: absolute;
+    top: 32px; /* Logo abaixo do gatilho */
+    min-width: 140px;
+    background-color: var(--bg-elevation-3);
+    border: 1px solid var(--border-color-light);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    z-index: 10;
+}
+
+/* Posição do dropdown para NOSSAS mensagens */
+.message-bubble-wrapper.me .message-menu-dropdown {
+    left: 4px; /* Alinha com o gatilho */
+    right: auto;
+}
+
+/* Posição do dropdown para mensagens DOS OUTROS */
+.message-bubble-wrapper.other .message-menu-dropdown {
+    right: 4px; /* Alinha com o gatilho */
+    left: auto;
+}
+
+/* Botões dentro do menu (Editar, Excluir) */
+.message-menu-dropdown button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    padding: 10px 12px;
+    text-align: left;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease;
+}
+
+.message-menu-dropdown button:hover {
+    background-color: var(--bg-elevation-hover);
+}
+
+/* Estilo específico para o botão de perigo (Excluir) */
+.message-menu-dropdown button.danger {
+    color: var(--danger-color);
+}
+
+.message-menu-dropdown button.danger:hover {
+    background-color: var(--danger-color-hover);
+    color: #fff;
+}
+
+
+/* --- 3. ✅ NOVO: Lista de Emojis de Reação (Dentro do Dropdown) --- */
+.emoji-react-list {
+    display: flex;
+    justify-content: space-around;
+    padding: 4px 8px;
+}
+
+.emoji-react-item {
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+.emoji-react-item:hover {
+    transform: scale(1.2);
+    background-color: var(--bg-elevation-hover);
+}
+
+
+/* --- 4. Reações Renderizadas (Abaixo da Bolha) --- */
+.message-reactions {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px; /* Espaço entre a bolha e as reações */
+    padding: 0 10px;
+    z-index: 2;
+    position: relative;
+}
+
+.reaction-pill {
+    background-color: var(--bg-elevation-3);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.reaction-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-left: 4px;
+}
+
+
+/* --- 5. Outros --- */
+
+/* Indicador de mensagem editada */
+.edited-indicator {
+    font-style: italic;
+    font-size: 0.65rem;
+    opacity: 0.8;
 }

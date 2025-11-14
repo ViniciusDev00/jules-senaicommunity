@@ -1,4 +1,5 @@
-// src/pages/Mensagens/Mensagens.jsx (CÓDIGO FINAL E COMPLETO)
+// src/pages/Mensagens/Mensagens.jsx
+// (ARQUIVO SUBSTITUÍDO E CORRIGIDO)
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
@@ -15,6 +16,9 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
 
+// ✅ IMPORTA O NOVO MODAL
+import EditarMensagemModal from './EditarMensagemModal.jsx';
+
 // --- COMPONENTE CONVERSATIONListItem ---
 const ConversationListItem = ({ conversa, ativa, onClick }) => (
     <div
@@ -29,10 +33,13 @@ const ConversationListItem = ({ conversa, ativa, onClick }) => (
     </div>
 );
 
+
 // --- COMPONENTE MessageBubble ---
-const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick }) => {
+// ✅ ATUALIZADO com nova lógica de menu/reação
+const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick, onReactClick, reactions }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
+    const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
     // Fecha o menu se clicar fora dele
     useEffect(() => {
@@ -48,26 +55,62 @@ const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick }) => {
     // Verifica se a data de edição é diferente da data de envio
     const hasBeenEdited = mensagem.dataEdicao && new Date(mensagem.dataEnvio).getTime() !== new Date(mensagem.dataEdicao).getTime();
 
+    // Agrupa reações (ex: ['👍', '👍', '❤️'] => [{emoji: '👍', count: 2}, {emoji: '❤️', count: 1}])
+    const aggregatedReactions = (reactions || []).reduce((acc, emoji) => {
+        const found = acc.find(r => r.emoji === emoji);
+        if (found) {
+            found.count++;
+        } else {
+            acc.push({ emoji, count: 1 });
+        }
+        return acc;
+    }, []);
+
+    const handleReact = (emoji) => {
+        onReactClick(mensagem, emoji);
+        setMenuOpen(false);
+    };
+
     return (
      <div className={`message-bubble-wrapper ${isMe ? 'me' : 'other'}`}>
         <div className="message-bubble">
             
-            {/* Ícone de Menu (só aparece para mim) */}
-            {isMe && (
-                <div className="message-menu-trigger" onClick={() => setMenuOpen(prev => !prev)}>
-                    <FontAwesomeIcon icon={faEllipsisV} />
-                </div>
-            )}
+            {/* ✅ Botão de 3 pontos (aparece para todos) */}
+            <div className="message-menu-trigger" onClick={() => setMenuOpen(prev => !prev)}>
+                <FontAwesomeIcon icon={faEllipsisV} />
+            </div>
 
-            {/* Menu Dropdown */}
-            {menuOpen && isMe && (
+            {/* ✅ Menu Dropdown (Conteúdo condicional) */}
+            {menuOpen && (
                 <div className="message-menu-dropdown" ref={menuRef}>
-                    <button onClick={() => { onEditClick(mensagem); setMenuOpen(false); }}>
-                        <FontAwesomeIcon icon={faPen} /> Editar
-                    </button>
-                    <button className="danger" onClick={() => { onDeleteClick(mensagem); setMenuOpen(false); }}>
-                        <FontAwesomeIcon icon={faTrash} /> Excluir
-                    </button>
+                    
+                    {/* Se a mensagem for MINHA, mostro Editar/Excluir */}
+                    {isMe && (
+                        <>
+                            <button onClick={() => { onEditClick(mensagem); setMenuOpen(false); }}>
+                                <FontAwesomeIcon icon={faPen} /> Editar
+                            </button>
+                            <button className="danger" onClick={() => { onDeleteClick(mensagem); setMenuOpen(false); }}>
+                                <FontAwesomeIcon icon={faTrash} /> Excluir
+                            </button>
+                        </>
+                    )}
+
+                    {/* Se a mensagem for DE OUTRO, mostro Reações */}
+                    {!isMe && (
+                        <div className="emoji-react-list">
+                            {emojis.map(emoji => (
+                                <span
+                                    key={emoji}
+                                    className="emoji-react-item"
+                                    onClick={() => handleReact(emoji)}
+                                >
+                                    {emoji}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
                 </div>
             )}
 
@@ -81,49 +124,24 @@ const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick }) => {
                 {new Date(mensagem.dataEnvio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </span>
         </div>
-    </div>
+
+        {/* Área de Reações Renderizadas */}
+        {aggregatedReactions.length > 0 && (
+            <div className="message-reactions">
+                {aggregatedReactions.map(r => (
+                    <span key={r.emoji} className="reaction-pill">
+                        {r.emoji} {r.count > 1 && <span className="reaction-count">{r.count}</span>}
+                    </span>
+                ))}
+            </div>
+        )}
+     </div>
     );
 };
 
 
-// --- NOVO COMPONENTE: MessageEditForm ---
-const MessageEditForm = ({ mensagem, onSave, onCancel }) => {
-    const [editedContent, setEditedContent] = useState(mensagem.conteudo);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (editedContent.trim() && editedContent.trim() !== mensagem.conteudo) {
-            onSave(mensagem, editedContent.trim());
-        } else {
-            onCancel();
-        }
-    };
-
-    return (
-        <div className="message-bubble-wrapper me">
-            <form className="message-edit-form" onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    value={editedContent}
-                    onChange={(e) => setEditedContent(e.target.value)}
-                    autoFocus
-                    onKeyDown={(e) => e.key === 'Escape' && onCancel()}
-                />
-                <div className="edit-form-actions">
-                    <button type="button" className="btn-cancel" onClick={onCancel}>
-                        <FontAwesomeIcon icon={faTimes} /> Cancelar
-                    </button>
-                    <button type="submit" className="btn-save" disabled={!editedContent.trim()}>
-                        <FontAwesomeIcon icon={faPen} /> Salvar
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-};
-
-
-// --- COMPONENTE PRINCIPAL DA PÁGINA (CÓDIGO FINAL CORRIGIDO) ---
+// --- COMPONENTE PRINCIPAL DA PÁGINA ---
+// ✅ ATUALIZADO com lógica de Modal e Reações
 const Mensagens = ({ onLogout }) => {
     const [conversas, setConversas] = useState([]);
     const [conversaAtiva, setConversaAtiva] = useState(null); 
@@ -133,7 +151,9 @@ const Mensagens = ({ onLogout }) => {
     const [currentUser, setCurrentUser] = useState(null);
     const [novaMensagem, setNovaMensagem] = useState('');
     
-    const [editingMessage, setEditingMessage] = useState(null);
+    // ✅ Estados para o Modal de Edição
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [messageToEdit, setMessageToEdit] = useState(null);
 
     const { stompClient, isConnected } = useWebSocket(); 
     const messagesEndRef = useRef(null);
@@ -190,7 +210,9 @@ const Mensagens = ({ onLogout }) => {
         setConversaAtiva(conversa);
         setLoadingMensagens(true);
         setMensagens([]);
-        setEditingMessage(null); // Cancela edição ao trocar de chat
+        // Cancela modais/pickers ao trocar de chat
+        setIsEditModalOpen(false);
+        setMessageToEdit(null);
 
         if (atualizarUrl) {
             const params = new URLSearchParams();
@@ -211,9 +233,11 @@ const Mensagens = ({ onLogout }) => {
 
             const mensagensRes = await axios.get(endpoint);
 
+            // ✅ Simula um array de reações (remova isso quando o back-end enviar)
             const msgsFormatadas = mensagensRes.data.map((msg) => ({
                 ...msg,
-                tipo: conversa.tipo
+                tipo: conversa.tipo,
+                // reactions: msg.id % 5 === 0 ? ['👍'] : (msg.id % 3 === 0 ? ['❤️', '❤️', '😂'] : []) // Dummy data
             }));
 
             setMensagens(msgsFormatadas);
@@ -275,14 +299,16 @@ const Mensagens = ({ onLogout }) => {
 
     // Efeito para rolar para a última mensagem
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [mensagens]);
+        // Só rola se não estiver editando
+        if (!isEditModalOpen) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [mensagens, isEditModalOpen]);
 
     // Efeito para o WebSocket (Escuta de mensagens em tempo real)
     useEffect(() => {
         if (isConnected && stompClient && conversaAtiva && currentUser) {
             
-            // 1. Tópico de Inscrição: Direto para o grupo OU a fila privada do usuário
             const topicToSubscribe = conversaAtiva.tipo === 'grupo'
                 ? `/topic/grupo/${conversaAtiva.id}` 
                 : `/user/queue/mensagens-privadas`; 
@@ -290,42 +316,38 @@ const Mensagens = ({ onLogout }) => {
             const subscription = stompClient.subscribe(topicToSubscribe, (message) => {
                 const payload = JSON.parse(message.body);
                 
-                // 2. Filtro de Conversa Ativa (CRÍTICO)
                 const isForActiveChat = (() => {
                     if (conversaAtiva.tipo === 'grupo') {
-                        // GRUPO: A mensagem deve ter o ID do grupo ativo.
                         return payload.grupoId === conversaAtiva.id;
                     } else {
-                        // DM: A mensagem deve envolver o partnerId e o currentUser.id
                         const partnerId = conversaAtiva.id;
-
-                        // Verifica se é uma mensagem (com remetente/destinatário) OU uma remoção
                         const isDMMessage = (payload.remetenteId === partnerId && payload.destinatarioId === currentUser.id) || 
                                             (payload.remetenteId === currentUser.id && payload.destinatarioId === partnerId);
-                        
                         return isDMMessage || payload.tipo === 'remocao';
                     }
                 })();
 
                 if (!isForActiveChat) return;
 
-                // 3. Atualização da UI
                 if (payload.tipo === 'remocao') {
-                    // Remove a mensagem
                     setMensagens((prev) => prev.filter(m => m.id !== payload.id));
                 
                 } else {
-                    // É uma nova mensagem ou edição (payload contém o DTO completo atualizado)
                     setMensagens((prev) => {
                         const existingIndex = prev.findIndex(m => m.id === payload.id);
-                        // Adiciona 'tipo' para que o MessageBubble saiba se é grupo ou dm
-                        const messageWithContext = { ...payload, tipo: conversaAtiva.tipo };
+                        
+                        // ✅ Simula reações (remova quando o back-end enviar)
+                        // const dummyReactions = payload.id % 5 === 0 ? ['👍'] : (payload.id % 3 === 0 ? ['❤️', '❤️', '😂'] : []);
+                        
+                        const messageWithContext = { 
+                            ...payload, 
+                            tipo: conversaAtiva.tipo,
+                            // reactions: payload.reactions || dummyReactions // Usa reações do payload se existirem
+                        };
                         
                         if (existingIndex > -1) {
-                            // Edição
                             return prev.map((m, index) => index === existingIndex ? messageWithContext : m);
                         } else {
-                            // Nova mensagem
                             return [...prev, messageWithContext];
                         }
                     });
@@ -333,7 +355,6 @@ const Mensagens = ({ onLogout }) => {
             });
 
             return () => {
-                // Remove a inscrição ao desmontar ou trocar de chat
                 subscription.unsubscribe();
             };
         }
@@ -346,7 +367,6 @@ const Mensagens = ({ onLogout }) => {
         e.preventDefault();
         if (!novaMensagem.trim() || !conversaAtiva || !currentUser || !stompClient || !isConnected) return;
 
-        // Endpoint de envio (DM/GRUPO)
         const endpoint = conversaAtiva.tipo === 'grupo'
             ? `/app/chat/grupo/${conversaAtiva.id}`
             : `/app/chat/privado/${conversaAtiva.id}`;
@@ -354,22 +374,14 @@ const Mensagens = ({ onLogout }) => {
         let mensagemParaEnviar;
 
         if (conversaAtiva.tipo === 'grupo') {
-            // MensagemGrupoEntradaDTO precisa só de 'conteudo'
-            mensagemParaEnviar = {
-                conteudo: novaMensagem,
-            };
+            mensagemParaEnviar = { conteudo: novaMensagem };
         } else {
-            // MensagemPrivadaEntradaDTO precisa de 'conteudo' e 'destinatarioId'
-            mensagemParaEnviar = {
-                conteudo: novaMensagem,
-                destinatarioId: conversaAtiva.id, 
-            };
+            mensagemParaEnviar = { conteudo: novaMensagem, destinatarioId: conversaAtiva.id };
         }
         
         setNovaMensagem(''); // Limpa o input imediatamente
 
         try {
-            // Publica a mensagem via WebSocket. O servidor vai ecoar a mensagem salva de volta.
             stompClient.publish({
                 destination: endpoint,
                 body: JSON.stringify(mensagemParaEnviar),
@@ -378,16 +390,18 @@ const Mensagens = ({ onLogout }) => {
         } catch (error) {
              console.error("Erro ao publicar mensagem via WebSocket:", error);
              Swal.fire('Erro', 'Falha ao enviar mensagem.', 'error');
-             // Se houver falha, restaurar o texto no input
              setNovaMensagem(mensagemParaEnviar.conteudo); 
         }
     };
 
-    // ✅ Excluir Mensagem (USANDO API REST DO BACKEND)
+    // ✅ CORREÇÃO DO ERRO 404: MUDANÇA DE AXIOS PARA STOMPCLIENT
     const handleDeleteMessage = async (mensagem) => {
+        // Caminhos corretos baseados nos seus controllers Java
+        // [viniciusdev00/jules-senaicommunity/jules-senaicommunity-c97979060486177255d59e8b5d40624305a51492/BackEnd/src/main/java/com/SenaiCommunity/BackEnd/Controller/MensagemGrupoController.java]
+        // [viniciusdev00/jules-senaicommunity/jules-senaicommunity-c97979060486177255d59e8b5d40624305a51492/BackEnd/src/main/java/com/SenaiCommunity/BackEnd/Controller/MensagemPrivadaController.java]
         const url = conversaAtiva.tipo === 'grupo'
-            ? `http://localhost:8080/api/chat/grupo/${mensagem.id}`
-            : `http://localhost:8080/api/chat/privado/${mensagem.id}`;
+            ? `/app/chat/grupo/${mensagem.id}/excluir` 
+            : `/app/chat/privado/${mensagem.id}/excluir`; 
 
         const result = await Swal.fire({
             title: 'Excluir mensagem?',
@@ -401,34 +415,71 @@ const Mensagens = ({ onLogout }) => {
         });
 
         if (result.isConfirmed) {
+            if (!stompClient || !isConnected) {
+                 Swal.fire('Erro', 'Não conectado ao chat. Tente novamente.', 'error');
+                 return;
+            }
             try {
-                // DELETE REST. O backend envia a notificação 'remocao' via WebSocket.
-                await axios.delete(url);
+                // ✅ Publica para o endpoint de exclusão do WebSocket
+                // O back-end NÃO espera um body para exclusão
+                stompClient.publish({ 
+                    destination: url 
+                });
             } catch (error) {
-                console.error("Erro ao excluir mensagem:", error);
-                const msg = error.response?.data?.message || 'Não foi possível excluir a mensagem.';
-                Swal.fire('Erro', msg, 'error');
+                console.error("Erro ao excluir mensagem via WebSocket:", error);
+                Swal.fire('Erro', 'Não foi possível excluir a mensagem.', 'error');
             }
         }
     };
 
-    // ✅ Salvar Edição (USANDO API REST DO BACKEND)
+    // ✅ Função para abrir o modal de edição
+    const handleOpenEditModal = (mensagem) => {
+        setMessageToEdit(mensagem);
+        setIsEditModalOpen(true);
+    };
+
+    // ✅ CORREÇÃO DO ERRO 404: MUDANÇA DE AXIOS PARA STOMPCLIENT
     const handleSaveEdit = async (mensagem, novoConteudo) => {
+        // Caminhos corretos baseados nos seus controllers Java
         const url = conversaAtiva.tipo === 'grupo'
-            ? `http://localhost:8080/api/chat/grupo/${mensagem.id}`
-            : `http://localhost:8080/api/chat/privado/${mensagem.id}`;
+            ? `/app/chat/grupo/${mensagem.id}/editar`
+            : `/app/chat/privado/${mensagem.id}/editar`;
         
-        try {
-            // PUT REST. O backend envia o DTO atualizado via WebSocket.
-            await axios.put(url, novoConteudo, {
-                headers: { 'Content-Type': 'text/plain' } // O backend espera texto puro
-            });
-            setEditingMessage(null); // Fecha o formulário de edição
-        } catch (error) {
-            console.error("Erro ao editar mensagem:", error);
-            const msg = error.response?.data?.message || 'Não foi possível salvar a edição.';
-            Swal.fire('Erro', msg, 'error');
+        if (!stompClient || !isConnected) {
+            Swal.fire('Erro', 'Não conectado ao chat. Tente novamente.', 'error');
+            throw new Error("Cliente STOMP não conectado");
         }
+
+        try {
+            // ✅ Publica para o endpoint de edição do WebSocket
+            stompClient.publish({
+                destination: url,
+                body: novoConteudo, // O back-end espera o texto puro
+            });
+        } catch (error) {
+            console.error("Erro ao editar mensagem via WebSocket:", error);
+            Swal.fire('Erro', 'Não foi possível salvar a edição.', 'error');
+            // Lança o erro para o modal saber que falhou
+            throw error; 
+        }
+    };
+
+    // ✅ NOVA FUNÇÃO: Envio de Reação (Lógica de exemplo)
+    const handleSendReaction = (mensagem, emoji) => {
+        console.log(`Reagindo com ${emoji} à mensagem ID ${mensagem.id}`);
+        // TODO: Implementar lógica de back-end
+        // Quando o back-end estiver pronto, você faria algo como:
+        // stompClient.publish({
+        //     destination: `/app/chat/reagir/${mensagem.id}`,
+        //     body: JSON.stringify({ emoji: emoji })
+        // });
+
+        // Simulação de UI (adiciona a reação localmente)
+        setMensagens(prev => prev.map(m => 
+            m.id === mensagem.id 
+                ? { ...m, reactions: [...(m.reactions || []), emoji] }
+                : m
+        ));
     };
 
 
@@ -484,22 +535,15 @@ const Mensagens = ({ onLogout }) => {
                                 {loadingMensagens ? <p className="loading-state"><FontAwesomeIcon icon={faSpinner} spin /> Carregando...</p> :
                                     mensagens.length > 0 ? (
                                         mensagens.map((msg, index) => (
-                                            (editingMessage && editingMessage.id === msg.id) ? (
-                                                <MessageEditForm
-                                                    key={`edit-${msg.id}`}
-                                                    mensagem={msg}
-                                                    onSave={handleSaveEdit}
-                                                    onCancel={() => setEditingMessage(null)}
-                                                />
-                                            ) : (
-                                                <MessageBubble
-                                                    key={msg.id || index} 
-                                                    mensagem={msg}
-                                                    isMe={msg.autorId === currentUser?.id || msg.remetenteId === currentUser?.id}
-                                                    onDeleteClick={handleDeleteMessage}
-                                                    onEditClick={(msg) => setEditingMessage(msg)}
-                                                />
-                                            )
+                                            <MessageBubble
+                                                key={msg.id || index} 
+                                                mensagem={msg}
+                                                isMe={msg.autorId === currentUser?.id || msg.remetenteId === currentUser?.id}
+                                                onDeleteClick={handleDeleteMessage}
+                                                onEditClick={handleOpenEditModal}
+                                                onReactClick={handleSendReaction}
+                                                reactions={msg.reactions || []} // ✅ Passa as reações
+                                            />
                                         ))
                                     ) : (
                                         <p className="empty-state">Ainda não há mensagens. Diga oi!</p>
@@ -534,6 +578,18 @@ const Mensagens = ({ onLogout }) => {
                    )}
                 </main>
             </div>
+
+            {/* ✅ Renderiza o Modal de Edição */}
+            {isEditModalOpen && messageToEdit && (
+                <EditarMensagemModal
+                    mensagem={messageToEdit}
+                    onSave={handleSaveEdit}
+                    onClose={() => {
+                        setIsEditModalOpen(false);
+                        setMessageToEdit(null);
+                    }}
+                />
+            )}
         </div>
     );
 };
