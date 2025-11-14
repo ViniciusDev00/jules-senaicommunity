@@ -95,6 +95,10 @@ const MessageBubble = ({ mensagem, isMe, onDeleteClick, onEditClick, onReactClic
                     <div className="message-menu-dropdown">
                         {isMe ? (
                             <>
+                                <button onClick={(e) => { e.stopPropagation(); onEditClick(mensagem); }}>
+                                    <FontAwesomeIcon icon={faPen} /> Editar
+                                </button>
+                                <button className="danger" onClick={(e) => { e.stopPropagation(); onDeleteClick(mensagem); }}>
                                 <button onClick={() => { onEditClick(mensagem); setMenuOpen(false); }}>
                                     <FontAwesomeIcon icon={faPen} /> Editar
                                 </button>
@@ -414,15 +418,20 @@ const Mensagens = ({ onLogout }) => {
                  Swal.fire('Erro', 'Não conectado ao chat. Tente novamente.', 'error');
                  return;
             }
+
+            // Atualização Otimista da UI
+            setMensagens((prev) => prev.filter(m => m.id !== mensagem.id));
+
             try {
-                // ✅ Publica para o endpoint de exclusão do WebSocket
-                // O back-end NÃO espera um body para exclusão
+                // Publica para o endpoint de exclusão do WebSocket
                 stompClient.publish({ 
                     destination: url 
                 });
             } catch (error) {
-                console.error("Erro ao excluir mensagem via WebSocket:", error);
-                Swal.fire('Erro', 'Não foi possível excluir a mensagem.', 'error');
+                console.error("Erro ao enviar pedido de exclusão via WebSocket:", error);
+                // Reverte a UI se a publicação falhar
+                setMensagens((prev) => [...prev, mensagem].sort((a, b) => new Date(a.dataEnvio) - new Date(b.dataEnvio)));
+                Swal.fire('Erro', 'A solicitação de exclusão falhou.', 'error');
             }
         }
     };
@@ -516,43 +525,50 @@ const Mensagens = ({ onLogout }) => {
     return (
         <div className="layout-mensagens">
             <Topbar onLogout={onLogout} currentUser={currentUser} />
+            <div className={`container container-chat`}>
             <div className={`container container-chat ${isInfoSidebarOpen ? 'info-open' : ''}`}>
                 <Sidebar currentUser={currentUser}/>
 
-                <aside className={`chat-conversations-sidebar ${conversaAtiva ? 'hidden-mobile' : ''}`}>
-                    <div className="conv-sidebar-header"><h2>Mensagens</h2></div>
-                    <div className="conv-search">
-                         <FontAwesomeIcon icon={faSearch} />
-                         <input type="text" placeholder="Pesquisar conversas..." />
-                    </div>
-                    <div className="conversations-list">
-                        {loadingConversas ? <p className="loading-state"><FontAwesomeIcon icon={faSpinner} spin /> Carregando...</p> :
-                            conversas.length > 0 ? (
-                                conversas.map(c => (
-                                    <ConversationListItem
-                                        key={`${c.tipo}-${c.id}`}
-                                        conversa={c}
-                                        ativa={conversaAtiva?.id === c.id && conversaAtiva?.tipo === c.tipo}
-                                        onClick={() => selecionarConversa(c, currentUser)}
-                                    />
-                                ))
-                            ) : <p className="empty-state">Nenhuma conversa encontrada.</p>
-                        }
-                    </div>
-                </aside>
+                {isInfoSidebarOpen && conversaInfo ? (
+                    <InfoSidebar conversa={conversaInfo} onClose={toggleInfoSidebar} />
+                ) : (
+                    <aside className={`chat-conversations-sidebar ${conversaAtiva ? 'hidden-mobile' : ''}`}>
+                        <div className="conv-sidebar-header"><h2>Mensagens</h2></div>
+                        <div className="conv-search">
+                            <FontAwesomeIcon icon={faSearch} />
+                            <input type="text" placeholder="Pesquisar conversas..." />
+                        </div>
+                        <div className="conversations-list">
+                            {loadingConversas ? <p className="loading-state"><FontAwesomeIcon icon={faSpinner} spin /> Carregando...</p> :
+                                conversas.length > 0 ? (
+                                    conversas.map(c => (
+                                        <ConversationListItem
+                                            key={`${c.tipo}-${c.id}`}
+                                            conversa={c}
+                                            ativa={conversaAtiva?.id === c.id && conversaAtiva?.tipo === c.tipo}
+                                            onClick={() => selecionarConversa(c, currentUser)}
+                                        />
+                                    ))
+                                ) : <p className="empty-state">Nenhuma conversa encontrada.</p>
+                            }
+                        </div>
+                    </aside>
+                )}
 
                 <main className={`chat-main-area ${!conversaAtiva ? 'hidden-mobile' : ''}`}>
                    {conversaAtiva ? (
                         <div className="chat-active-card">
+                            <header className="chat-header-area">
+                                <button className="chat-back-btn" onClick={(e) => { e.stopPropagation(); handleVoltarParaLista(); }}>
                             <header className="chat-header-area" onClick={toggleInfoSidebar} style={{cursor: 'pointer'}}>
                                 <button className="chat-back-btn" onClick={handleVoltarParaLista}>
                                     <FontAwesomeIcon icon={faArrowLeft} />
                                 </button>
-                                <div className="chat-header-info">
+                                <div className="chat-header-info" onClick={toggleInfoSidebar} style={{cursor: 'pointer'}}>
                                     <img src={conversaAtiva.avatar} className="avatar" alt="avatar" />
                                     <h3>{conversaAtiva.nome}</h3>
                                 </div>
-                                <button className="chat-options-btn"><FontAwesomeIcon icon={faEllipsisV} /></button>
+                                <button className="chat-options-btn" onClick={(e) => e.stopPropagation()}><FontAwesomeIcon icon={faEllipsisV} /></button>
                             </header>
 
                             <div className="chat-messages-area">
