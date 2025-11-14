@@ -15,6 +15,13 @@
     grid-template-columns: 280px 340px 1fr;
     grid-template-rows: 1fr; /* Garante que a linha ocupe a altura */
     gap: 0;
+    transition: grid-template-columns 0.3s ease-in-out;
+}
+
+/* Novo layout quando a sidebar de info está aberta */
+.container-chat.info-open {
+    grid-template-columns: 280px 1fr 320px;
+}
     flex-grow: 1;
     height: calc(100vh - 70px); /* Altura do Topbar é 70px */
     max-height: calc(100vh - 70px);
@@ -80,27 +87,31 @@
     padding-bottom: 6rem; /* Espaço para o input não sobrepor a última msg */
 }
 
-/* Bolha de Mensagem */
-.message-bubble-wrapper { 
-    display: flex; 
-    max-width: 70%; 
-    word-wrap: break-word; 
+/* Bolha de Mensagem - NOVA ESTRUTURA FLEXBOX */
+.message-container {
+    display: flex;
+    max-width: 80%;
     flex-direction: column;
 }
-.message-bubble-wrapper.me { justify-content: flex-end; margin-left: auto; align-items: flex-end; }
-.message-bubble-wrapper.other { justify-content: flex-start; margin-right: auto; align-items: flex-start; }
+.message-container.me { align-self: flex-end; }
+.message-container.other { align-self: flex-start; }
 
-.message-bubble { 
-    padding: 0.75rem 1rem; 
-    border-radius: 18px; 
-    line-height: 1.4; 
-    position: relative; 
-    /* ✅ Adiciona espaço para os 3 pontos */
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
+.message-bubble-wrapper {
+    display: flex;
+    align-items: center; /* Alinha a bolha e os 3 pontos verticalmente */
+    gap: 0.5rem; /* Espaço entre a bolha e os 3 pontos */
 }
-.message-bubble-wrapper.me .message-bubble { background: var(--accent-primary); color: #fff; border-bottom-right-radius: 4px; }
-.message-bubble-wrapper.other .message-bubble { background: var(--bg-tertiary); color: var(--text-primary); border-bottom-left-radius: 4px; }
+/* Inverte a ordem para as MINHAS mensagens (bolha, depois 3 pontos) */
+.message-container.me .message-bubble-wrapper { flex-direction: row-reverse; }
+
+.message-bubble {
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    line-height: 1.4;
+    word-wrap: break-word; /* Garante a quebra de linha */
+}
+.message-container.me .message-bubble { background: var(--accent-primary); color: #fff; border-bottom-right-radius: 4px; }
+.message-container.other .message-bubble { background: var(--bg-tertiary); color: var(--text-primary); border-bottom-left-radius: 4px; }
 .message-text { margin: 0; }
 .message-time { font-size: 0.7rem; color: rgba(255, 255, 255, 0.7); margin-top: 0.25rem; display: block; text-align: right; }
 .message-bubble-wrapper.other .message-time { color: var(--text-tertiary); }
@@ -192,51 +203,40 @@
 
 /*
 =================================================
-  CSS PARA AÇÕES DE MENSAGEM (EDITAR, EXCLUIR, REAGIR)
+  CSS PARA AÇÕES DE MENSAGEM (EDITAR, EXCLUIR, REAGIR) - NOVA ESTRUTURA
 =================================================
 */
 
-/* --- 1. Gatilho de 3 pontos --- */
+/* Contêiner das ações (3 pontos e dropdown) */
+.message-actions {
+    position: relative; /* Referência para o dropdown */
+    flex-shrink: 0; /* Impede que o contêiner encolha */
+}
+
+/* Gatilho de 3 pontos */
 .message-menu-trigger {
-    position: absolute;
-    top: 6px;
     padding: 4px 8px;
     color: var(--text-tertiary);
     cursor: pointer;
-    border-radius: 6px;
-    z-index: 5;
+    border-radius: 50%;
     
-    /* Oculta por padrão e mostra ao passar o mouse */
+    /* Oculta por padrão e mostra ao passar o mouse sobre o contêiner da mensagem */
     opacity: 0;
     transition: opacity 0.2s ease, background-color 0.2s ease;
 }
-
-/* Mostra o gatilho quando o mouse está sobre o balão */
-.message-bubble:hover .message-menu-trigger {
+.message-container:hover .message-menu-trigger {
     opacity: 1;
 }
-
 .message-menu-trigger:hover {
     background-color: var(--bg-elevation-hover);
     color: var(--text-primary);
 }
 
-/* ✅ CORREÇÃO: Posição dos 3 pontos para NOSSAS mensagens (direita) */
-.message-bubble-wrapper.me .message-menu-trigger {
-    left: 8px; /* Posiciona à esquerda DENTRO do balão */
-    right: auto;
-}
-
-/* ✅ CORREÇÃO: Posição dos 3 pontos para mensagens DOS OUTROS (esquerda) */
-.message-bubble-wrapper.other .message-menu-trigger {
-    right: 8px; /* Posiciona à direita DENTRO do balão */
-    left: auto;
-}
-
-/* --- 2. Menu Dropdown (Contêiner) --- */
+/* Menu Dropdown */
 .message-menu-dropdown {
     position: absolute;
-    top: 32px; /* Logo abaixo do gatilho */
+    top: 100%; /* Posiciona abaixo do gatilho */
+    margin-top: 4px; /* Pequeno espaço */
     min-width: 140px;
     background-color: var(--bg-elevation-3);
     border: 1px solid var(--border-color-light);
@@ -246,16 +246,14 @@
     z-index: 10;
 }
 
-/* Posição do dropdown para NOSSAS mensagens */
-.message-bubble-wrapper.me .message-menu-dropdown {
-    left: 4px; /* Alinha com o gatilho */
-    right: auto;
+/* Alinhamento para MINHAS mensagens (menu à direita) */
+.message-container.me .message-menu-dropdown {
+    right: 0;
 }
 
-/* Posição do dropdown para mensagens DOS OUTROS */
-.message-bubble-wrapper.other .message-menu-dropdown {
-    right: 4px; /* Alinha com o gatilho */
-    left: auto;
+/* Alinhamento para mensagens DOS OUTROS (menu à esquerda) */
+.message-container.other .message-menu-dropdown {
+    left: 0;
 }
 
 /* Botões dentro do menu (Editar, Excluir) */
