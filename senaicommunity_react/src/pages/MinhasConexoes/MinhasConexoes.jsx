@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom'; // Para linkar para perfil
 
 // --- COMPONENTE ConexaoCard MELHORADO ---
 const ConexaoCard = ({ item, type, onAction }) => {
+    // ... (Código do ConexaoCard não muda) ...
     // Determina qual nome/foto usar baseado no tipo de lista
     const idUsuario = type === 'enviado' ? item.idSolicitado : item.idSolicitantee; // Ajuste AQUI se o campo for diferente
     const nome = type === 'enviado' ? item.nomeSolicitado : item.nomeSolicitante;
@@ -70,6 +71,9 @@ const MinhasConexoes = ({ onLogout }) => {
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null); // ✅ INTEGRAÇÃO
 
+    // ✅ 1. Adiciona o estado do menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     // ✅ INTEGRAÇÃO: Função refatorada para buscar tudo
     const fetchData = async () => {
         // Removido setLoading(true) daqui para evitar piscar a tela em updates
@@ -115,6 +119,7 @@ const MinhasConexoes = ({ onLogout }) => {
 
     // ✅ INTEGRAÇÃO: Função para aceitar/recusar/cancelar/remover
     const handleAction = async (amizadeId, action) => {
+        // ... (Código do handleAction não muda) ...
         // Token já está nos headers padrão do axios
         let url = '';
         let method = 'post'; // Default
@@ -166,9 +171,27 @@ const MinhasConexoes = ({ onLogout }) => {
 
     return (
         <div>
-            <Topbar onLogout={onLogout} currentUser={currentUser} />
+            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            <Topbar 
+                onLogout={onLogout} 
+                currentUser={currentUser} 
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* ✅ 3. Adiciona o overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container">
-                <Sidebar currentUser={currentUser} />
+                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser} 
+                    isOpen={isSidebarOpen}
+                />
                 <main className="main-content">
                     <section className="widget-card connections-page-card">
                         <h2 className="widget-title">Gerenciar Conexões</h2>

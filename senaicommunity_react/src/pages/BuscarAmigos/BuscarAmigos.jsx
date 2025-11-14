@@ -13,6 +13,9 @@ const BuscarAmigos = ({ onLogout }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSearching, setIsSearching] = useState(false);
 
+    // ✅ 1. Adiciona o estado do menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     const backendUrl = 'http://localhost:8080';
 
     // Usamos useCallback para evitar recriar a função de busca a cada renderização
@@ -73,9 +76,27 @@ const BuscarAmigos = ({ onLogout }) => {
 
     return (
         <>
-            <Topbar onLogout={onLogout} currentUser={currentUser} />
+            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            <Topbar 
+                onLogout={onLogout} 
+                currentUser={currentUser} 
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* ✅ 3. Adiciona o overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container">
-                <Sidebar currentUser={currentUser} />
+                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser} 
+                    isOpen={isSidebarOpen}
+                />
                 <main className="main-content">
                     <div className="widget-card">
                         <h3 className="widget-title">Encontrar Pessoas na Comunidade</h3>

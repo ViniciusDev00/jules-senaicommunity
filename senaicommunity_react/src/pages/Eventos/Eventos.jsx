@@ -14,6 +14,7 @@ import {
 
 // --- COMPONENTE EventoDetalheModal ---
 const EventoDetalheModal = ({ evento, onClose }) => {
+    // ... (Código do EventoDetalheModal não muda) ...
     if (!evento) return null;
 
     let dataFormatada = 'Data inválida';
@@ -115,6 +116,7 @@ const EventoDetalheModal = ({ evento, onClose }) => {
 
 // --- COMPONENTE EventoCard (Adicionado onClick para o modal) ---
 const EventoCard = ({ evento, onVerDetalhes }) => {
+    // ... (Código do EventoCard não muda) ...
     let dia = '??';
     let mes = '???';
     let dataFormatada = 'Data inválida';
@@ -189,13 +191,15 @@ const Eventos = ({ onLogout }) => {
     const [eventos, setEventos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
-    // ✅ NOVO ESTADO: Controla o modal de detalhes
     const [eventoSelecionado, setEventoSelecionado] = useState(null);
     const [filters, setFilters] = useState({
         periodo: 'proximos',
         formato: 'todos',
         categoria: 'todos'
     });
+
+    // ✅ 1. Adiciona o estado do menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         document.title = 'Senai Community | Eventos';
@@ -283,9 +287,27 @@ const Eventos = ({ onLogout }) => {
 
     return (
         <div>
-            <Topbar onLogout={onLogout} currentUser={currentUser} />
+            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            <Topbar 
+                onLogout={onLogout} 
+                currentUser={currentUser} 
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* ✅ 3. Adiciona o overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container">
-                <Sidebar currentUser={currentUser} />
+                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser} 
+                    isOpen={isSidebarOpen}
+                />
                 <main className="main-content">
                     <header className="eventos-header">
                         <h1>Conecte-se, Aprenda e Inove</h1>

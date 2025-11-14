@@ -1,4 +1,4 @@
-/* src/components/Layout/Topbar.css (COMPLETO E MELHORADO) */
+/* src/components/Layout/Topbar.css (COMPLETO E ATUALIZADO) */
 
 .topbar {
     display: flex;
@@ -25,6 +25,7 @@
     font-weight: 700;
     color: var(--text-primary); /* Cor base */
     white-space: nowrap; /* Impede quebra de linha */
+    margin: 0; /* ✅ CORREÇÃO: Remove margem do h1 para alinhar com o hamburger */
 }
 .logo .highlight { color: var(--highlight); } /* Cor SENAI */
 .logo span:not(.highlight) { color: var(--accent-primary); } /* Cor Community */
@@ -49,6 +50,12 @@
     box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
 }
 
+/* Wrapper para os ícones da direita e menu de usuário */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Gap padrão (será sobrescrito no mobile) */
+}
 
 .nav-icons { display: flex; align-items: center; gap: 0.75rem; /* Aumenta gap */ }
 
@@ -91,7 +98,10 @@
 }
 
 /* --- User Dropdown --- */
-.user-dropdown { position: relative; margin-left: 0.5rem; /* Espaço antes do dropdown */ }
+.user-dropdown { 
+    position: relative; 
+    margin-left: 0; /* Margem removida */
+}
 
 .user {
     display: flex; align-items: center; gap: 0.75rem; /* Aumenta gap */
@@ -289,17 +299,50 @@
 /* ================================================================= */
 
 
-/* --- RESPONSIVIDADE (JÁ EXISTENTE) --- */
+/* --- Estilos do Hamburger (do passo anterior) --- */
+.hamburger-btn {
+    display: none; /* Escondido no desktop */
+    font-size: 1.1rem;
+    padding: 0.75rem;
+    /* Reutiliza estilos do .nav-icon */
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+.hamburger-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+
+/* --- RESPONSIVIDADE (COM MODIFICAÇÕES) --- */
 @media (max-width: 768px) {
     .topbar { padding: 0.5rem 1rem; }
-    .search { display: none; } /* Esconde busca no mobile */
-    .username-display { display: none; } /* Esconde nome no mobile */
-    .user { padding: 0.5rem; } /* Menor padding no user */
-    .nav-icons { gap: 0.25rem; } /* Menor gap entre ícones */
+    
+    .hamburger-btn {
+        display: flex; /* Mostra o hamburger */
+    }
 
-    /* Ajuste para o dropdown de notificação no mobile */
+    .search { display: none; } 
+    .username-display { display: none; } 
+    .user { padding: 0.5rem; } 
+    .nav-icons { gap: 0.25rem; } 
+
+    /* Define o gap do novo wrapper da direita */
+    .header-right {
+        gap: 0.25rem;
+    }
+
+    /* Esconde os ícones marcados */
+    .nav-icon.hide-on-mobile {
+        display: none;
+    }
+
     .notifications-dropdown {
-        width: 320px; /* Um pouco mais estreito */
-        top: 60px; /* Ajuste de posição */
+        width: 320px; 
+        top: 60px; 
     }
 }

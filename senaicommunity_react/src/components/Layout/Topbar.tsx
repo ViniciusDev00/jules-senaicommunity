@@ -1,4 +1,4 @@
-// src/components/Layout/Topbar.tsx (COMPLETO, CORRIGIDO E ATUALIZADO)
+// src/components/Layout/Topbar.tsx (COMPLETO E ATUALIZADO)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
@@ -6,11 +6,12 @@ import { useWebSocket } from '../../contexts/WebSocketContext.tsx';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faHome, faCommentDots, faBell, faChevronDown, faUserEdit,
-    faSignOutAlt, faSearch, faMoon, faSun, faCog
+    faSignOutAlt, faSearch, faMoon, faSun, faCog,
+    faBars // 1. Importa o ícone 'faBars'
 } from '@fortawesome/free-solid-svg-icons';
 import './Topbar.css';
 import axios from 'axios';
-import ConviteProjetoModal from './ConviteProjetoModal'; // Importa o NOVO modal
+import ConviteProjetoModal from './ConviteProjetoModal'; 
 
 // --- DEFINIÇÃO DOS TIPOS ---
 interface Notificacao {
@@ -26,7 +27,6 @@ interface Notificacao {
     remetenteFotoUrl?: string; 
 }
 
-// O que guardamos no estado ao clicar em um convite
 interface ConviteSelecionado {
     id: any; // ID da Notificação
     conviteId: any; // ID do Convite (de idReferencia)
@@ -35,27 +35,28 @@ interface ConviteSelecionado {
     remetenteFotoUrl?: string; // Passa a foto para o modal
 }
 
-// Tipo das props do Topbar
+// 2. Tipo das props do Topbar (ATUALIZADO)
 interface TopbarProps {
     onLogout: () => void;
     currentUser: any; // Idealmente, defina uma interface de Usuário
+    onToggleSidebar: () => void; // <-- Adiciona a prop
 }
 
-const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
+// 3. Recebe a nova prop 'onToggleSidebar'
+const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar }) => {
     
     const webSocketContext = useWebSocket();
     const stompClient = webSocketContext?.stompClient;
     const isConnected = webSocketContext?.isConnected;
 
-    // Estados tipados
+    // Estados
     const [notifications, setNotifications] = useState<Notificacao[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-
     const [conviteSelecionado, setConviteSelecionado] = useState<ConviteSelecionado | null>(null);
     const [isConviteModalOpen, setIsConviteModalOpen] = useState(false);
-
+    
     // Busca notificações existentes
     const fetchNotifications = useCallback(async () => {
         if (currentUser) {
@@ -146,7 +147,6 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
 
     // --- LÓGICA PRINCIPAL (CLIQUE NA NOTIFICAÇÃO) ---
     const handleNotificationClick = (notif: Notificacao) => {
-        // 1. Marca como lida (se já não estiver)
         if (!notif.lida) {
             axios.post(`http://localhost:8080/api/notificacoes/${notif.id}/ler`)
                 .then(() => {
@@ -155,14 +155,13 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
                 .catch(err => console.error("Erro ao marcar notificação como lida:", err));
         }
 
-        // 2. Ação específica (Abrir Modal de Convite)
         if (notif.tipo === 'CONVITE_PROJETO' && notif.idReferencia) {
             setConviteSelecionado({
                 id: notif.id,
-                conviteId: notif.idReferencia, // Este é o ID do CONVITE
+                conviteId: notif.idReferencia, 
                 mensagem: notif.mensagem,
-                remetenteNome: notif.remetenteNome, // Passa o nome para o modal
-                remetenteFotoUrl: notif.remetenteFotoUrl // Passa a foto para o modal
+                remetenteNome: notif.remetenteNome, 
+                remetenteFotoUrl: notif.remetenteFotoUrl 
             });
             setIsConviteModalOpen(true); 
             setIsNotificationsOpen(false); 
@@ -178,28 +177,23 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
         setConviteSelecionado(null);
     };
 
-    // (Promise<void> garante que podemos usar 'await' no modal)
     const handleAcceptConvite = async (conviteId: any): Promise<void> => {
         await axios.post(`http://localhost:8080/projetos/convites/${conviteId}/aceitar`);
-        // Remove a notificação da lista e fecha o modal
         setNotifications(prev => prev.filter(n => n.id !== conviteSelecionado?.id));
         handleCloseConviteModal();
-        // Você pode querer adicionar um fetchProjetos() aqui se tiver uma lista global
     };
 
     const handleDeclineConvite = async (conviteId: any): Promise<void> => {
         await axios.delete(`http://localhost:8080/projetos/convites/${conviteId}/recusar`);
-        // Remove a notificação da lista e fecha o modal
         setNotifications(prev => prev.filter(n => n.id !== conviteSelecionado?.id));
         handleCloseConviteModal();
     };
 
-    // URL da foto do usuário logado (para a barra)
+
     const userImage = currentUser?.urlFotoPerfil
         ? `http://localhost:8080${currentUser.urlFotoPerfil}`
         : "https://via.placeholder.com/40";
 
-    // URL da foto do REMETENTE da notificação (para o dropdown)
     const getNotificationSenderPhoto = (notif: Notificacao) => { 
         if (notif.remetenteFotoUrl) {
             if (notif.remetenteFotoUrl.startsWith('http')) {
@@ -207,7 +201,6 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
             }
             return `http://localhost:8080${notif.remetenteFotoUrl}`;
         }
-        // Fallback
         return `https://i.pravatar.cc/40?u=${notif.remetenteId || 'sistema'}`;
     };
 
@@ -215,6 +208,15 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
         <> 
             <header className="topbar">
                  <div className="header-left">
+                    {/* 4. ADICIONA O BOTÃO HAMBURGER */}
+                    <button 
+                        className="nav-icon hamburger-btn" 
+                        onClick={onToggleSidebar}
+                        aria-label="Abrir menu"
+                    >
+                        <FontAwesomeIcon icon={faBars} />
+                    </button>
+                    
                     <Link to="/principal" className="logo-link">
                         <h1 className="logo"><span className="highlight">SENAI </span>Community</h1>
                     </Link>
@@ -225,86 +227,87 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser }) => {
                     <input type="text" id="search-input" placeholder="Pesquisar..." />
                 </div>
 
-                <nav className="nav-icons">
-                    <Link to="/principal" className="nav-icon" data-tooltip="Início">
-                        <FontAwesomeIcon icon={faHome} />
-                    </Link>
-                    <Link to="/mensagens" className="nav-icon" data-tooltip="Mensagens">
-                        <FontAwesomeIcon icon={faCommentDots} />
-                    </Link>
+                {/* Agrupa os ícones da direita e o menu de usuário */}
+                <div className="header-right">
+                    <nav className="nav-icons">
+                        {/* Adiciona a classe 'hide-on-mobile' */}
+                        <Link to="/principal" className="nav-icon hide-on-mobile" data-tooltip="Início">
+                            <FontAwesomeIcon icon={faHome} />
+                        </Link>
+                        {/* Adiciona a classe 'hide-on-mobile' */}
+                        <Link to="/mensagens" className="nav-icon hide-on-mobile" data-tooltip="Mensagens">
+                            <FontAwesomeIcon icon={faCommentDots} />
+                        </Link>
 
-                    {/* === ÁREA DE NOTIFICAÇÃO ATUALIZADA === */}
-                    <div className="nav-icon notifications-container" data-tooltip="Notificações">
-                        <div onClick={handleOpenNotifications}>
-                            <FontAwesomeIcon icon={faBell} />
-                            {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                        {/* Área de Notificação (permanece visível) */}
+                        <div className="nav-icon notifications-container" data-tooltip="Notificações">
+                            <div onClick={handleOpenNotifications}>
+                                <FontAwesomeIcon icon={faBell} />
+                                {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                            </div>
+                            {isNotificationsOpen && (
+                                <div className="notifications-dropdown">
+                                    <div className="notifications-header"><h3>Notificações</h3></div>
+                                    <div className="notifications-list">
+                                        {(Array.isArray(notifications) && notifications.length > 0) ? (
+                                            notifications.map((notif: Notificacao) => (
+                                                <div
+                                                    className={`notification-item ${!notif.lida ? 'unread' : ''}`}
+                                                    key={notif.id} 
+                                                    onClick={() => handleNotificationClick(notif)} 
+                                                >
+                                                    <img
+                                                        src={getNotificationSenderPhoto(notif)}
+                                                        alt={notif.remetenteNome || 'Remetente'}
+                                                        className="notification-sender-photo"
+                                                    />
+                                                    <div className="notification-content">
+                                                        <p className="notification-text">
+                                                            <strong>{notif.remetenteNome || 'Notificação'}</strong>
+                                                            &nbsp;{notif.mensagem}
+                                                        </p>
+                                                        <span className="notification-time">
+                                                            {new Date(notif.dataCriacao).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                    {!notif.lida && <div className="unread-indicator"></div>}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="no-notifications">Nenhuma notificação nova.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {isNotificationsOpen && (
-                            <div className="notifications-dropdown">
-                                <div className="notifications-header">
-                                    <h3>Notificações</h3>
-                                </div>
-                                <div className="notifications-list">
-                                    {(Array.isArray(notifications) && notifications.length > 0) ? (
-                                        notifications.map((notif: Notificacao) => (
-                                            <div
-                                                className={`notification-item ${!notif.lida ? 'unread' : ''}`}
-                                                key={notif.id} 
-                                                onClick={() => handleNotificationClick(notif)} 
-                                            >
-                                                <img
-                                                    src={getNotificationSenderPhoto(notif)}
-                                                    alt={notif.remetenteNome || 'Remetente'}
-                                                    className="notification-sender-photo"
-                                                />
-                                                <div className="notification-content">
-                                                    <p className="notification-text">
-                                                        {/* USA O NOME DO REMETENTE! */}
-                                                        <strong>{notif.remetenteNome || 'Notificação'}</strong>
-                                                        &nbsp;{notif.mensagem}
-                                                    </p>
-                                                    <span className="notification-time">
-                                                        {new Date(notif.dataCriacao).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-                                                {!notif.lida && <div className="unread-indicator"></div>}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="no-notifications">Nenhuma notificação nova.</p>
-                                    )}
-                                </div>
+                        {/* Botão de Tema (permanece visível) */}
+                        <div className="nav-icon theme-toggle-button" data-tooltip="Alternar tema" onClick={handleThemeToggle}>
+                            <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} />
+                        </div>
+                    </nav>
+
+                    {/* Menu do Usuário (permanece visível) */}
+                    <div className="user-dropdown">
+                        <div className="user" onClick={handleToggleMenu}>
+                            <div className="profile-pic">
+                                <img src={userImage} alt="Perfil" />
+                            </div>
+                            <span className="username-display">{currentUser?.nome || 'Usuário'}</span>
+                            <FontAwesomeIcon icon={faChevronDown} className={`dropdown-arrow ${isMenuOpen ? 'open' : ''}`} />
+                        </div>
+
+                        {isMenuOpen && (
+                            <div className="dropdown-menu show">
+                                <Link to="/perfil" onClick={() => setIsMenuOpen(false)}><FontAwesomeIcon icon={faUserEdit} /> Meu Perfil</Link>
+                                <Link to="/configuracoes" onClick={() => setIsMenuOpen(false)}><FontAwesomeIcon icon={faCog} /> Configurações</Link>
+                                <a href="#" onClick={() => { onLogout(); setIsMenuOpen(false); }}><FontAwesomeIcon icon={faSignOutAlt} /> Sair</a>
                             </div>
                         )}
                     </div>
-                    {/* === FIM DA ÁREA DE NOTIFICAÇÃO === */}
-
-                    <div className="nav-icon theme-toggle-button" data-tooltip="Alternar tema" onClick={handleThemeToggle}>
-                        <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} />
-                    </div>
-                </nav>
-
-                <div className="user-dropdown">
-                    <div className="user" onClick={handleToggleMenu}>
-                        <div className="profile-pic">
-                            <img src={userImage} alt="Perfil" />
-                        </div>
-                        <span className="username-display">{currentUser?.nome || 'Usuário'}</span>
-                        <FontAwesomeIcon icon={faChevronDown} className={`dropdown-arrow ${isMenuOpen ? 'open' : ''}`} />
-                    </div>
-
-                    {isMenuOpen && (
-                        <div className="dropdown-menu show">
-                            <Link to="/perfil" onClick={() => setIsMenuOpen(false)}><FontAwesomeIcon icon={faUserEdit} /> Meu Perfil</Link>
-                            <Link to="/configuracoes" onClick={() => setIsMenuOpen(false)}><FontAwesomeIcon icon={faCog} /> Configurações</Link>
-                            <a href="#" onClick={() => { onLogout(); setIsMenuOpen(false); }}><FontAwesomeIcon icon={faSignOutAlt} /> Sair</a>
-                        </div>
-                    )}
                 </div>
             </header>
 
-            {/* Renderiza o novo modal */}
             {isConviteModalOpen && conviteSelecionado && (
                 <ConviteProjetoModal
                     convite={conviteSelecionado}

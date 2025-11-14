@@ -16,6 +16,7 @@ import {
 
 // --- COMPONENTE VagaDetalheModal (Agora com todos os ícones definidos) ---
 const VagaDetalheModal = ({ vaga, onClose }) => {
+    // ... (Código do VagaDetalheModal não muda) ...
     if (!vaga) return null;
 
     // Transforma os enums em texto legível para o modal
@@ -107,6 +108,7 @@ const VagaDetalheModal = ({ vaga, onClose }) => {
 
 // --- COMPONENTE VagaCard MELHORADO (Adicionado onClick para o modal) ---
 const VagaCard = ({ vaga, onVerDetalhes }) => {
+    // ... (Código do VagaCard não muda) ...
     const nivelMap = { 'JUNIOR': 'Júnior', 'PLENO': 'Pleno', 'SENIOR': 'Sênior' };
     const localMap = { 'REMOTO': 'Remoto', 'HIBRIDO': 'Híbrido', 'PRESENCIAL': 'Presencial' };
     const tipoMap = { 'TEMPO_INTEGRAL': 'Tempo Integral', 'MEIO_PERIODO': 'Meio Período', 'ESTAGIO': 'Estágio', 'TRAINEE': 'Trainee' };
@@ -164,7 +166,6 @@ const Vagas = ({ onLogout }) => {
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
     const { stompClient, isConnected } = useWebSocket();
-    // ✅ NOVO ESTADO: Controla o modal de detalhes
     const [vagaSelecionada, setVagaSelecionada] = useState(null);
     const [filters, setFilters] = useState({
         busca: '',
@@ -172,6 +173,9 @@ const Vagas = ({ onLogout }) => {
         local: 'todos',
         nivel: 'todos'
     });
+
+    // ✅ 1. Adiciona o estado do menu mobile
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         document.title = 'Senai Community | Vagas';
@@ -236,9 +240,27 @@ const Vagas = ({ onLogout }) => {
 
     return (
         <div>
-            <Topbar onLogout={onLogout} currentUser={currentUser} />
+            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            <Topbar 
+                onLogout={onLogout} 
+                currentUser={currentUser} 
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            {/* ✅ 3. Adiciona o overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="sidebar-overlay"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="container">
-                <Sidebar currentUser={currentUser} />
+                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
+                <Sidebar 
+                    currentUser={currentUser} 
+                    isOpen={isSidebarOpen}
+                />
                 <main className="main-content">
 
                     <header className="vagas-header">
