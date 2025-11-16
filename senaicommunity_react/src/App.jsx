@@ -74,6 +74,15 @@ function App() {
                 />
 
                 {/* ✅ NOVAS ROTAS ADICIONADAS */}
+
+                <Route
+                    path="/perfil/:userId"
+                    element={
+                        <PrivateRoute>
+                            <Perfil onLogout={handleLogout} />
+                        </PrivateRoute>
+                    }
+                />
                 <Route
                     path="/projetos"
                     element={

@@ -134,6 +134,14 @@ public class UsuarioService {
         usuarioRepository.deleteById(usuario.getId());
     }
 
+    public UsuarioSaidaDTO buscarUsuarioPorId(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o ID: " + id));
+
+        // Reutiliza o mesmo DTO de saídtoBuscaDTOtoBuscaDTOa
+        return new UsuarioSaidaDTO(usuario);
+    }
+
     /**
      * Método auxiliar para obter a entidade Usuario a partir do token.
      */
@@ -183,19 +191,19 @@ public class UsuarioService {
     private UsuarioBuscaDTO toBuscaDTO(Usuario usuario, Usuario usuarioLogado) {
         UsuarioBuscaDTO.StatusAmizadeRelacao status = determinarStatusAmizade(usuario, usuarioLogado);
 
-        // O campo fotoPerfil agora contém a URL completa do Cloudinary.
+        // 1. Verifica se a foto de perfil existe e não está em branco
         String urlFoto = usuario.getFotoPerfil() != null && !usuario.getFotoPerfil().isBlank()
-                ? usuario.getFotoPerfil()
-                : "/images/default-avatar.png";
+                ? usuario.getFotoPerfil() // 2. Se existir, usa a foto (ex: Cloudinary)
+                : "/images/default-avatar.png"; // 3. Se for nula, USA UMA FOTO PADRÃO
 
+        // 4. Cria o DTO com a 'urlFoto' (que agora nunca é nula)
         return new UsuarioBuscaDTO(
                 usuario.getId(),
                 usuario.getNome(),
                 usuario.getEmail(),
-                urlFoto,
+                urlFoto, // Este valor NUNCA será 'null'
                 status,
                 userStatusService.isOnline(usuario.getEmail()),
-                // ✅ NOVO CAMPO ADICIONADO
                 usuario.getTipoUsuario()
         );
     }

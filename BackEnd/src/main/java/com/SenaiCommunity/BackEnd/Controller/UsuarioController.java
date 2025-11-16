@@ -41,6 +41,11 @@ public class UsuarioController {
         usuarioService.deletarUsuarioLogado(authentication);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/{id}")
+    public ResponseEntity<UsuarioSaidaDTO> getUsuarioPorId(@PathVariable Long id) {
+        UsuarioSaidaDTO usuarioDTO = usuarioService.buscarUsuarioPorId(id);
+        return ResponseEntity.ok(usuarioDTO);
+    }
 
     // NOVO ENDPOINT PARA A FOTO
     @PutMapping("/me/foto")

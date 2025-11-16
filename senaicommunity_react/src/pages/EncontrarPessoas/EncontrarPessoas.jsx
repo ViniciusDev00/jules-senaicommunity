@@ -1,54 +1,96 @@
-// src/pages/EncontrarPessoas/EncontrarPessoas.jsx (NOVO DESIGN - CORRIGIDO NOVAMENTE)
+// src/pages/EncontrarPessoas/EncontrarPessoas.jsx
 
+// ... (Todos os seus imports React, axios, FontAwesomeIcon, etc. permanecem iguais)
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Topbar from '../../components/Layout/Topbar';
 import Sidebar from '../../components/Layout/Sidebar';
-import RightSidebar from '../../pages/Principal/RightSidebar'; // Layout consistente
-import './EncontrarPessoas.css'; // Carrega o NOVO CSS
+import RightSidebar from '../../pages/Principal/RightSidebar'; 
+import './EncontrarPessoas.css'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// ✅ CORREÇÃO AQUI: Removido 'faLink' que não estava sendo usado.
 import { faSearch, faCheck, faUserPlus, faClockRotateLeft } from '@fortawesome/free-solid-svg-icons';
 import { debounce } from 'lodash';
-import { Link } from 'react-router-dom'; // Para linkar para o perfil
-import Swal from 'sweetalert2'; // Importar Swal para mensagens de erro
+import { Link } from 'react-router-dom'; 
+import Swal from 'sweetalert2'; 
 
-// --- COMPONENTE UserCard MELHORADO ---
+
 const UserCard = ({ user, onAddFriend, currentUser }) => {
-    // ... (Código do UserCard não muda) ...
-    // Estado local para o status, permitindo atualização imediata na UI
     const [statusAmizade, setStatusAmizade] = useState(user.statusAmizade);
+    
+    // 1. Estado para armazenar a URL da foto (que será buscada)
+    const [fotoUrl, setFotoUrl] = useState(null); 
 
-    // ✅ INTEGRAÇÃO: Constrói URL da foto
-    const fotoUrl = user.fotoPerfil
-        ? `http://localhost:8080${user.fotoPerfil}`
-        : `https://i.pravatar.cc/80?u=${user.id}`;
+    // 2. Avatar padrão (local) para usar como fallback
+    const defaultAvatar = 'http://localhost:8080/images/default-avatar.png';
+
+    // 3. useEffect para buscar os dados COMPLETOS do usuário (igual a Perfil.jsx)
+    useEffect(() => {
+        // Define a foto padrão *enquanto* busca a foto real
+        setFotoUrl(defaultAvatar); 
+        
+        const fetchFullUserData = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) return; // Não pode buscar sem token
+
+            try {
+                // 4. Busca o perfil COMPLETO do usuário, igual a página Perfil.jsx faz
+                const response = await axios.get(`http://localhost:8080/usuarios/${user.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const fullProfile = response.data;
+                
+                // 5. Lógica de foto do Perfil.jsx (que sabemos que funciona)
+                if (fullProfile.urlFotoPerfil && fullProfile.urlFotoPerfil.startsWith('http')) {
+                    setFotoUrl(fullProfile.urlFotoPerfil); // Cloudinary
+                } else if (fullProfile.urlFotoPerfil) {
+                    setFotoUrl(`http://localhost:8080${fullProfile.urlFotoPerfil}`); // Local
+                } else {
+                    setFotoUrl(defaultAvatar); // Se não tiver, usa o padrão
+                }
+
+            } catch (error) {
+                console.error(`Erro ao buscar dados do usuário ${user.id}:`, error);
+                setFotoUrl(defaultAvatar); // Em caso de erro, usa o padrão
+            }
+        };
+
+        // Não buscamos o perfil do usuário logado (currentUser)
+        // Apenas o perfil dos resultados da busca.
+        if (user.id !== currentUser?.id) {
+             fetchFullUserData();
+        } else {
+            // Se o usuário da busca for o próprio usuário logado,
+            // podemos pegar a foto dele direto do 'currentUser' que já temos
+             const fotoLogado = currentUser.urlFotoPerfil || currentUser.fotoPerfil;
+             if (fotoLogado && fotoLogado.startsWith('http')) {
+                 setFotoUrl(fotoLogado);
+             } else if (fotoLogado) {
+                 setFotoUrl(`http://localhost:8080${fotoLogado}`);
+             } else {
+                 setFotoUrl(defaultAvatar);
+             }
+        }
+
+    }, [user.id, currentUser]); // <-- Dispara sempre que o user.id ou currentUser mudar
 
     const handleAddFriendClick = async () => {
-        setStatusAmizade('SOLICITACAO_ENVIADA'); // Atualiza UI imediatamente
-        await onAddFriend(user.id); // Chama a função do pai para a API
+        setStatusAmizade('SOLICITACAO_ENVIADA'); 
+        await onAddFriend(user.id); 
     };
 
-    // Função para cancelar (mantida comentada para futuro)
-    // const handleCancelRequestClick = async () => {
-    //     setStatusAmizade('NENHUMA');
-    //     await onCancelRequest(user.idAmizade); // Precisaria buscar o id da amizade
-    // };
-
     const renderButton = () => {
-        // Não mostrar botão para o próprio usuário
         if (currentUser && user.id === currentUser.id) {
-            return null;
+            return null; // Não mostra botão de "Conectar" no seu próprio perfil
         }
 
         switch (statusAmizade) {
             case 'AMIGOS':
                 return <button className="btn btn-secondary disabled"><FontAwesomeIcon icon={faCheck} /> Conectados</button>;
             case 'SOLICITACAO_ENVIADA':
-                // Adicionar botão de cancelar futuramente se necessário
                 return <button className="btn btn-secondary disabled"><FontAwesomeIcon icon={faClockRotateLeft} /> Pendente</button>;
+            case 'SOLICITACO_RECEBIDA': // Cuidado! O seu original tinha "SOLICITACAO_RECEBIDA"
             case 'SOLICITACAO_RECEBIDA':
-                // Leva para a página de conexões para responder
                 return <Link to="/conexoes" className="btn btn-primary respond-link">Responder</Link>;
             case 'NENHUMA':
             default:
@@ -57,63 +99,72 @@ const UserCard = ({ user, onAddFriend, currentUser }) => {
     };
 
     return (
-        <article className="user-card">
-            {/* Link para perfil futuro (ajustar rota se necessário) */}
-            <Link to={`/perfil/${user.id}`} className="user-card-link">
-                <div className="user-card-avatar">
-                    <img src={fotoUrl} alt={`Foto de ${user.nome}`} />
-                    {/* Status online pode ser adicionado se a API retornar */}
-                    {/* <div className={`status ${user.online ? 'online' : 'offline'}`}></div> */}
-                </div>
-                <div className="user-card-info">
-                    <h4>{user.nome}</h4>
-                    <p>{user.email}</p>
-                    {/* Adicionar curso/tipo futuramente */}
-                </div>
-            </Link>
-            <div className="user-card-action">
-                {renderButton()}
-            </div>
-        </article>
+     <article className="user-card">
+         <Link to={`/perfil/${user.id}`} className="user-card-link">
+             
+             <div className="user-card-avatar">
+                 <img 
+                     src={fotoUrl} // ⬅️ Usa a URL do estado (que foi buscada)
+                     alt={`Foto de ${user.nome}`} 
+                     className="profile-pic"
+                     // Se a URL buscada falhar, usa a padrão
+                     onError={(e) => { 
+                         e.target.onerror = null; 
+                         e.target.src = defaultAvatar;
+                     }}
+                 />
+             </div>
+
+             <div className="user-card-info">
+                 <h4>{user.nome}</h4>
+                 <p>{user.email}</p>
+             </div>
+         </Link>
+         <div className="user-card-action">
+             {renderButton()}
+         </div>
+     </article>
     );
 };
+// --- FIM DO COMPONENTE UserCard ---
+
 
 
 // --- COMPONENTE PRINCIPAL DA PÁGINA ---
+// (O restante do arquivo não precisa de alterações)
 const EncontrarPessoas = ({ onLogout }) => {
+    // ... (todo o resto do seu componente EncontrarPessoas permanece igual) ...
+    // ... (useState, useEffect, debouncedSearch, etc. estão corretos) ...
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null); // ✅ INTEGRAÇÃO
+    const [currentUser, setCurrentUser] = useState(null); 
     const [message, setMessage] = useState('Comece a digitar para encontrar pessoas.');
 
-    // ✅ 1. Adiciona o estado do menu mobile
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // ✅ INTEGRAÇÃO: Busca o usuário logado
     useEffect(() => {
         document.title = 'Senai Community | Encontrar Pessoas';
         const token = localStorage.getItem('authToken');
         const fetchCurrentUser = async () => {
-            if (!token) { // Verifica se há token antes de fazer a chamada
-              onLogout();
-              return;
+            if (!token) { 
+             onLogout();
+             return;
             }
             try {
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; // Define o header padrão
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; 
                 const response = await axios.get('http://localhost:8080/usuarios/me');
                 setCurrentUser(response.data);
             } catch (error) {
                 console.error("Erro ao buscar usuário atual:", error);
                  if (error.response?.status === 401 || error.response?.status === 403) {
-                     onLogout(); // Faz logout se token for inválido
+                     onLogout(); 
                  }
             }
         };
         fetchCurrentUser();
     }, [onLogout]);
 
-    // Função de busca com debounce (atraso para não sobrecarregar)
     const debouncedSearch = useCallback(debounce(async (query) => {
         if (query.length < 3) {
             setResults([]);
@@ -122,13 +173,12 @@ const EncontrarPessoas = ({ onLogout }) => {
             } else {
                  setMessage('Comece a digitar para encontrar pessoas.');
             }
-            setLoading(false); // Garante que loading seja falso
+            setLoading(false); 
             return;
         }
         setLoading(true);
-        setMessage(''); // Limpa mensagem enquanto busca
+        setMessage(''); 
         try {
-            // Token já está nos headers padrão do axios
             const response = await axios.get(`http://localhost:8080/usuarios/buscar?nome=${query}`);
             setResults(response.data);
             if(response.data.length === 0) {
@@ -137,38 +187,32 @@ const EncontrarPessoas = ({ onLogout }) => {
         } catch (error) {
             console.error('Erro ao buscar usuários:', error);
             setMessage('Erro ao buscar usuários. Tente novamente.');
-            setResults([]); // Limpa resultados em caso de erro
+            setResults([]); 
              if (error.response?.status === 401 || error.response?.status === 403) {
-                onLogout(); // Faz logout se token for inválido durante a busca
+                 onLogout(); 
              }
         } finally {
             setLoading(false);
         }
-    }, 500), [onLogout]); // Adicionado onLogout como dependência
+    }, 500), [onLogout]); 
 
-    // Atualiza o termo de busca e chama a busca com debounce
     const handleInputChange = (e) => {
         const query = e.target.value;
         setSearchTerm(query);
-        setLoading(true); // Mostra loading imediatamente ao digitar
+        setLoading(true); 
         debouncedSearch(query);
     };
 
-    // ✅ INTEGRAÇÃO: Função para enviar solicitação de amizade
     const handleAddFriend = async (userId) => {
         try {
-            // Token já está nos headers padrão do axios
             await axios.post(`http://localhost:8080/api/amizades/solicitar/${userId}`);
-            // A UI já foi atualizada no UserCard, aqui só confirmamos a chamada
             console.log("Solicitação enviada para:", userId);
         } catch (error) {
             console.error("Erro ao enviar solicitação:", error);
-            // Reverter a UI se a API falhar (opcional)
              Swal.fire('Erro', 'Não foi possível enviar a solicitação. Tente novamente.', 'error');
-             // Para reverter UI, precisaríamos buscar novamente ou passar callback
              const updatedResults = results.map(user => {
                  if (user.id === userId) {
-                     return { ...user, statusAmizade: 'NENHUMA' }; // Reverte o status localmente
+                     return { ...user, statusAmizade: 'NENHUMA' }; 
                  }
                  return user;
              });
@@ -176,19 +220,14 @@ const EncontrarPessoas = ({ onLogout }) => {
         }
     };
 
-    // Função para cancelar solicitação (mantida comentada para futuro)
-    // const handleCancelRequest = async (amizadeId) => { ... }
-
     return (
         <div>
-            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
             <Topbar 
                 onLogout={onLogout} 
                 currentUser={currentUser}
                 onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             />
 
-            {/* ✅ 3. Adiciona o overlay */}
             {isSidebarOpen && (
                 <div 
                     className="sidebar-overlay"
@@ -197,7 +236,6 @@ const EncontrarPessoas = ({ onLogout }) => {
             )}
 
             <div className="container">
-                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
                 <Sidebar 
                     currentUser={currentUser}
                     isOpen={isSidebarOpen}
@@ -224,8 +262,7 @@ const EncontrarPessoas = ({ onLogout }) => {
                                     key={user.id}
                                     user={user}
                                     onAddFriend={handleAddFriend}
-                                    // onCancelRequest={handleCancelRequest}
-                                    currentUser={currentUser} // Passa currentUser para o Card
+                                    currentUser={currentUser} 
                                 />
                             ))
                         )}
@@ -234,7 +271,7 @@ const EncontrarPessoas = ({ onLogout }) => {
                         )}
                     </section>
                 </main>
-                 <RightSidebar /> {/* ✅ DESIGN: Adicionado para layout de 3 colunas */}
+                 <RightSidebar /> 
             </div>
         </div>
     );

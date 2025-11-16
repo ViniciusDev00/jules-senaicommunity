@@ -1,199 +1,207 @@
-// senaicommunity_react/src/pages/Perfil/Perfil.jsx
+    // senaicommunity_react/src/pages/Perfil/Perfil.jsx
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEnvelope, faCalendarAlt, faPen } from '@fortawesome/free-solid-svg-icons';
+    import React, { useState, useEffect } from 'react';
+    import axios from 'axios';
+    import { useParams } from 'react-router-dom';
+    import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+    import { faEnvelope, faCalendarAlt, faPen } from '@fortawesome/free-solid-svg-icons';
 
-// Componentes de Layout (reaproveitados)
-import Topbar from '../../components/Layout/Topbar';
-import Sidebar from '../../components/Layout/Sidebar';
+    // Componentes de Layout
+    import Topbar from '../../components/Layout/Topbar';
+    import Sidebar from '../../components/Layout/Sidebar';
+    import RightSidebar from '../../pages/Principal/RightSidebar'; 
 
-// Estilos
-import '../../pages/Principal/Principal.css';
-import './Perfil.css';
-import EditarPerfilModal from './EditarPerfilModal';
-import './EditarPerfilModal.css';
+    // Estilos
+    import '../../pages/Principal/Principal.css'; 
+    import './Perfil.css';
+    import EditarPerfilModal from './EditarPerfilModal';
+    import './EditarPerfilModal.css';
 
-const Perfil = ({ onLogout }) => {
-    const [currentUser, setCurrentUser] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isSaving, setIsSaving] = useState(false); 
-
-    // ✅ 1. Adiciona o estado para o menu mobile
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    const fetchCurrentUser = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            onLogout(); // Se NÃO tem token, desloga (correto)
-            return;
-        }
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-        try {
-            const response = await axios.get('http://localhost:8080/usuarios/me');
-            setCurrentUser(response.data);
-        } catch (error) {
-            console.error("Erro ao buscar dados do usuário:", error);
-            
-            // ✅ CORREÇÃO APLICADA AQUI (LINHA 35) ✅
-            // Se o 'fetch' falhar (ex: erro 500), não queremos deslogar o usuário
-            // que JÁ ESTÁ logado. Apenas logamos o erro.
-            // onLogout(); // LINHA REMOVIDA
-            
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        document.title = 'Senai Community | Meu Perfil';
-        fetchCurrentUser();
-    }, [onLogout]);
-
-    
-    // ===================================================================
-    // FUNÇÃO handleSaveProfile CORRIGIDA
-    // ===================================================================
-    const handleSaveProfile = async (novosDados) => {
-        const { nome, bio, arquivoFoto } = novosDados;
-        const token = localStorage.getItem('authToken');
+    const Perfil = ({ onLogout }) => {
+        const [profileData, setProfileData] = useState(null); 
+        const [loggedInUser, setLoggedInUser] = useState(null); 
         
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        setIsSaving(true); 
+        const [isLoading, setIsLoading] = useState(true);
+        const [isModalOpen, setIsModalOpen] = useState(false);
+        const [isSaving, setIsSaving] = useState(false); 
+        const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-        try {
-            // --- 1. Atualizar Nome e Bio (Isto estava correto) ---
-            await axios.put('http://localhost:8080/usuarios/me', { nome, bio });
+        const { userId } = useParams();
 
-            // --- 2. Atualizar Foto (SEÇÃO CORRIGIDA) ---
-            if (arquivoFoto) {
-                const formData = new FormData();
-                
-                // O back-end espera 'foto' (baseado no seu JS antigo)
-                // O seu código React estava enviando 'file'
-                formData.append('foto', arquivoFoto); 
+        const fetchPageData = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                onLogout();
+                return;
+            }
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            setIsLoading(true);
 
-                // A rota e o método corretos.
-                // Esta rota atualiza a foto do usuário "logado" (me)
-                await axios.put('http://localhost:8080/usuarios/me/foto', formData);
+            // --- 1. Sempre buscar o usuário LOGADO (para Topbar/Sidebar) ---
+            try {
+                const meResponse = await axios.get('http://localhost:8080/usuarios/me');
+                setLoggedInUser(meResponse.data);
+            } catch (error) {
+                console.error("Erro ao buscar usuário logado:", error);
+                if (error.response?.status === 401 || error.response?.status === 403) {
+                    onLogout(); 
+                }
+                return; 
             }
 
-            // --- 3. Refetchar dados do usuário (Isto estava correto) ---
-            await fetchCurrentUser(); 
-            setIsModalOpen(false); 
+            // --- 2. Buscar o perfil a ser EXIBIDO ---
+            const apiUrl = userId 
+                ? `http://localhost:8080/usuarios/${userId}` 
+                : 'http://localhost:8080/usuarios/me';
+
+            try {
+                const profileResponse = await axios.get(apiUrl);
+                setProfileData(profileResponse.data);
+                document.title = `Senai Community | ${profileResponse.data.nome}`;
+            } catch (error) {
+                console.error("Erro ao buscar dados do perfil:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        useEffect(() => {
+            fetchPageData();
+        }, [onLogout, userId]); 
+
+        
+        const handleSaveProfile = async (novosDados) => {
+            const { nome, bio, arquivoFoto } = novosDados;
+            const token = localStorage.getItem('authToken');
             
-        } catch (error)
-        {
-            // O erro 404 não deve mais acontecer aqui
-            console.error("Erro ao salvar perfil:", error);
-        } finally {
-            setIsSaving(false); 
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            
+            setIsSaving(true); 
+
+            try {
+                await axios.put('http://localhost:8080/usuarios/me', { nome, bio });
+
+                if (arquivoFoto) {
+                    const formData = new FormData();
+                    formData.append('foto', arquivoFoto); 
+                    await axios.put('http://localhost:8080/usuarios/me/foto', formData);
+                }
+
+                await fetchPageData(); 
+                setIsModalOpen(false); 
+                
+            } catch (error)
+            {
+                console.error("Erro ao salvar perfil:", error);
+            } finally {
+                setIsSaving(false); 
+            }
+        };
+
+        if (isLoading || !profileData || !loggedInUser) {
+            return <div>Carregando perfil...</div>;
         }
-    };
-    // ===================================================================
-    // FIM DA CORREÇÃO
-    // ===================================================================
 
-    if (isLoading || !currentUser) {
-        return <div>Carregando perfil...</div>;
-    }
+        // ✅ ================================================================
+        // ✅ CORREÇÃO APLICADA AQUI
+        // ✅ O DTO (UsuarioSaidaDTO) envia 'urlFotoPerfil', não 'fotoPerfil'.
+        // ✅ ================================================================
+        let userImage;
+        if (profileData.urlFotoPerfil && profileData.urlFotoPerfil.startsWith('http')) {
+            userImage = profileData.urlFotoPerfil; // Foto do Cloudinary
+        } else if (profileData.urlFotoPerfil) {
+            userImage = `http://localhost:8080${profileData.urlFotoPerfil}`; // Foto local (fallback)
+        } else {
+            userImage = "https://via.placeholder.com/150"; // Foto placeholder
+        }
 
-    // Lógica da imagem de perfil (sem alterações)
-    let userImage;
-    if (currentUser.urlFotoPerfil && (currentUser.urlFotoPerfil.startsWith('http') || currentUser.urlFotoPerfil.startsWith('blob:'))) {
-        userImage = currentUser.urlFotoPerfil;
-    } else if (currentUser.urlFotoPerfil) {
-        userImage = `http://localhost:8080${currentUser.urlFotoPerfil}`;
-    } else {
-        userImage = "https://via.placeholder.com/150";
-    }
+        const userDob = profileData.dataNascimento
+            ? new Date(profileData.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+            : 'Não informado';
 
-    const userDob = currentUser.dataNascimento
-        ? new Date(currentUser.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
-        : 'Não informado';
+        const isMyProfile = loggedInUser.id === profileData.id;
 
-    return (
-        <>
-            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
-            <Topbar 
-                onLogout={onLogout} 
-                currentUser={currentUser} 
-                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-            />
-
-            {/* ✅ 3. Adiciona o overlay (para fechar ao clicar fora) */}
-            {isSidebarOpen && (
-                <div 
-                    className="sidebar-overlay"
-                    onClick={() => setIsSidebarOpen(false)}
-                ></div>
-            )}
-
-            <div className="container">
-                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
-                <Sidebar 
-                    currentUser={currentUser} 
-                    isOpen={isSidebarOpen}
+        return (
+            <>
+                <Topbar 
+                    onLogout={onLogout} 
+                    currentUser={loggedInUser} 
+                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
                 />
 
-                <main className="main-content">
-                    <div className="profile-page">
-                        <div className="profile-header">
-                            <div className="profile-banner">
-                            </div>
-                            <div className="profile-details">
-                                <div className="profile-picture-container">
-                                    <img src={userImage} alt="Foto do Perfil" id="profile-pic-img" />
-                                </div> 
-                                <div className="profile-info-actions">
-                                    <div className="profile-info">
-                                        <h1 id="profile-name">{currentUser.nome}</h1>
-                                        <p id="profile-title">{currentUser.tipoUsuario}</p>
-                                    </div>
-                                    <div className="profile-actions">
-                                        <button 
-                                            className="btn btn-primary" 
-                                            id="edit-profile-btn-page" 
-                                            onClick={() => setIsModalOpen(true)}
-                                            disabled={isSaving} 
-                                        >
-                                            {isSaving ? 'Salvando...' : (
-                                                <><FontAwesomeIcon icon={faPen} /> Editar Perfil</>
-                                            )}
-                                        </button>
+                {isSidebarOpen && (
+                    <div 
+                        className="sidebar-overlay"
+                        onClick={() => setIsSidebarOpen(false)}
+                    ></div>
+                )}
+
+                <div className="container">
+                    <Sidebar 
+                        currentUser={loggedInUser} 
+                        isOpen={isSidebarOpen}
+                    />
+
+                    <main className="main-content">
+                        <div className="profile-page">
+                            <div className="profile-header">
+                                <div className="profile-banner">
+                                </div>
+                                <div className="profile-details">
+                                    <div className="profile-picture-container">
+                                        {/* Esta 'userImage' agora vai ler a variável correta */}
+                                        <img src={userImage} alt="Foto do Perfil" id="profile-pic-img" />
+                                    </div> 
+                                    <div className="profile-info-actions">
+                                        <div className="profile-info">
+                                            <h1 id="profile-name">{profileData.nome}</h1>
+                                            <p id="profile-title">{profileData.tipoUsuario}</p>
+                                        </div>
+                                        
+                                        {isMyProfile && (
+                                            <div className="profile-actions">
+                                                <button 
+                                                    className="btn btn-primary" 
+                                                    id="edit-profile-btn-page" 
+                                                    onClick={() => setIsModalOpen(true)}
+                                                    disabled={isSaving} 
+                                                >
+                                                    {isSaving ? 'Salvando...' : (
+                                                        <><FontAwesomeIcon icon={faPen} /> Editar Perfil</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="profile-body">
-                            <div className="widget-card">
-                                <h3>Sobre</h3>
-                                <p id="profile-bio">{currentUser.bio || 'Nenhuma bio informada.'}</p>
-                                <ul className="profile-metadata">
-                                    <li><FontAwesomeIcon icon={faEnvelope} /><span id="profile-email">{currentUser.email}</span></li>
-                                    <li><FontAwesomeIcon icon={faCalendarAlt} />Nascido em <span id="profile-dob">{userDob}</span></li>
-                                </ul>
+                            <div className="profile-body">
+                                <div className="widget-card">
+                                    <h3>Sobre</h3>
+                                    <p id="profile-bio">{profileData.bio || 'Nenhuma bio informada.'}</p>
+                                    <ul className="profile-metadata">
+                                        <li><FontAwesomeIcon icon={faEnvelope} /><span id="profile-email">{profileData.email}</span></li>
+                                        <li><FontAwesomeIcon icon={faCalendarAlt} />Nascido em <span id="profile-dob">{userDob}</span></li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </main>
-            </div>
+                    </main>
 
-            {/* Renderização do Modal */}
-            {isModalOpen && (
-                <EditarPerfilModal
-                    user={currentUser}
-                    onClose={() => setIsModalOpen(false)}
-                    onSave={handleSaveProfile}
-                />
-            )}
-        </>
-    );
-};
+                    <RightSidebar />
 
-export default Perfil;
+                </div>
+
+                {isModalOpen && isMyProfile && (
+                    <EditarPerfilModal
+                        user={profileData} 
+                        onClose={() => setIsModalOpen(false)}
+                        onSave={handleSaveProfile}
+                    />
+                )}
+            </>
+        );
+    };
+
+    export default Perfil;
