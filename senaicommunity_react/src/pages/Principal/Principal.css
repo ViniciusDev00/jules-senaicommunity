@@ -1074,3 +1074,26 @@ button:focus-visible,
   color: var(--text-primary);
   text-decoration: underline;
 }
+.post-author-link,
+.post-author-link:hover {
+  text-decoration: none; /* Remove o sublinhado */
+  color: inherit;      /* Faz o texto herdar a cor normal (preto/branco) */
+}
+/* Adiciona espaçamento e estilo para a contagem de conexões */
+.profile-connections {
+  margin-top: 8px;
+  font-size: 0.9em;
+  color: var(--text-secondary); /* Usa a cor secundária do texto */
+}
+
+.profile-connections strong {
+  color: var(--text-primary); /* Deixa o número com a cor principal */
+  font-weight: 600;
+}
+
+/* Remove o estilo de link (cor azul e sublinhado) */
+.profile-connections-link,
+.profile-connections-link:hover {
+  text-decoration: none; /* Remove o sublinhado */
+  color: inherit;      /* Herda a cor do .profile-connections */
+}

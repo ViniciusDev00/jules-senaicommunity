@@ -17,6 +17,7 @@ import {
   faTimes,
   faReply,
 } from "@fortawesome/free-solid-svg-icons";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 
@@ -1005,16 +1006,19 @@ const MainContent = ({ currentUser }) => {
 
             return (
               <div className="post" key={post.id}>
-                <div className="post-header">
-                  <div className="post-author">
-                    <div className="post-icon">
-                      <img src={autorAvatar} alt={post.nomeAutor} />
-                    </div>
-                    <div className="post-info">
-                      <h2>{post.nomeAutor || "Usuário"}</h2>
-                      <span>{formatTimeAgo(post.dataCriacao)}</span>
-                    </div>
-                  </div>
+              <div className="post-header">
+            {/* ✅ O Link agora envolve toda a área do autor */}
+            <Link to={`/perfil/${post.autorId}`} className="post-author-link">
+              <div className="post-author">
+                <div className="post-icon">
+                  <img src={autorAvatar} alt={post.nomeAutor} />
+                </div>
+                <div className="post-info">
+                  <h2>{post.nomeAutor || "Usuário"}</h2>
+                  <span>{formatTimeAgo(post.dataCriacao)}</span>
+                </div>
+              </div>
+            </Link>
 
                   {currentUser && post.autorId === currentUser.id && (
                     <div

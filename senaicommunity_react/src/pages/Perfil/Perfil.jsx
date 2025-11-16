@@ -17,6 +17,8 @@
     import EditarPerfilModal from './EditarPerfilModal';
     import './EditarPerfilModal.css';
 
+    
+
     const Perfil = ({ onLogout }) => {
         const [profileData, setProfileData] = useState(null); 
         const [loggedInUser, setLoggedInUser] = useState(null); 
