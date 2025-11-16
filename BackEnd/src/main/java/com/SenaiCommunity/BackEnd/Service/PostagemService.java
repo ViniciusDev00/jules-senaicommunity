@@ -1,9 +1,13 @@
 package com.SenaiCommunity.BackEnd.Service;
 
+import com.SenaiCommunity.BackEnd.DTO.*;
+import java.util.Comparator;
+import com.SenaiCommunity.BackEnd.DTO.UsuarioSimplesDTO;
+import com.SenaiCommunity.BackEnd.DTO.ArquivoMidiaDTO;
 import com.SenaiCommunity.BackEnd.DTO.ComentarioSaidaDTO;
-import com.SenaiCommunity.BackEnd.DTO.PostagemEntradaDTO;
-import com.SenaiCommunity.BackEnd.DTO.PostagemSaidaDTO;
+import com.SenaiCommunity.BackEnd.DTO.UsuarioSimplesDTO;
 import com.SenaiCommunity.BackEnd.Entity.ArquivoMidia;
+import com.SenaiCommunity.BackEnd.Entity.Comentario;
 import com.SenaiCommunity.BackEnd.Entity.Postagem;
 import com.SenaiCommunity.BackEnd.Entity.Usuario;
 import com.SenaiCommunity.BackEnd.Repository.PostagemRepository;
@@ -169,6 +173,17 @@ public class PostagemService {
         return toDTO(postagem); // Perfeito
     }
 
+    public List<PostagemSaidaDTO> buscarPostagensPorUsuario(Long usuarioId) {
+        // 1. Busca as postagens pelo ID do autor (do repositório)
+        List<Postagem> posts = postagemRepository.findByAutorIdOrderByDataPostagemDesc(usuarioId);
+
+        // 2. Converte a lista de Postagem para PostagemSaidaDTO
+        //    usando o SEU método 'toDTO' que já faz todo o trabalho
+        //    de calcular curtidas e formatar URLs de fotos.
+        return posts.stream()
+                .map(this::toDTO)  // <--- Certifique-se que está 'toDTO'
+                .collect(Collectors.toList());
+    }
     private PostagemSaidaDTO toDTO(Postagem postagem) {
         List<String> urls = postagem.getArquivos() != null
                 ? postagem.getArquivos().stream().map(ArquivoMidia::getUrl).collect(Collectors.toList())
@@ -261,4 +276,86 @@ public class PostagemService {
                 .autor(autor)
                 .build();
     }
+
+    public PostagemSaidaDTO converteParaSaidaDTO(Postagem postagem) {
+        if (postagem == null) {
+            return null;
+        }
+
+        String nomeAutor = null;
+        Long autorId = null;
+        String urlFotoAutor = null;
+        if (postagem.getAutor() != null) {
+            nomeAutor = postagem.getAutor().getNome();
+            autorId = postagem.getAutor().getId();
+            urlFotoAutor = postagem.getAutor().getFotoPerfil();
+        }
+
+        List<String> urlsMidia = postagem.getArquivos().stream()
+                .map(ArquivoMidia::getUrl)
+                .collect(Collectors.toList());
+
+        List<ComentarioSaidaDTO> comentariosDTO = postagem.getComentarios().stream()
+                .map(this::converteComentarioParaDTO)
+                .collect(Collectors.toList());
+
+        return PostagemSaidaDTO.builder()
+                .id(postagem.getId())
+                .conteudo(postagem.getConteudo())
+                // ✅ CORREÇÃO AQUI: O DTO usa 'dataCriacao', não 'dataPostagem'
+                .dataCriacao(postagem.getDataPostagem())
+                .autorId(autorId)
+                .nomeAutor(nomeAutor)
+                .urlFotoAutor(urlFotoAutor)
+                .urlsMidia(urlsMidia)
+                .comentarios(comentariosDTO)
+                .totalCurtidas(postagem.getCurtidas() != null ? postagem.getCurtidas().size() : 0)
+                .build();
+    }
+
+    // =========================================================================
+// ✅ MÉTODO 2: AJUDANTE PARA CONVERTER COMENTÁRIO (CORRIGIDO)
+// =========================================================================
+    private ComentarioSaidaDTO converteComentarioParaDTO(Comentario comentario) {
+        if (comentario == null) {
+            return null;
+        }
+
+        UsuarioSimplesDTO autorComentarioDTO = converteUsuarioParaSimplesDTO(comentario.getAutor());
+
+        // Também vamos popular o ID da postagem
+        Long postagemId = null;
+        if(comentario.getPostagem() != null) {
+            postagemId = comentario.getPostagem().getId();
+        }
+
+        return ComentarioSaidaDTO.builder()
+                .id(comentario.getId())
+                .conteudo(comentario.getConteudo())
+                .dataCriacao(comentario.getDataCriacao())
+                // ✅ CORREÇÃO AQUI: Passando os campos separados
+                .autorId(autorComentarioDTO.getId())
+                .nomeAutor(autorComentarioDTO.getNome())
+                .urlFotoAutor(autorComentarioDTO.getUrlFotoPerfil())
+                .postagemId(postagemId) //
+                .totalCurtidas(comentario.getCurtidas() != null ? comentario.getCurtidas().size() : 0)
+                .build();
+    }
+
+    // =========================================================================
+// ✅ MÉTODO 3: AJUDANTE PARA CONVERTER USUÁRIO (Revisado)
+// =========================================================================
+    private UsuarioSimplesDTO converteUsuarioParaSimplesDTO(Usuario usuario) {
+        if (usuario == null) {
+            return null;
+        }
+
+        return UsuarioSimplesDTO.builder()
+                .id(usuario.getId())
+                .nome(usuario.getNome())
+                .urlFotoPerfil(usuario.getFotoPerfil())
+                .tipoUsuario(usuario.getTipoUsuario())
+                .build();
+    }
+
 }

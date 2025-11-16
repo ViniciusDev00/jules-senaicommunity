@@ -500,6 +500,7 @@
   justify-content: space-around;
   border-top: 1px solid var(--border-color);
   padding-top: 0.75rem;
+  
 }
 .post-actions button {
   display: flex;

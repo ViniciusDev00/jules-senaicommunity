@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/postagem")
@@ -87,6 +88,20 @@ public class PostagemController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+    @GetMapping("/usuario/{usuarioId}")
+    public ResponseEntity<List<PostagemSaidaDTO>> buscarPostagensPorUsuario(@PathVariable Long usuarioId) {
+        // 1. Pede ao service (que você não enviou, mas sei que existe)
+        //    para buscar as postagens usando o novo método do repositório.
+        List<PostagemSaidaDTO> postagens = postagemService.buscarPostagensPorUsuario(usuarioId);
+
+        // 2. É uma boa prática garantir que os comentários de CADA postagem
+        //    também venham ordenados, assim como você faz nos outros endpoints.
+        List<PostagemSaidaDTO> postagensOrdenadas = postagens.stream()
+                .map(postagemService::ordenarComentarios)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(postagensOrdenadas);
     }
 
     @DeleteMapping("/{id}")
