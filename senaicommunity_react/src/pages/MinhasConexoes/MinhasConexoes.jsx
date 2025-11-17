@@ -1,28 +1,48 @@
-// src/pages/MinhasConexoes/MinhasConexoes.jsx (NOVO DESIGN - CORRIGIDO NOVAMENTE)
+// src/pages/MinhasConexoes/MinhasConexoes.jsx (COM CONFIRMAÇÃO DE EXCLUSÃO)
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Topbar from '../../components/Layout/Topbar';
 import Sidebar from '../../components/Layout/Sidebar';
-import RightSidebar from '../../pages/Principal/RightSidebar'; // Layout consistente
+import RightSidebar from '../../pages/Principal/RightSidebar'; 
 import Swal from 'sweetalert2';
-import './MinhasConexoes.css'; // Carrega o NOVO CSS
+import './MinhasConexoes.css'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faTimes, faPaperPlane, faUserMinus, faClockRotateLeft } from '@fortawesome/free-solid-svg-icons';
-import { Link } from 'react-router-dom'; // Para linkar para perfil
+import { Link, useNavigate } from 'react-router-dom'; 
 
-// --- COMPONENTE ConexaoCard MELHORADO ---
-const ConexaoCard = ({ item, type, onAction }) => {
-    // ... (Código do ConexaoCard não muda) ...
-    // Determina qual nome/foto usar baseado no tipo de lista
-    const idUsuario = type === 'enviado' ? item.idSolicitado : item.idSolicitantee; // Ajuste AQUI se o campo for diferente
-    const nome = type === 'enviado' ? item.nomeSolicitado : item.nomeSolicitante;
-    const foto = type === 'enviado' ? item.fotoPerfilSolicitado : item.fotoPerfilSolicitante;
+// --- COMPONENTE ConexaoCard ---
+// (Este componente não precisa de alterações)
+const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
+    
+    let idUsuario, nome, foto;
 
-    // ✅ INTEGRAÇÃO: Constrói URL da foto corretamente
-    const fotoUrl = foto
-        ? `http://localhost:8080${foto}` // Assume que o backend retorna o caminho relativo
-        : `https://i.pravatar.cc/80?u=${idUsuario || item.idAmizade}`; // Fallback com ID
+    if (type === 'enviado') {
+        idUsuario = item.idSolicitado;
+        nome = item.nomeSolicitado;
+        foto = item.fotoPerfilSolicitado;
+    } else if (type === 'recebido') {
+        idUsuario = item.idSolicitante; 
+        nome = item.nomeSolicitante;
+        foto = item.fotoPerfilSolicitante;
+    } else { // type === 'amigo'
+        idUsuario = item.idUsuario; 
+        nome = item.nome;
+        foto = item.fotoPerfil; 
+    }
+
+    let fotoUrl;
+    const fallbackAvatar = `https://i.pravatar.cc/80?u=${idUsuario || item.idAmizade}`;
+    
+    if (!foto) {
+        fotoUrl = fallbackAvatar;
+    } else if (foto.startsWith('http')) {
+        fotoUrl = foto; // URL completa (ex: Cloudinary)
+    } else if (foto.startsWith('/api/arquivos/') || foto.startsWith('/images/')) {
+        fotoUrl = `http://localhost:8080${foto}`;
+    } else {
+        fotoUrl = `http://localhost:8080/api/arquivos/${foto}`; //
+    }
 
     const handleActionClick = (action) => {
         onAction(item.idAmizade, action);
@@ -30,12 +50,14 @@ const ConexaoCard = ({ item, type, onAction }) => {
 
     return (
         <article className="conexao-card">
-             {/* Link para o perfil (necessita ID do usuário) */}
-             {/* Ajuste o ID usado no link se necessário */}
              <Link to={`/perfil/${idUsuario}`} className="conexao-card-link">
-                <img src={fotoUrl} alt={`Foto de ${nome}`} className="conexao-avatar" />
+                <img 
+                    src={fotoUrl} 
+                    alt={`Foto de ${nome}`} 
+                    className="conexao-avatar"
+                    onError={(e) => { e.target.onerror = null; e.target.src = fallbackAvatar; }} // Fallback
+                />
                 <h4 className="conexao-nome">{nome}</h4>
-                {/* Adicionar curso/tipo se a API retornar */}
             </Link>
             <div className="conexao-actions">
                 {type === 'recebido' && <>
@@ -50,8 +72,7 @@ const ConexaoCard = ({ item, type, onAction }) => {
                      <FontAwesomeIcon icon={faClockRotateLeft} /> Cancelar
                 </button>}
                 {type === 'amigo' && <>
-                     {/* Link para chat futuro */}
-                    <button className="btn btn-secondary btn-message">
+                    <button className="btn btn-secondary btn-message" onClick={() => onGoToChat(idUsuario)}>
                         <FontAwesomeIcon icon={faPaperPlane} /> Mensagem
                     </button>
                     <button className="btn btn-danger btn-remove" onClick={() => handleActionClick('remover')}>
@@ -69,116 +90,145 @@ const MinhasConexoes = ({ onLogout }) => {
     const [enviados, setEnviados] = useState([]);
     const [amigos, setAmigos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [currentUser, setCurrentUser] = useState(null); // ✅ INTEGRAÇÃO
-
-    // ✅ 1. Adiciona o estado do menu mobile
+    const [currentUser, setCurrentUser] = useState(null); 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    
+    const navigate = useNavigate();
 
-    // ✅ INTEGRAÇÃO: Função refatorada para buscar tudo
     const fetchData = async () => {
-        // Removido setLoading(true) daqui para evitar piscar a tela em updates
+        // ... (fetchData não precisa de alterações) ...
         const token = localStorage.getItem('authToken');
         if (!token) {
             onLogout();
             return;
         }
-        // ✅ CORREÇÃO AQUI: Linha removida -> const headers = { 'Authorization': `Bearer ${token}` };
         try {
-             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; // Define header padrão
+             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             const [userRes, resRecebidos, resEnviados, resAmigos] = await Promise.all([
                  axios.get('http://localhost:8080/usuarios/me'),
                 axios.get('http://localhost:8080/api/amizades/pendentes'),
                 axios.get('http://localhost:8080/api/amizades/enviadas'),
-                // A API de amigos (/api/amizades/) precisa retornar o ID do amigo também
-                axios.get('http://localhost:8080/api/amizades/')
+                axios.get('http://localhost:8080/api/amizades/') 
             ]);
             setCurrentUser(userRes.data);
-            setRecebidos(resRecebidos.data);
-            setEnviados(resEnviados.data);
-            // Mapeia amigos para incluir idSolicitante (necessário para o link do perfil no card)
-             setAmigos(resAmigos.data.map(amigo => ({
-                ...amigo,
-                // Ajuste AQUI se o campo do ID do amigo for diferente em /api/amizades/
-                idSolicitante: amigo.idUsuarioAmigo || amigo.idUsuario // Tenta 'idUsuarioAmigo' ou 'idUsuario'
-            })));
+            setRecebidos(resRecebidos.data); 
+            setEnviados(resEnviados.data); 
+            setAmigos(resAmigos.data); 
         } catch (error) {
             console.error("Erro ao buscar conexões:", error);
             if (error.response?.status === 401 || error.response?.status === 403) {
-                 onLogout(); // Logout se token inválido
+                 onLogout(); 
             }
         } finally {
-            setLoading(false); // Define loading como false só após tudo carregar
+            setLoading(false); 
         }
     };
 
     useEffect(() => {
         document.title = 'Senai Community | Conexões';
-        setLoading(true); // Define loading true ao montar o componente
+        setLoading(true); 
         fetchData();
     }, [onLogout]);
 
-    // ✅ INTEGRAÇÃO: Função para aceitar/recusar/cancelar/remover
+    // ✅✅✅ INÍCIO DA ATUALIZAÇÃO ✅✅✅
+    // A função handleAction foi modificada
     const handleAction = async (amizadeId, action) => {
-        // ... (Código do handleAction não muda) ...
-        // Token já está nos headers padrão do axios
         let url = '';
-        let method = 'post'; // Default
+        let method = 'post';
 
-        try {
-            switch(action) {
-                case 'aceitar':
-                    url = `http://localhost:8080/api/amizades/aceitar/${amizadeId}`;
-                    method = 'post';
-                    break;
-                case 'recusar':
-                case 'cancelar':
-                case 'remover':
-                     url = `http://localhost:8080/api/amizades/recusar/${amizadeId}`; // API para recusar/cancelar/remover
-                     method = 'delete';
-                     break;
-                default:
-                    return; // Ação desconhecida
-            }
-
-            await axios({ method, url });
-
-            // Otimização: Atualiza o estado localmente antes de refazer o fetch
-            if (action === 'aceitar') {
-                 const aceito = recebidos.find(r => r.idAmizade === amizadeId);
-                 if (aceito) {
-                     // Adiciona aos amigos, garantindo o ID correto
-                     setAmigos(prev => [...prev, { ...aceito, idUsuarioAmigo: aceito.idSolicitante }]);
-                     setRecebidos(prev => prev.filter(r => r.idAmizade !== amizadeId)); // Remove dos recebidos
-                 }
-            } else if (action === 'recusar') {
-                 setRecebidos(prev => prev.filter(r => r.idAmizade !== amizadeId));
-            } else if (action === 'cancelar') {
-                 setEnviados(prev => prev.filter(e => e.idAmizade !== amizadeId));
-            } else if (action === 'remover') {
-                 setAmigos(prev => prev.filter(a => a.idAmizade !== amizadeId));
-            }
-
-            // Opcional: Refazer fetch para garantir consistência total, mas pode causar 'piscada'
-            // fetchData();
-
-        } catch (error) {
-            console.error(`Erro ao ${action} amizade:`, error);
-            // Agora o Swal está importado e funciona
-            Swal.fire('Erro', `Não foi possível executar a ação '${action}'. Tente novamente.`, 'error');
-            // Poderia reverter a mudança visual aqui se desejado
+        // 1. Define a URL e o método baseado na ação
+        switch(action) {
+            case 'aceitar':
+                url = `http://localhost:8080/api/amizades/aceitar/${amizadeId}`;
+                method = 'post';
+                break;
+            case 'recusar':
+            case 'cancelar':
+            case 'remover': 
+                 url = `http://localhost:8080/api/amizades/recusar/${amizadeId}`; //
+                 method = 'delete';
+                 break;
+            default:
+                return; // Ação desconhecida
         }
+
+        // 2. SE A AÇÃO FOR 'REMOVER', MOSTRA O POP-UP DE CONFIRMAÇÃO
+        if (action === 'remover') {
+            Swal.fire({
+                title: 'Você tem certeza?',
+                text: "A amizade será desfeita e você não poderá reverter isso!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33', // Vermelho
+                cancelButtonColor: 'var(--bg-quaternary)', // Cinza do tema
+                confirmButtonText: 'Sim, remover!',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                // 3. Se o usuário confirmar...
+                if (result.isConfirmed) {
+                    try {
+                        // Executa a requisição de remoção
+                        await axios({ method, url });
+                        // Atualiza o estado local
+                        setAmigos(prev => prev.filter(a => a.idAmizade !== amizadeId));
+                        
+                        Swal.fire(
+                            'Removido!',
+                            'A conexão foi desfeita.',
+                            'success'
+                        );
+                    } catch (error) {
+                        console.error(`Erro ao ${action} amizade:`, error);
+                        Swal.fire('Erro', `Não foi possível executar a ação '${action}'. Tente novamente.`, 'error');
+                    }
+                }
+            });
+        } else {
+            // 4. PARA AS OUTRAS AÇÕES (aceitar, recusar, cancelar), executa direto
+            try {
+                await axios({ method, url });
+
+                // Atualização otimista do estado
+                if (action === 'aceitar') {
+                     const aceito = recebidos.find(r => r.idAmizade === amizadeId);
+                     if (aceito) {
+                         const novoAmigo = {
+                             idAmizade: aceito.idAmizade,
+                             idUsuario: aceito.idSolicitante,
+                             nome: aceito.nomeSolicitante,
+                             fotoPerfil: aceito.fotoPerfilSolicitante,
+                             email: '...', 
+                             online: true 
+                         };
+                         setAmigos(prev => [...prev, novoAmigo]);
+                         setRecebidos(prev => prev.filter(r => r.idAmizade !== amizadeId));
+                     }
+                } else if (action === 'recusar') {
+                     setRecebidos(prev => prev.filter(r => r.idAmizade !== amizadeId));
+                } else if (action === 'cancelar') {
+                     setEnviados(prev => prev.filter(e => e.idAmizade !== amizadeId));
+                }
+            } catch (error) {
+                console.error(`Erro ao ${action} amizade:`, error);
+                Swal.fire('Erro', `Não foi possível executar a ação '${action}'. Tente novamente.`, 'error');
+            }
+        }
+    };
+    // ✅✅✅ FIM DA ATUALIZAÇÃO ✅✅✅
+
+    const handleGoToChat = (userId) => {
+        navigate(`/mensagens?dm=${userId}`);
     };
 
     return (
         <div>
-            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            {/* ... (Restante do JSX sem alterações) ... */}
             <Topbar 
                 onLogout={onLogout} 
                 currentUser={currentUser} 
                 onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             />
 
-            {/* ✅ 3. Adiciona o overlay */}
             {isSidebarOpen && (
                 <div 
                     className="sidebar-overlay"
@@ -187,7 +237,6 @@ const MinhasConexoes = ({ onLogout }) => {
             )}
 
             <div className="container">
-                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
                 <Sidebar 
                     currentUser={currentUser} 
                     isOpen={isSidebarOpen}
@@ -201,7 +250,15 @@ const MinhasConexoes = ({ onLogout }) => {
                             <h3>Pedidos Recebidos ({loading ? '...' : recebidos.length})</h3>
                              {loading ? <p className="loading-state">Carregando...</p> : recebidos.length > 0 ? (
                                 <div className="conexao-grid">
-                                    {recebidos.map(item => <ConexaoCard key={item.idAmizade} item={item} type="recebido" onAction={handleAction} />)}
+                                    {recebidos.map(item => 
+                                        <ConexaoCard 
+                                            key={item.idAmizade} 
+                                            item={item} 
+                                            type="recebido" 
+                                            onAction={handleAction} 
+                                            onGoToChat={handleGoToChat} 
+                                        />
+                                    )}
                                 </div>
                             ) : <p className="empty-state">Nenhum pedido de conexão pendente.</p>}
                         </div>
@@ -211,7 +268,15 @@ const MinhasConexoes = ({ onLogout }) => {
                             <h3>Pedidos Enviados ({loading ? '...' : enviados.length})</h3>
                              {loading ? <p className="loading-state">Carregando...</p> : enviados.length > 0 ? (
                                  <div className="conexao-grid">
-                                    {enviados.map(item => <ConexaoCard key={item.idAmizade} item={item} type="enviado" onAction={handleAction} />)}
+                                    {enviados.map(item => 
+                                        <ConexaoCard 
+                                            key={item.idAmizade} 
+                                            item={item} 
+                                            type="enviado" 
+                                            onAction={handleAction} 
+                                            onGoToChat={handleGoToChat} 
+                                        />
+                                    )}
                                  </div>
                             ) : <p className="empty-state">Você não enviou nenhum pedido recentemente.</p>}
                         </div>
@@ -221,14 +286,21 @@ const MinhasConexoes = ({ onLogout }) => {
                             <h3>Minhas Conexões ({loading ? '...' : amigos.length})</h3>
                              {loading ? <p className="loading-state">Carregando...</p> : amigos.length > 0 ? (
                                 <div className="conexao-grid">
-                                    {/* Mapeia amigos, garantindo que idSolicitante exista para o card */}
-                                    {amigos.map(item => <ConexaoCard key={item.idAmizade} item={item} type="amigo" onAction={handleAction} />)}
+                                    {amigos.map(item => 
+                                        <ConexaoCard 
+                                            key={item.idAmizade} 
+                                            item={item} 
+                                            type="amigo" 
+                                            onAction={handleAction} 
+                                            onGoToChat={handleGoToChat} 
+                                        />
+                                    )}
                                 </div>
                             ) : <p className="empty-state">Você ainda não tem conexões. Que tal <Link to="/encontrar-pessoas">encontrar pessoas</Link>?</p>}
                         </div>
                     </section>
                 </main>
-                 <RightSidebar /> {/* ✅ DESIGN: Adicionado para layout de 3 colunas */}
+                 <RightSidebar />
             </div>
         </div>
     );
