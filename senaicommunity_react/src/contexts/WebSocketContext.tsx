@@ -1,8 +1,5 @@
-// src/contexts/WebSocketContext.tsx (COMPLETO)
-//
-
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { Client, IFrame } from '@stomp/stompjs'; // Importar IFrame
+import { Client, IFrame } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 // 1. Definição do Tipo para o Contexto
@@ -11,9 +8,10 @@ type WebSocketContextType = {
   isConnected: boolean;
   connect: (token: string) => void;
   disconnect: () => void;
+  lastNotification: any | null; // NOVO: Para armazenar a última notificação
 };
 
-// 2. Criação do Contexto com o Tipo null inicial
+// 2. Criação do Contexto
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 
 // 3. Hook para consumir o contexto
@@ -25,44 +23,39 @@ export const useWebSocket = (): WebSocketContextType => {
   return context;
 };
 
-// Tipo para as props do Provider
 type WebSocketProviderProps = {
   children: ReactNode;
 };
 
-// 4. Criação do Provider (Componente)
+// 4. Criação do Provider
 export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-  // 5. Estado `stompClient` com Tipo Explícito
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  // NOVO: Estado para a última notificação recebida
+  const [lastNotification, setLastNotification] = useState<any | null>(null);
 
-  // Função de desconexão (agora sem useCallback para simplificar, será recriada se stompClient mudar)
   const disconnect = () => {
     if (stompClient?.connected) {
       stompClient.deactivate();
     }
-    // Apenas limpa se já não estiver limpo, para evitar loops
     if (stompClient !== null) {
       setStompClient(null);
     }
     if (isConnected) {
-       setIsConnected(false);
+      setIsConnected(false);
     }
+    setLastNotification(null); // NOVO: Limpa a notificação ao desconectar
   };
 
-  // Função de conexão (useCallback mantido, mas com dependências corretas)
   const connect = useCallback((token: string) => {
-    // Evita reconexão se já conectado ou se não há token
     if (!token || isConnected) {
       return;
     }
     
-    // Se um cliente STOMP existe, desativa antes de criar um novo.
     if (stompClient) {
-        stompClient.deactivate();
+      stompClient.deactivate();
     }
 
-    // Cria nova factory e cliente a cada tentativa de conexão
     const socketFactory = () => new SockJS(`http://localhost:8080/ws`);
 
     const client = new Client({
@@ -70,34 +63,48 @@ export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
       connectHeaders: {
         'Authorization': `Bearer ${token}`
       },
-      // Aumentar timeouts pode ajudar em conexões lentas
-      reconnectDelay: 5000, // Tenta reconectar a cada 5 segundos
+      reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
 
       onConnect: () => {
         console.log('Conectado ao WebSocket!');
         setIsConnected(true);
-        // Define o cliente STOMP no estado APÓS a conexão ser estabelecida
         setStompClient(client);
+
+        // ************************************************************
+        // NOVO: Inscrição na fila de notificações privadas do usuário
+        // ************************************************************
+        client.subscribe('/user/queue/notifications', (message) => {
+          try {
+            const notification = JSON.parse(message.body);
+            console.log("Nova notificação recebida:", notification);
+            
+            // Armazena a notificação no estado do Contexto
+            setLastNotification(notification);
+
+          } catch (error) {
+            console.error("Erro ao processar notificação", error);
+          }
+        });
+        // ************************************************************
+
       },
       onDisconnect: () => {
         console.log('Desconectado do WebSocket.');
         setIsConnected(false);
-        setStompClient(null); // Limpa o cliente no estado
+        setStompClient(null);
       },
       onStompError: (frame: IFrame) => {
         console.error('Erro no STOMP:', frame.headers['message'], frame.body);
-        setIsConnected(false); // Garante que o estado reflita o erro
+        setIsConnected(false);
         setStompClient(null);
-        // Tentar desconectar formalmente pode ajudar a limpar recursos
         client.deactivate();
       },
       onWebSocketError: (event: Event) => {
         console.error('Erro na conexão WebSocket:', event);
         setIsConnected(false);
         setStompClient(null);
-         // Tentar desconectar formalmente
         client.deactivate();
       },
       onWebSocketClose: (event: CloseEvent) => {
@@ -107,19 +114,21 @@ export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
       }
     });
 
-    // Ativa o cliente para iniciar a conexão
     client.activate();
 
-  }, [isConnected, stompClient]);
+  }, [isConnected, stompClient]); // A dependência do 'stompClient' aqui está correta
 
-  // Efeito para desconectar ao desmontar o componente
+  // Efeito para desconectar ao desmontar
   useEffect(() => {
-    // A função retornada pelo useEffect é a função de cleanup
     return () => {
-      disconnect();
+      // Usar a função de desconexão definida no estado
+      if (stompClient) {
+        stompClient.deactivate();
+        setIsConnected(false);
+        setStompClient(null);
+      }
     };
-  // As dependências corretas aqui são stompClient e disconnect
-  }, [disconnect, stompClient]);
+  }, [stompClient]); // Depende apenas do stompClient
 
 
   // Valor do Contexto
@@ -128,6 +137,7 @@ export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
     isConnected,
     connect,
     disconnect,
+    lastNotification, // NOVO: Expõe a notificação no contexto
   };
 
   return (
