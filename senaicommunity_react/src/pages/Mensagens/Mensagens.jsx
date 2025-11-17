@@ -179,13 +179,40 @@ const Mensagens = ({ onLogout }) => {
             const amigosRes = await axios.get('http://localhost:8080/api/amizades/'); 
             const validAmigos = amigosRes.data.filter(amigo => amigo && amigo.idUsuario);
 
-            const conversasDMs = validAmigos.map(amigo => ({
-                id: amigo.idUsuario, 
-                nome: amigo.nome,
-                tipo: 'dm',
-                avatar: amigo.fotoPerfil ? `http://localhost:8080${amigo.fotoPerfil}` : `https://i.pravatar.cc/50?u=${amigo.idUsuario}`,
-                ultimaMensagem: 'Conversa privada', 
-            }));
+            // ✅✅✅ INÍCIO DA CORREÇÃO ✅✅✅
+            // A lógica de construção da URL da foto foi corrigida aqui.
+            const conversasDMs = validAmigos.map(amigo => {
+                let avatarUrl;
+                const fallbackAvatar = `https://i.pravatar.cc/50?u=${amigo.idUsuario}`;
+                
+                // O DTO de Amigo 
+                // pode conter uma URL completa (Cloudinary) ou um caminho relativo.
+                if (amigo.fotoPerfil) {
+                    if (amigo.fotoPerfil.startsWith('http')) {
+                        // 1. Já é uma URL completa (Cloudinary)
+                        avatarUrl = amigo.fotoPerfil;
+                    } else if (amigo.fotoPerfil.startsWith('/api/arquivos/') || amigo.fotoPerfil.startsWith('/images/')) {
+                        // 2. É um caminho relativo já formatado (ex: /api/arquivos/...)
+                        avatarUrl = `http://localhost:8080${amigo.fotoPerfil}`;
+                    } else {
+                        // 3. É apenas um nome de arquivo (lógica de cadastro antiga)
+                        //    O endpoint correto é /api/arquivos/
+                        avatarUrl = `http://localhost:8080/api/arquivos/${amigo.fotoPerfil}`;
+                    }
+                } else {
+                    // 4. Não tem foto, usa o fallback
+                    avatarUrl = fallbackAvatar;
+                }
+
+                return {
+                    id: amigo.idUsuario, 
+                    nome: amigo.nome,
+                    tipo: 'dm',
+                    avatar: avatarUrl, // Usa a URL corrigida
+                    ultimaMensagem: 'Conversa privada', 
+                };
+            });
+            // ✅✅✅ FIM DA CORREÇÃO ✅✅✅
 
             const todasConversas = [...conversasGrupos, ...conversasDMs];
             setConversas(todasConversas);
