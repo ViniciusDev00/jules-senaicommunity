@@ -63,6 +63,38 @@
     font-size: 0.875rem;
 }
 
+.login-toggle {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 10px;
+}
+
+.toggle-btn {
+    padding: 10px 20px;
+    border: 2px solid var(--highlight);
+    background: transparent;
+    color: var(--highlight);
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.toggle-btn.active {
+    background: var(--highlight);
+    color: white;
+}
+
+.toggle-btn:hover {
+    background: var(--highlight);
+    color: white;
+}
+
 .auth-form {
     display: flex;
     flex-direction: column;

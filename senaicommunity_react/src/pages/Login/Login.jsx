@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 
 // Importações do Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCode, faEnvelope, faLock, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { faCode, faEnvelope, faLock, faEye, faEyeSlash, faUserShield } from '@fortawesome/free-solid-svg-icons';
 
 // Importação de Componentes e Estilos
 import Background from '../../components/Auth/Background';
@@ -17,6 +17,7 @@ const Login = ({ onLogin }) => {
     const [senha, setSenha] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [isSupervisorLogin, setIsSupervisorLogin] = useState(false);
     const navigate = useNavigate();
 
     // Define o título da página quando o componente é montado
@@ -63,6 +64,22 @@ const Login = ({ onLogin }) => {
                         </div>
                         <h1>Bem-vindo de volta</h1>
                         <p className="subtext">Faça login para acessar sua conta</p>
+                        <div className="login-toggle">
+                            <button
+                                type="button"
+                                className={`toggle-btn ${!isSupervisorLogin ? 'active' : ''}`}
+                                onClick={() => setIsSupervisorLogin(false)}
+                            >
+                                Aluno/Professor
+                            </button>
+                            <button
+                                type="button"
+                                className={`toggle-btn ${isSupervisorLogin ? 'active' : ''}`}
+                                onClick={() => setIsSupervisorLogin(true)}
+                            >
+                                <FontAwesomeIcon icon={faUserShield} /> Supervisor
+                            </button>
+                        </div>
                     </div>
 
                     <form onSubmit={handleSubmit} className="auth-form">

@@ -122,7 +122,11 @@ public class PostagemService {
     public void excluirPostagem(Long id, String username) {
         Postagem postagem = buscarPorId(id);
 
-        if (!postagem.getAutor().getEmail().equals(username)) {
+        // Verificar se o usuário é o autor ou tem role ADMIN
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream().anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!postagem.getAutor().getEmail().equals(username) && !isAdmin) {
             throw new SecurityException("Você não pode excluir esta postagem.");
         }
 
