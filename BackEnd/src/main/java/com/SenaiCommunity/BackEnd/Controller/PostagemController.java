@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/postagem")
-@PreAuthorize("hasRole('ALUNO') or hasRole('PROFESSOR')")
+@PreAuthorize("hasRole('ALUNO') or hasRole('PROFESSOR') or hasRole('ADMIN')")
 public class PostagemController {
 
     @Autowired
