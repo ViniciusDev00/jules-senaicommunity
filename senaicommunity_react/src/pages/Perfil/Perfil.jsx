@@ -1,210 +1,484 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { useParams, Link, } from 'react-router-dom';
+import { useParams, Link, useNavigate } // ✅ 1. useNavigate importado
+from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     // Ícones do Perfil
     faEnvelope,
     faCalendarAlt,
     faPen,
-    // Ícones das Postagens (copiados do MainContent)
+    // Ícones das Postagens
     faThumbsUp,
     faComment,
     faEllipsisH,
     faSpinner,
     faChevronLeft,
     faChevronRight,
-    faPaperPlane, // Para o CommentSection
-    faReply       // Para o CommentSection
+    faPaperPlane,
+    faReply,
+    faTimes,
+    faTrash,
+    faImage,
+    // ✅ 2. ÍCONES DOS NOVOS BOTÕES
+    faUserPlus,
+    faCommentDots,
+    faClockRotateLeft,
+    faCheck
 } from '@fortawesome/free-solid-svg-icons';
+import Swal from 'sweetalert2';
 
 // Contexto e Componentes
-import { useWebSocket } from '../../contexts/WebSocketContext.tsx';
-// REMOVIDO: import CommentSection from... (Esta é a correção do erro)
+import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
 import Topbar from '../../components/Layout/Topbar';
 import Sidebar from '../../components/Layout/Sidebar';
 import RightSidebar from '../../pages/Principal/RightSidebar';
 import EditarPerfilModal from './EditarPerfilModal';
 
 // Estilos
-import '../../pages/Principal/Principal.css'; // Para os estilos da postagem
-import './Perfil.css'; // Para os estilos do perfil
+import '../../pages/Principal/Principal.css';
+import './Perfil.css';
 import './EditarPerfilModal.css';
 
 // =================================================================
-// FUNÇÕES HELPER (COPIADAS DO MAINCONTENT)
+// FUNÇÕES HELPER (Sem alterações)
 // =================================================================
 const getCorrectImageUrl = (url) => {
+    // ... (mesma função getCorrectImageUrl que você já tem) ...
     const placeholder = "https://via.placeholder.com/40";
     if (!url) return placeholder;
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
     if (url.startsWith("blob:")) return url;
     if (url.startsWith("/")) return `http://localhost:8080${url}`;
-    // Ajuste este caminho se for diferente
     return `http://localhost:8080/alunoPictures/${url}`; 
 };
 
-const formatarData = (data) => {
-    const agora = new Date();
-    const dataPost = new Date(data);
-    const diff = agora - dataPost;
-    const minutos = Math.floor(diff / 60000);
-    if (minutos < 1) return "agora";
-    if (minutos < 60) return `há ${minutos} min`;
-    const horas = Math.floor(minutos / 60);
-    if (horas < 24) return `há ${horas} h`;
-    const dias = Math.floor(horas / 24);
-    if (dias === 1) return "ontem";
-    return `há ${dias} dias`;
+const formatarData = (dateString) => {
+  // ... (mesma função formatarData que você já tem) ...
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (seconds < 60) {
+    return seconds + "s";
+  }
+  let interval = seconds / 31536000;
+  if (interval > 1) {
+    return Math.floor(interval) + "a";
+  }
+  interval = seconds / 2592000;
+  if (interval > 1) {
+    return Math.floor(interval) + "m";
+  }
+  interval = seconds / 86400;
+  if (interval > 1) {
+    return Math.floor(interval) + "d";
+  }
+  interval = seconds / 3600;
+  if (interval > 1) {
+    return Math.floor(interval) + "h";
+  }
+  interval = seconds / 60;
+  if (interval > 1) {
+    return Math.floor(interval) + "min";
+  }
+  return Math.floor(seconds) + "s";
 };
 
-const buildCommentTree = (comments, parentId = null) => {
-    return comments
-        .filter(comment => comment.parentId === parentId)
-        .sort((a, b) => new Date(a.dataCriacao) - new Date(b.dataCriacao));
+const buildCommentTree = (comments) => {
+  // ... (mesma função buildCommentTree que você já tem) ...
+  if (!comments || comments.length === 0) return [];
+  const commentsMap = {};
+  const tree = [];
+  comments.forEach((comment) => {
+    commentsMap[comment.id] = { ...comment, replies: [] };
+  });
+  Object.values(commentsMap).forEach((comment) => {
+    if (comment.parentId) {
+      const parent = commentsMap[comment.parentId];
+      if (parent) {
+        parent.replies.push(comment);
+      } else {
+        tree.push(comment);
+      }
+    } else {
+      tree.push(comment);
+    }
+  });
+  return tree;
 };
 
 // =================================================================
-// SUB-COMPONENTE: Comment (COPIADO DO MAINCONTENT)
+// SUB-COMPONENTE: POSTEDITOR (Sem alterações)
 // =================================================================
-const Comment = ({ comment, currentUser, onLikeComment, onReply, allComments }) => {
-    const [showReplies, setShowReplies] = useState(false);
-    const replies = buildCommentTree(allComments, comment.id); // Pega as respostas
-    const userImage = getCorrectImageUrl(comment.urlFotoAutor);
+const PostEditor = ({ post, onCancel, onSave }) => {
+  // ... (componente PostEditor sem alterações) ...
+  const [editedText, setEditedText] = useState(post.conteudo);
+  const [keptMediaUrls, setKeptMediaUrls] = useState(post.urlsMidia || []);
+  const [newMediaFiles, setNewMediaFiles] = useState([]);
+  const [urlsParaRemover, setUrlsParaRemover] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
-    return (
-        <div className="comment-container" style={{ marginLeft: comment.parentId ? '20px' : '0' }}>
-            <img 
-                src={userImage} 
-                alt={comment.nomeAutor} 
-                className="comment-author-img" 
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const filesWithPreview = Array.from(e.target.files).map((file) =>
+        Object.assign(file, {
+          preview: URL.createObjectURL(file),
+        })
+      );
+      setNewMediaFiles((prevFiles) => [...prevFiles, ...filesWithPreview]);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      newMediaFiles.forEach((file) => URL.revokeObjectURL(file.preview));
+    };
+  }, [newMediaFiles]);
+
+  const handleRemoveKeptUrl = (urlToRemove) => {
+    setKeptMediaUrls(keptMediaUrls.filter((url) => url !== urlToRemove));
+    setUrlsParaRemover((prev) => [...prev, urlToRemove]);
+  };
+
+  const handleRemoveNewFile = (indexToRemove) => {
+    setNewMediaFiles((prevFiles) =>
+      prevFiles.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
+  const handleSaveClick = async () => {
+    setIsSaving(true);
+    const formData = new FormData();
+    const postData = {
+      conteudo: editedText,
+      urlsParaRemover: urlsParaRemover,
+    };
+    formData.append(
+      "postagem",
+      new Blob([JSON.stringify(postData)], { type: "application/json" })
+    );
+    newMediaFiles.forEach((file) => {
+      formData.append("arquivos", file);
+    });
+    
+    await onSave(formData, post.id); 
+    setIsSaving(false);
+  };
+
+  const totalMedia = keptMediaUrls.length + newMediaFiles.length;
+
+  return (
+    <div className="post-editor-inline">
+      <textarea
+        className="editor-textarea"
+        value={editedText}
+        onChange={(e) => setEditedText(e.target.value)}
+        autoFocus
+      />
+      <div className="edit-media-container">
+        {keptMediaUrls.map((url, index) => {
+          const fullUrl = getCorrectImageUrl(url);
+          const isVideo = fullUrl.match(/\.(mp4|webm|ogg)$/i);
+          return (
+            <div key={`kept-${index}`} className="edit-media-item">
+              {isVideo ? (
+                <video src={fullUrl} controls={false} />
+              ) : (
+                <img src={fullUrl} alt={`Mídia existente ${index + 1}`} />
+              )}
+              <button
+                type="button"
+                onClick={() => handleRemoveKeptUrl(url)}
+                className="remove-media-btn"
+                title="Remover mídia"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+          );
+        })}
+        {newMediaFiles.map((file, index) => {
+          const isVideo = file.type.startsWith("video/");
+          return (
+            <div key={`new-${index}`} className="edit-media-item">
+              {isVideo ? (
+                <video src={file.preview} controls={false} />
+              ) : (
+                <img src={file.preview} alt={file.name} />
+              )}
+              <button
+                type="button"
+                onClick={() => handleRemoveNewFile(index)}
+                className="remove-media-btn"
+                title="Remover mídia"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="post-editor-footer">
+        <div className="editor-actions-left">
+          <label
+            htmlFor={`edit-file-upload-${post.id}`}
+            className="file-upload-label small"
+          >
+            <FontAwesomeIcon icon={faImage} />
+            <span>Adicionar Mídia</span>
+          </label>
+          <input
+            id={`edit-file-upload-${post.id}`}
+            className="hidden-file-input"
+            type="file"
+            accept="image/*,video/*"
+            onChange={handleFileChange}
+            multiple
+          />
+        </div>
+        <div className="editor-actions">
+          <button className="cancel-btn" onClick={onCancel} disabled={isSaving}>
+            Cancelar
+          </button>
+          <button
+            className="publish-btn"
+            disabled={(!editedText.trim() && totalMedia === 0) || isSaving}
+            onClick={handleSaveClick}
+          >
+            {isSaving ? <FontAwesomeIcon icon={faSpinner} spin /> : "Salvar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =================================================================
+// SUB-COMPONENTE: Comment (Sem alterações)
+// =================================================================
+const Comment = ({
+  comment,
+  currentUser,
+  onLikeComment,
+  onReplyClick,
+  postId,
+  depth = 1, 
+}) => {
+  // ... (componente Comment sem alterações) ...
+  const [repliesVisible, setRepliesVisible] = useState(false);
+  const hasReplies = comment.replies && comment.replies.length > 0;
+  const showViewRepliesButton = hasReplies && depth === 1;
+  const areRepliesShown = (depth === 1 && repliesVisible) || depth > 1;
+  const userImage = getCorrectImageUrl(comment.urlFotoAutor);
+
+  return (
+    <>
+      <div className="comment-item">
+        <div className="avatar-small">
+          <img src={userImage} alt={comment.nomeAutor} />
+        </div>
+        <div className="comment-body">
+          <div className="comment-content">
+             <Link to={`/perfil/${comment.autorId}`} className="comment-author-name">
+                <strong>{comment.nomeAutor}</strong>
+             </Link>
+            <p>
+              {comment.replyingToName && (
+                <strong className="reply-tag">@{comment.replyingToName}</strong>
+              )}{" "}
+              {comment.conteudo}
+            </p>
+          </div>
+          <div className="comment-actions-below">
+            <span>{formatarData(comment.dataCriacao)}</span>
+            ·
+            <button
+              className={`comment-action-btn ${
+                comment.curtidoPeloUsuario ? "liked" : ""
+              }`}
+              onClick={() => onLikeComment(postId, comment.id)}
+            >
+              <FontAwesomeIcon icon={faThumbsUp} /> (
+              {Number.isInteger(comment.totalCurtidas)
+                ? comment.totalCurtidas
+                : 0}
+              )
+            </button>
+            ·
+            <button
+              className="comment-action-btn"
+              onClick={() => onReplyClick(comment)}
+            >
+              <FontAwesomeIcon icon={faReply} />
+              Responder
+            </button>
+          </div>
+          {showViewRepliesButton && !repliesVisible && (
+            <button
+              className="comment-view-replies"
+              onClick={() => setRepliesVisible(true)}
+            >
+              Ver {comment.replies.length} resposta
+              {comment.replies.length > 1 ? "s" : ""}
+            </button>
+          )}
+          {showViewRepliesButton && repliesVisible && (
+            <button
+              className="comment-view-replies"
+              onClick={() => setRepliesVisible(false)}
+            >
+              Ocultar respostas
+            </button>
+          )}
+        </div>
+      </div> 
+      {hasReplies && areRepliesShown && (
+        <div className="comment-replies-list" style={{ paddingLeft: '15px' }}> 
+          {comment.replies.map((reply) => (
+            <Comment
+              key={reply.id}
+              comment={reply}
+              currentUser={currentUser}
+              onLikeComment={onLikeComment}
+              onReplyClick={onReplyClick}
+              postId={postId}
+              depth={depth + 1}
             />
-            <div className="comment-content">
-                <div className="comment-bubble">
-                    <Link to={`/perfil/${comment.autorId}`} className="comment-author-name">{comment.nomeAutor}</Link>
-                    {comment.replyingToName && (
-                        <span className="replying-to"> respondendo a {comment.replyingToName}</span>
-                    )}
-                    <p className="comment-text">{comment.conteudo}</p>
-                </div>
-                <div className="comment-actions">
-                    <span className="comment-time">{formatarData(comment.dataCriacao)}</span>
-                    <button 
-                        className={`comment-action-btn ${comment.curtidoPeloUsuario ? 'liked' : ''}`}
-                        onClick={() => onLikeComment(comment.id)}
-                    >
-                        <FontAwesomeIcon icon={faThumbsUp} />
-                        {comment.totalCurtidas > 0 && <span>{comment.totalCurtidas}</span>}
-                    </button>
-                    <button className="comment-action-btn" onClick={() => onReply(comment.autorId, comment.nomeAutor)}>
-                        <FontAwesomeIcon icon={faReply} />
-                        Responder
-                    </button>
-                </div>
-                
-                {replies && replies.length > 0 && (
-                    <button className="comment-view-replies" onClick={() => setShowReplies(!showReplies)}>
-                        {showReplies ? 'Ocultar' : `Ver ${replies.length} respostas`}
-                    </button>
-                )}
-
-                {showReplies && replies.map(reply => (
-                    <Comment
-                        key={reply.id}
-                        comment={reply}
-                        currentUser={currentUser}
-                        onLikeComment={onLikeComment}
-                        onReply={onReply}
-                        allComments={allComments} // Passa a lista completa
-                    />
-                ))}
-            </div>
+          ))}
         </div>
-    );
+      )}
+    </>
+  );
 };
 
 // =================================================================
-// SUB-COMPONENTE: CommentSection (COPIADO DO MAINCONTENT)
+// SUB-COMPONENTE: CommentSection (Sem alterações)
 // =================================================================
-const CommentSection = ({ postId, comments, currentUser, stompClient, isConnected, onLikeComment }) => {
-    const [newComment, setNewComment] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [replyTo, setReplyTo] = useState(null); // { id, nome }
+const CommentSection = ({
+  postId,
+  comments = [],
+  currentUser,
+  stompClient,
+  isConnected,
+  onLikeComment,
+}) => {
+  // ... (componente CommentSection sem alterações) ...
+  const [commentText, setCommentText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const userImage = getCorrectImageUrl(currentUser?.urlFotoPerfil);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const commentInputRef = useRef(null);
 
-    // Lógica de enviar comentário
-    const handleCommentSubmit = (e) => {
-        e.preventDefault();
-        if (!stompClient || !isConnected || !newComment.trim()) return;
-
-        setIsSubmitting(true);
-        
-        const destination = `/app/chat.sendComment`;
-        const payload = {
-            conteudo: newComment,
-            autorId: currentUser.id,
-            postagemId: postId,
-            parentId: replyTo ? replyTo.id : null 
-        };
-
-        stompClient.send(destination, {}, JSON.stringify(payload));
-        
-        setNewComment("");
-        setReplyTo(null);
-        setIsSubmitting(false);
+  const handleSubmitComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    if (!isConnected || !stompClient) {
+      alert("A conexão com o chat não está ativa. Tente novamente.");
+      return;
+    }
+    setIsSubmitting(true);
+    const payload = {
+      conteudo: commentText,
+      parentId: replyingTo ? replyingTo.id : null,
     };
+    const destination = `/app/postagem/${postId}/comentar`; 
+    try {
+      stompClient.publish({
+        destination: destination,
+        body: JSON.stringify(payload),
+      });
+      setCommentText("");
+      setReplyingTo(null);
+    } catch (error) {
+      console.error("Erro ao enviar comentário via WebSocket:", error);
+      alert("Falha ao comentar.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    const handleReply = (autorId, nomeAutor) => {
-        setReplyTo({ id: autorId, nome: nomeAutor });
-    };
+  const handleReplyClick = (comment) => {
+    setReplyingTo(comment);
+    if (commentInputRef.current) {
+      commentInputRef.current.focus();
+    }
+  };
 
-    const rootComments = buildCommentTree(comments, null); // Apenas comentários principais
-    const userImage = getCorrectImageUrl(currentUser.urlFotoPerfil);
-
-    return (
-        <div className="comment-section">
-            <form onSubmit={handleCommentSubmit} className="comment-form">
-                <img 
-                    src={userImage} 
-                    alt="Seu avatar" 
-                    className="comment-author-img" 
-                />
-                <div className="comment-input-wrapper">
-                    <input
-                        type="text"
-                        placeholder={replyTo ? `Respondendo a ${replyTo.nome}...` : "Escreva um comentário..."}
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        disabled={isSubmitting}
-                    />
-                    <button type="submit" disabled={isSubmitting}>
-                        <FontAwesomeIcon icon={isSubmitting ? faSpinner : faPaperPlane} spin={isSubmitting} />
-                    </button>
-                </div>
-            </form>
-            {replyTo && (
-                <button className="cancel-reply-btn" onClick={() => setReplyTo(null)}>
-                    Cancelar Resposta
-                </button>
+  return (
+    <div className="comment-section">
+      <form className="comment-form" onSubmit={handleSubmitComment}>
+        {replyingTo && (
+          <div className="replying-to-banner">
+            <span>
+              Respondendo a <strong>@{replyingTo.nomeAutor}</strong>
+            </span>
+            <button
+              type="button"
+              className="cancel-reply-btn"
+              onClick={() => setReplyingTo(null)}
+            >
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+        )}
+        <div className="comment-input-wrapper">
+          <div className="avatar-small">
+            <img src={userImage} alt="Seu Perfil" />
+          </div>
+          <input
+            ref={commentInputRef}
+            type="text"
+            placeholder="Escreva um comentário..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            disabled={isSubmitting || !isConnected}
+          />
+          <button
+            type="submit"
+            className="comment-submit-btn"
+            disabled={isSubmitting || !commentText.trim() || !isConnected}
+          >
+            {isSubmitting ? (
+              <FontAwesomeIcon icon={faSpinner} spin />
+            ) : (
+              <FontAwesomeIcon icon={faPaperPlane} />
             )}
-
-            <div className="comment-list">
-                {rootComments.map(comment => (
-                    <Comment
-                        key={comment.id}
-                        comment={comment}
-                        currentUser={currentUser}
-                        onLikeComment={onLikeComment}
-                        onReply={handleReply}
-                        allComments={comments} // Passa a lista completa
-                    />
-                ))}
-            </div>
+          </button>
         </div>
-    );
+      </form>
+      <div className="comment-list">
+        {comments.length > 0 ? (
+          comments.map((comment) => (
+            <Comment
+              key={comment.id}
+              comment={comment}
+              currentUser={currentUser}
+              onLikeComment={onLikeComment}
+              onReplyClick={handleReplyClick}
+              postId={postId}
+              depth={1}
+            />
+          ))
+        ) : (
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: "0.9em",
+              color: "#888",
+              paddingTop: "10px",
+            }}
+          >
+            Nenhum comentário ainda.
+          </p>
+        )}
+      </div>
+    </div>
+  );
 };
 
 // =========================================================================
-// ✅ SUB-COMPONENTE: PostagemItem (Idêntico ao MainContent)
+// SUB-COMPONENTE: PostagemItem (Sem alterações)
 // =========================================================================
 const PostagemItem = ({
     post,
@@ -212,12 +486,16 @@ const PostagemItem = ({
     activeCommentBox,
     handleToggleComments,
     handleLike,
-    handleLikeComment,
+    handleLikeComment, 
+    activePostMenu,
+    handleTogglePostMenu,
+    handleEditPost,
+    handleDeletePost,
     currentUser, 
     stompClient,
     isConnected
 }) => {
-
+    // ... (componente PostagemItem sem alterações) ...
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const scrollerRef = useRef(null);
 
@@ -240,8 +518,10 @@ const PostagemItem = ({
 
     const autorImage = getCorrectImageUrl(post.urlFotoAutor);
     const isMyPost = loggedInUser && loggedInUser.id === post.autorId;
-    const totalCurtidas = post.totalCurtidas || 0;
-    const totalComentarios = post.comentarios?.length || 0;
+    const totalCurtidas = Number.isInteger(post.totalCurtidas) ? post.totalCurtidas : 0;
+    
+    const commentTree = buildCommentTree(post.comentarios);
+    const totalComentarios = Array.isArray(post.comentarios) ? post.comentarios.length : 0;
 
     return (
         <div className="post-card">
@@ -253,17 +533,33 @@ const PostagemItem = ({
                         <span>{formatarData(post.dataCriacao)}</span>
                     </div>
                 </Link>
+                
                 {isMyPost && (
-                    <button className="post-options-btn">
-                        <FontAwesomeIcon icon={faEllipsisH} />
-                    </button>
+                    <div
+                      className="post-options-btn"
+                      onClick={() => handleTogglePostMenu(post.id)} 
+                    >
+                      <FontAwesomeIcon icon={faEllipsisH} />
+                    </div>
+                )}
+
+                {activePostMenu === post.id && ( 
+                    <div className="post-options-dropdown">
+                      <button onClick={() => handleEditPost(post)}>
+                        <FontAwesomeIcon icon={faPen} /> Editar Postagem
+                      </button>
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="danger"
+                      >
+                        <FontAwesomeIcon icon={faTrash} /> Excluir Postagem
+                      </button>
+                    </div>
                 )}
             </div>
-
             <div className="post-content">
                 <p>{post.conteudo}</p>
             </div>
-
             {post.urlsMidia && post.urlsMidia.length > 0 && (
                 <div className="post-media-container">
                     {post.urlsMidia.length > 1 && currentMediaIndex > 0 && (
@@ -274,7 +570,7 @@ const PostagemItem = ({
                     <div className="post-media-scroller" ref={scrollerRef} onScroll={handleMediaScroll}>
                         {post.urlsMidia.map((url, index) => (
                             <div key={index} className="post-media-item">
-                                <img src={url} alt={`Mídia ${index + 1}`} />
+                                <img src={getCorrectImageUrl(url)} alt={`Mídia ${index + 1}`} />
                             </div>
                         ))}
                     </div>
@@ -292,28 +588,23 @@ const PostagemItem = ({
                     )}
                 </div>
             )}
-
-            
-
             <div className="post-actions">
                 <button
                     onClick={() => handleLike(post.id)}
                     className={post.curtidoPeloUsuario ? "liked" : ""}
                 >
                     <FontAwesomeIcon icon={faThumbsUp} />
-                    Curtir
+                    Curtir ({totalCurtidas})
                 </button>
                 <button onClick={() => handleToggleComments(post.id)}>
                     <FontAwesomeIcon icon={faComment} />
-                    Comentar
+                    Comentar ({totalComentarios})
                 </button>
             </div>
-
-            {/* AQUI ESTÁ A MÁGICA: Ele chama o CommentSection que está NESTE ARQUIVO */}
             {activeCommentBox === post.id && (
                 <CommentSection
                     postId={post.id}
-                    comments={post.comentarios || []}
+                    comments={commentTree} 
                     currentUser={currentUser}
                     stompClient={stompClient}
                     isConnected={isConnected}
@@ -323,13 +614,9 @@ const PostagemItem = ({
         </div>
     );
 };
-// =========================================================================
-// ✅ FIM DO PostagemItem
-// =========================================================================
-
 
 // =========================================================================
-// ✅ COMPONENTE PRINCIPAL: Perfil (AGORA COM A LÓGICA DE COMENTÁRIOS)
+// ✅ COMPONENTE PRINCIPAL: Perfil (COM NOVOS ESTADOS E HANDLERS)
 // =========================================================================
 const Perfil = ({ onLogout }) => {
     const [profileData, setProfileData] = useState(null);
@@ -340,43 +627,94 @@ const Perfil = ({ onLogout }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+    // ✅ 3. NOVO ESTADO PARA STATUS DE AMIZADE
+    const [friendshipStatus, setFriendshipStatus] = useState(null);
+
     const { userId } = useParams();
+    const navigate = useNavigate(); // ✅ 4. Hook de navegação
     
 
-    // --- Lógica de Comentários e Likes (copiada do MainContent) ---
+    // --- Lógica de Comentários e Likes ---
     const { stompClient, isConnected } = useWebSocket();
     const [activeCommentBox, setActiveCommentBox] = useState(null);
+    const [activePostMenu, setActivePostMenu] = useState(null);
+    const [editingPost, setEditingPost] = useState(null);
+
 
    const handleToggleComments = (postId) => {
         setActiveCommentBox((prev) => (prev === postId ? null : postId));
     };
 
-    const handleLike = (postId) => {
-        if (!stompClient || !isConnected) {
-            console.error("Stomp client não conectado");
-            return;
-        }
-        const payload = {
-            tipo: "POST", // 'POST' para postagem
-            id: postId,
-            usuarioId: loggedInUser.id, // Use loggedInUser que já existe no Perfil
-        };
-        stompClient.send("/app/chat.toggleLike", {}, JSON.stringify(payload));
-    };
+    // ... (useEffect do WebSocket - sem alterações) ...
+    useEffect(() => {
+        const handleFeedUpdate = (message) => {
+            try {
+                const payload = JSON.parse(message.body);
+                const updatedPost = payload.postagem || payload;
+                
+                if (!updatedPost || !updatedPost.id) {
+                   if (payload.tipo === "remocao" && payload.postagemId) {
+                     setPostagens((currentPostagens) => 
+                       currentPostagens.filter((p) => p.id !== payload.postagemId)
+                     );
+                   }
+                   return;
+                }
 
-    const handleLikeComment = (commentId) => {
-        if (!stompClient || !isConnected) {
-            console.error("Stomp client não conectado");
-            return;
-        }
-        const payload = {
-            tipo: "COMENTARIO",
-            id: commentId,
-            usuarioId: loggedInUser.id, // Use loggedInUser
+                const postId = updatedPost.id;
+
+                setPostagens((currentPostagens) => { 
+                    const postIndex = currentPostagens.findIndex((p) => p.id === postId);
+
+                    if (postIndex > -1) {
+                        const newPosts = [...currentPostagens];
+                        const oldPost = currentPostagens[postIndex];
+                        const mergedComentarios = (updatedPost.comentarios || []).map(newComment => {
+                            const oldComment = (oldPost.comentarios || []).find(c => c.id === newComment.id);
+                            
+                            if (oldComment) {
+                                return {
+                                    ...newComment,
+                                    curtidoPeloUsuario: oldComment.curtidoPeloUsuario
+                                };
+                            }
+                            return {
+                                ...newComment,
+                                curtidoPeloUsuario: false
+                            }; 
+                        });
+                        const mergedPost = {
+                            ...updatedPost,
+                            comentarios: mergedComentarios,
+                            curtidoPeloUsuario: oldPost.curtidoPeloUsuario 
+                        };
+                        newPosts[postIndex] = mergedPost;
+                        return newPosts;
+                    
+                    } else if (payload.tipo !== "remocao") {
+                         if (updatedPost.autorId === profileData?.id) {
+                            return [updatedPost, ...currentPostagens];
+                         }
+                    }
+                    return currentPostagens;
+                });
+            } catch (error) {
+                console.error("Falha ao processar mensagem do WebSocket no Perfil:", error);
+            }
         };
-        stompClient.send("/app/chat.toggleLike", {}, JSON.stringify(payload));
-    };
-    // --- Fim da Lógica ---
+
+        if (isConnected && stompClient && profileData) { 
+            const subscription = stompClient.subscribe(
+                "/topic/publico",
+                handleFeedUpdate
+            );
+            return () => {
+                if (subscription) {
+                    subscription.unsubscribe();
+                }
+            };
+        }
+    }, [isConnected, stompClient, profileData]);
 
     // --- Função para buscar os dados ---
     const fetchPageData = async () => {
@@ -388,6 +726,7 @@ const Perfil = ({ onLogout }) => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         setIsLoading(true);
         setPostagens([]);
+        setFriendshipStatus(null); // Reseta o status ao recarregar
 
         let meResponse;
         try {
@@ -401,9 +740,13 @@ const Perfil = ({ onLogout }) => {
             return;
         }
 
-        const apiUrl = userId
-            ? `http://localhost:8080/usuarios/${userId}`
-            : 'http://localhost:8080/usuarios/me';
+        // Determina se estamos vendo nosso próprio perfil
+        const isMyProfile = !userId || (meResponse.data.id.toString() === userId);
+
+        const apiUrl = isMyProfile
+            ? 'http://localhost:8080/usuarios/me'
+            : `http://localhost:8080/usuarios/${userId}`;
+        
         let perfilId;
 
         try {
@@ -411,6 +754,25 @@ const Perfil = ({ onLogout }) => {
             setProfileData(profileResponse.data);
             perfilId = profileResponse.data.id;
             document.title = `Senai Community | ${profileResponse.data.nome}`;
+
+             // ✅ 5. SE NÃO FOR MEU PERFIL, BUSCA O STATUS DE AMIZADE
+             if (!isMyProfile) {
+                 try {
+                    // Usamos o endpoint de busca (que retorna o DTO com status)
+                    const statusResponse = await axios.get(`http://localhost:8080/usuarios/buscar?nome=${profileResponse.data.nome}`);
+                    // Encontra o usuário exato na lista de busca
+                    const foundUser = statusResponse.data.find(user => user.id === profileResponse.data.id);
+                    if (foundUser) {
+                        setFriendshipStatus(foundUser.statusAmizade);
+                    } else {
+                        setFriendshipStatus('NENHUMA'); // Fallback
+                    }
+                 } catch (statusError) {
+                     console.error("Erro ao buscar status de amizade:", statusError);
+                     setFriendshipStatus('NENHUMA'); // Fallback em caso de erro
+                 }
+             }
+
         } catch (error) {
             console.error("Erro ao buscar dados do perfil:", error);
             setIsLoading(false);
@@ -420,10 +782,9 @@ const Perfil = ({ onLogout }) => {
         if (perfilId) {
             try {
                 const postagensResponse = await axios.get(`http://localhost:8080/postagem/usuario/${perfilId}`);
-                // Ordena os comentários de cada postagem
                 const postsComComentariosOrdenados = postagensResponse.data.map(post => ({
                     ...post,
-                    comentarios: post.comentarios.sort((a, b) => {
+                    comentarios: (post.comentarios || []).sort((a, b) => {
                         if (a.destacado !== b.destacado) return b.destacado ? 1 : -1;
                         return new Date(a.dataCriacao) - new Date(b.dataCriacao);
                     })
@@ -438,10 +799,137 @@ const Perfil = ({ onLogout }) => {
 
     useEffect(() => {
         fetchPageData();
-    }, [onLogout, userId]);
+    }, [onLogout, userId]); // Re-executa se a ID da URL (userId) mudar
 
-    // --- Função para Salvar Perfil ---
+    // --- Handlers de Like (Sem alterações) ---
+    const handleLike = async (postId) => {
+        // ... (mesmo handler handleLike da última vez) ...
+        const likeEndpoint = `http://localhost:8080/curtidas/toggle`;
+        const payload = { postagemId: postId, comentarioId: null };
+        const token = localStorage.getItem("authToken");
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+        setPostagens(currentPosts => currentPosts.map(p => {
+          if (p.id === postId) {
+            const curtidas = Number.isInteger(p.totalCurtidas) ? p.totalCurtidas : 0;
+            return {
+              ...p,
+              curtidoPeloUsuario: !p.curtidoPeloUsuario,
+              totalCurtidas: p.curtidoPeloUsuario ? curtidas - 1 : curtidas + 1
+            };
+          }
+          return p;
+        }));
+        try {
+          await axios.post(likeEndpoint, payload, { headers });
+        } catch (error) {
+          console.error("Erro ao curtir post:", error);
+          alert("Não foi possível curtir a postagem.");
+          fetchPageData(); 
+        }
+    };
+    
+    const handleLikeComment = async (postId, commentId) => {
+        // ... (mesmo handler handleLikeComment da última vez) ...
+        if (!postId) {
+            console.error("Não foi possível encontrar o postID para este comentário");
+            return;
+        }
+        const likeEndpoint = `http://localhost:8080/curtidas/toggle`;
+        const payload = { postagemId: null, comentarioId: commentId };
+        const token = localStorage.getItem("authToken");
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+        setPostagens(currentPosts => currentPosts.map(p => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              comentarios: p.comentarios.map(c => {
+                const findAndToggle = (comment) => {
+                    if (comment.id === commentId) {
+                         const curtidas = Number.isInteger(comment.totalCurtidas) ? comment.totalCurtidas : 0;
+                         return {
+                            ...comment,
+                            curtidoPeloUsuario: !comment.curtidoPeloUsuario,
+                            totalCurtidas: comment.curtidoPeloUsuario ? curtidas - 1 : curtidas + 1
+                         };
+                    }
+                    return comment;
+                };
+                return findAndToggle(c);
+              })
+            };
+          }
+          return p;
+        }));
+        try {
+          await axios.post(likeEndpoint, payload, { headers });
+        } catch (error) {
+          console.error("Erro ao curtir comentário:", error);
+          fetchPageData();
+        }
+    };
+
+    // --- Handlers de Edição/Exclusão (Sem alterações) ---
+    const handleTogglePostMenu = (postId) => {
+        setActivePostMenu((prevId) => (prevId === postId ? null : postId));
+    };
+    const handleEditPost = (post) => {
+        setEditingPost(post);
+        setActivePostMenu(null); 
+    };
+    const handleDeletePost = async (postId) => {
+        // ... (mesmo handler handleDeletePost da última vez) ...
+        setActivePostMenu(null); 
+        const result = await Swal.fire({
+          title: "Você tem certeza?",
+          text: "Esta ação não pode ser revertida!",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "var(--danger)",
+          cancelButtonColor: "var(--bg-quaternary)",
+          confirmButtonText: "Sim, excluir postagem",
+          cancelButtonText: "Cancelar",
+        });
+        if (result.isConfirmed) {
+          const deleteEndpoint = `http://localhost:8080/postagem/${postId}`;
+          const token = localStorage.getItem("authToken");
+          if (!token) {
+            alert("Sessão expirada.");
+            return;
+          }
+          const headers = { Authorization: `Bearer ${token}` };
+          try {
+            await axios.delete(deleteEndpoint, { headers });
+            setPostagens((prevPosts) => prevPosts.filter((p) => p.id !== postId)); 
+            Swal.fire("Excluída!", "Sua postagem foi excluída.", "success");
+          } catch (error) {
+            console.error("Erro ao excluir post:", error);
+            alert("Não foi possível excluir a postagem.");
+          }
+        }
+    };
+    const handleSaveEdit = async (formData, postId) => {
+        // ... (mesmo handler handleSaveEdit da última vez) ...
+        const updateEndpoint = `http://localhost:8080/postagem/${postId}`;
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          alert("Sessão expirada.");
+          return; 
+        }
+        const headers = { Authorization: `Bearer ${token}` };
+        try {
+          await axios.put(updateEndpoint, formData, { headers });
+          setEditingPost(null); 
+        } catch (error) {
+          console.error("Erro ao salvar edição:", error);
+          alert("Não foi possível salvar as alterações.");
+        }
+    };
+
+    // --- Função para Salvar Perfil (Sem alterações) ---
     const handleSaveProfile = async (novosDados) => {
+        // ... (mesmo handler handleSaveProfile da última vez) ...
         const { nome, bio, arquivoFoto } = novosDados;
         const token = localStorage.getItem('authToken');
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -453,7 +941,10 @@ const Perfil = ({ onLogout }) => {
                 formData.append('foto', arquivoFoto);
                 await axios.put('http://localhost:8080/usuarios/me/foto', formData);
             }
-            await fetchPageData();
+            await fetchPageData(); 
+            const meResponse = await axios.get('http://localhost:8080/usuarios/me');
+            setLoggedInUser(meResponse.data);
+            
             setIsModalOpen(false);
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
@@ -462,41 +953,63 @@ const Perfil = ({ onLogout }) => {
         }
     };
 
+    // ✅ 6. NOVOS HANDLERS PARA BOTÕES DE CONEXÃO
+    const handleConnect = async () => {
+        try {
+            // Endpoint de 'solicitar'
+            await axios.post(`http://localhost:8080/api/amizades/solicitar/${profileData.id}`);
+            // Atualiza o estado do botão localmente
+            setFriendshipStatus('SOLICITACAO_ENVIADA'); 
+            Swal.fire('Sucesso!', 'Solicitação de amizade enviada.', 'success');
+        } catch (error) {
+            console.error("Erro ao enviar solicitação:", error);
+            const errorMsg = error.response?.data?.message || 'Não foi possível enviar a solicitação.';
+            Swal.fire('Erro', errorMsg, 'error');
+        }
+    };
+
+    const handleChat = () => {
+        // Navega para a página de mensagens com o ID do usuário do perfil
+        navigate(`/mensagens?dm=${profileData.id}`);
+    };
+    // --- Fim dos novos Handlers ---
+
+
     // --- Renderização ---
     if (isLoading || !profileData || !loggedInUser) {
         return <div>Carregando perfil...</div>;
     }
 
+    // ... (lógica de userImage, userDob - sem alterações) ...
     let userImage;
     if (profileData.urlFotoPerfil && profileData.urlFotoPerfil.startsWith('http')) {
         userImage = profileData.urlFotoPerfil;
     } else if (profileData.urlFotoPerfil) {
-        userImage = `http://localhost:8080${profileData.urlFotoPerfil}`;
+        userImage = getCorrectImageUrl(profileData.urlFotoPerfil); 
     } else {
         userImage = "https://via.placeholder.com/150";
     }
-
     const userDob = profileData.dataNascimento
         ? new Date(profileData.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
         : 'Não informado';
 
+    // ✅ ATUALIZADO: a variável isMyProfile agora é calculada com segurança
     const isMyProfile = loggedInUser.id === profileData.id;
 
     return (
         <>
+            {/* ... (Topbar, Overlay, Sidebar - sem alterações) ... */}
             <Topbar
                 onLogout={onLogout}
                 currentUser={loggedInUser}
                 onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             />
-
             {isSidebarOpen && (
                 <div
                     className="sidebar-overlay"
                     onClick={() => setIsSidebarOpen(false)}
                 ></div>
             )}
-
             <div className="container">
                 <Sidebar
                     currentUser={loggedInUser}
@@ -516,8 +1029,11 @@ const Perfil = ({ onLogout }) => {
                                         <h1 id="profile-name">{profileData.nome}</h1>
                                         <p id="profile-title">{profileData.tipoUsuario}</p>
                                     </div>
-                                    {isMyProfile && (
-                                        <div className="profile-actions">
+
+                                    {/* ✅ 7. LÓGICA DE RENDERIZAÇÃO DOS BOTÕES ATUALIZADA */}
+                                    <div className="profile-actions">
+                                        {isMyProfile ? (
+                                            // Se for MEU perfil, mostra "Editar"
                                             <button
                                                 className="btn btn-primary"
                                                 id="edit-profile-btn-page"
@@ -528,12 +1044,50 @@ const Perfil = ({ onLogout }) => {
                                                     <><FontAwesomeIcon icon={faPen} /> Editar Perfil</>
                                                 )}
                                             </button>
-                                        </div>
-                                    )}
+                                        ) : (
+                                            // Se for perfil de OUTRA pessoa, mostra os botões de ação
+                                            <div className="profile-actions-other">
+                                                
+                                                {/* --- Botão de Conexão (com base no status) --- */}
+                                                {friendshipStatus === 'NENHUMA' && (
+                                                    <button className="btn btn-primary" onClick={handleConnect}>
+                                                        <FontAwesomeIcon icon={faUserPlus} /> Conectar
+                                                    </button>
+                                                )}
+                                                {friendshipStatus === 'SOLICITACAO_ENVIADA' && (
+                                                    <button className="btn btn-secondary" disabled>
+                                                        <FontAwesomeIcon icon={faClockRotateLeft} /> Pendente
+                                                    </button>
+                                                )}
+                                                {friendshipStatus === 'SOLICITACAO_RECEBIDA' && (
+                                                    // Leva para a página de conexões para aceitar
+                                                    <Link to="/conexoes" className="btn btn-primary">
+                                                        Responder
+                                                    </Link>
+                                                )}
+                                                {friendshipStatus === 'AMIGOS' && (
+                                                    <button className="btn btn-secondary" disabled>
+                                                        <FontAwesomeIcon icon={faCheck} /> Amigos
+                                                    </button>
+                                                )}
+
+                                                {/* --- Botão de Conversar --- */}
+                                                {/* (Aparece se já são amigos) */}
+                                                {friendshipStatus === 'AMIGOS' && (
+                                                    <button className="btn btn-secondary" onClick={handleChat}>
+                                                        <FontAwesomeIcon icon={faCommentDots} /> Conversar
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* ✅ FIM DA LÓGICA DOS BOTÕES */}
+                                    
                                 </div>
                             </div>
                         </div>
 
+                        {/* ... (Corpo do Perfil - Widget "Sobre" - sem alterações) ... */}
                         <div className="profile-body">
                             <div className="widget-card">
                                 <h3>Sobre</h3>
@@ -544,6 +1098,7 @@ const Perfil = ({ onLogout }) => {
                                 </ul>
                             </div>
 
+                            {/* ... (Container de Postagens - sem alterações) ... */}
                             <div className="profile-posts-container">
                                 <h3>Postagens de {profileData.nome.split(' ')[0]}</h3>
                                 
@@ -551,20 +1106,39 @@ const Perfil = ({ onLogout }) => {
                                 
                                 {!isLoading && postagens.length > 0 ? (
                                     <div className="feed-lista">
-                                        {postagens.map(post => (
-                                            <PostagemItem
-                                                key={post.id}
-                                                post={post}
-                                                loggedInUser={loggedInUser}
-                                                activeCommentBox={activeCommentBox}
-                                                handleToggleComments={handleToggleComments}
-                                                handleLike={handleLike}
-                                                handleLikeComment={handleLikeComment}
-                                                currentUser={loggedInUser}
-                                                stompClient={stompClient}
-                                                isConnected={isConnected}
-                                            />
-                                        ))}
+                                        
+                                        {postagens.map(post => {
+                                            // Se o post está sendo editado, renderiza o Editor
+                                            if (editingPost && editingPost.id === post.id) {
+                                              return (
+                                                <PostEditor
+                                                  key={post.id}
+                                                  post={editingPost}
+                                                  onCancel={() => setEditingPost(null)}
+                                                  onSave={handleSaveEdit}
+                                                />
+                                              );
+                                            }
+                                            // Se não, renderiza o item normal
+                                            return (
+                                                <PostagemItem
+                                                    key={post.id}
+                                                    post={post}
+                                                    loggedInUser={loggedInUser}
+                                                    activeCommentBox={activeCommentBox}
+                                                    handleToggleComments={handleToggleComments}
+                                                    handleLike={handleLike}
+                                                    handleLikeComment={handleLikeComment}
+                                                    currentUser={loggedInUser} 
+                                                    stompClient={stompClient}
+                                                    isConnected={isConnected}
+                                                    activePostMenu={activePostMenu}
+                                                    handleTogglePostMenu={handleTogglePostMenu}
+                                                    handleEditPost={handleEditPost}
+                                                    handleDeletePost={handleDeletePost}
+                                                />
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     !isLoading && (
@@ -580,6 +1154,7 @@ const Perfil = ({ onLogout }) => {
                 <RightSidebar />
             </div>
 
+            {/* ... (Modal de Editar Perfil - sem alterações) ... */}
             {isModalOpen && isMyProfile && (
                 <EditarPerfilModal
                     user={profileData}
