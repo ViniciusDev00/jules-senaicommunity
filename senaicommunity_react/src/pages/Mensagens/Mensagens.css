@@ -347,3 +347,34 @@
     font-size: 0.65rem;
     opacity: 0.8;
 }
+
+.message-bubble-wrapper.other {
+    display: flex;
+    align-items: flex-start; /* Alinha a foto no topo da bolha */
+    gap: 0.75rem; /* 12px de espaço entre a foto e a bolha */
+}
+
+/* Estilo para a foto do autor da mensagem (Goal 3) */
+.message-author-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-top: 4px; /* Pequeno ajuste para alinhar com o topo da bolha */
+    flex-shrink: 0; /* Impede que a foto encolha */
+    background-color: var(--bg-tertiary); /* Cor de fundo caso a imagem falhe */
+}
+
+/* Estilo para o nome do autor (Goal 2) */
+.message-author {
+    display: block;
+    font-size: 0.8rem; /* Pequeno, como pedido */
+    font-weight: 700;
+    color: var(--text-tertiary); /* Cor mais suave */
+    margin-bottom: 4px;
+}
+
+/* Ajusta a cor do nome do autor (pode customizar) */
+.message-bubble-wrapper.other .message-author {
+    color: var(--primary); /* Exemplo: cor primária */
+}

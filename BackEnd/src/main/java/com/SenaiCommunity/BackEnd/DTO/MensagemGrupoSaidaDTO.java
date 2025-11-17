@@ -20,4 +20,5 @@ public class MensagemGrupoSaidaDTO {
     private LocalDateTime dataEnvio;
     // ✅ NOVO CAMPO
     private LocalDateTime dataEdicao;
+    private String fotoAutorUrl;
 }

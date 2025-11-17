@@ -10,10 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.util.StringUtils;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+// import java.nio.file.Files; // Não é mais necessário
+// import java.nio.file.Path; // Não é mais necessário
+// import java.nio.file.Paths; // Não é mais necessário
+// import java.nio.file.StandardCopyOption; // Não é mais necessário
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,7 +24,8 @@ import java.util.stream.Collectors;
 @Service
 public class ProjetoService {
 
-    private static final String UPLOAD_DIR = "uploads/projeto-pictures/";
+    // ❌ UPLOAD_DIR REMOVIDO
+    // private static final String UPLOAD_DIR = "uploads/projeto-pictures/";
 
     @Autowired
     private ProjetoRepository projetoRepository;
@@ -39,10 +40,14 @@ public class ProjetoService {
     private ConviteProjetoRepository conviteProjetoRepository;
 
     @Autowired
-    private NotificacaoService notificacaoService; // Injetado para enviar notificações
+    private NotificacaoService notificacaoService;
 
     @Autowired
     private MensagemGrupoService mensagemGrupoService;
+
+    // ✅ INJETADO O ARQUIVOMIDIASERVICE (CLOUDINARY)
+    @Autowired
+    private ArquivoMidiaService arquivoMidiaService;
 
     public List<ProjetoDTO> listarTodos() {
         List<Projeto> projetos = projetoRepository.findAll();
@@ -99,81 +104,120 @@ public class ProjetoService {
         projeto.setMaxMembros(dto.getMaxMembros() != null ? dto.getMaxMembros() : 50);
         projeto.setGrupoPrivado(dto.getGrupoPrivado() != null ? dto.getGrupoPrivado() : false);
 
+        // ✅ LÓGICA DE UPLOAD ATUALIZADA PARA CLOUDINARY
         if (foto != null && !foto.isEmpty()) {
             try {
-                if (!isNovoGrupo && projeto.getImagemUrl() != null && !projeto.getImagemUrl().isBlank()) {
-                    deletarFotoAntiga(projeto.getImagemUrl());
+                // Se não for um grupo novo e já tiver uma foto (URL http), deleta a antiga
+                if (!isNovoGrupo && projeto.getImagemUrl() != null && projeto.getImagemUrl().startsWith("http")) {
+                    try {
+                        arquivoMidiaService.deletar(projeto.getImagemUrl());
+                    } catch (Exception e) {
+                        System.err.println("[WARN] Falha ao deletar foto antiga do Cloudinary: " + e.getMessage());
+                    }
                 }
-                String fileName = salvarFoto(foto);
-                projeto.setImagemUrl(fileName);
+                // Faz upload da nova foto para o Cloudinary
+                String urlFoto = arquivoMidiaService.upload(foto);
+                projeto.setImagemUrl(urlFoto); // Salva a URL completa do Cloudinary
+
             } catch (IOException e) {
-                System.err.println("[ERROR] Erro ao salvar a foto do projeto: " + e.getMessage());
+                System.err.println("[ERROR] Erro ao salvar a foto do projeto no Cloudinary: " + e.getMessage());
+                // Lança a exceção para o controller lidar (ex: "Upload de vídeos bloqueado")
+                throw new RuntimeException("Erro ao salvar foto: " + e.getMessage(), e);
             }
-        } else if (dto.getImagemUrl() != null && dto.getImagemUrl().isEmpty() && projeto.getImagemUrl() != null) {
-            deletarFotoAntiga(projeto.getImagemUrl());
-            projeto.setImagemUrl(null);
         }
+        // Lógica para remover foto (não implementada no DTO, mas fica aqui)
+        // else if (dto.getImagemUrl() != null && dto.getImagemUrl().isEmpty() && projeto.getImagemUrl() != null && projeto.getImagemUrl().startsWith("http")) {
+        //     try {
+        //         arquivoMidiaService.deletar(projeto.getImagemUrl());
+        //     } catch (Exception e) {
+        //         System.err.println("[WARN] Falha ao deletar foto antiga do Cloudinary: " + e.getMessage());
+        //     }
+        //     projeto.setImagemUrl(null);
+        // }
 
         Projeto salvo = projetoRepository.save(projeto);
 
         if (isNovoGrupo) {
+            // 1. Adiciona o criador como ADMIN
             adicionarMembroComoAdmin(salvo, autor);
-            enviarConvitesAutomaticos(salvo, dto.getProfessorIds(), dto.getAlunoIds(), autor.getId());
 
+            // ✅ 2. LÓGICA ATUALIZADA: Adiciona membros direto, em vez de enviar convites
+            adicionarMembrosIniciais(salvo, dto.getProfessorIds(), dto.getAlunoIds(), autor);
+
+            // 3. Prepara a lista de IDs para a mensagem do sistema
             List<Long> todosIdsConvidados = new ArrayList<>();
             if (dto.getProfessorIds() != null) todosIdsConvidados.addAll(dto.getProfessorIds());
             if (dto.getAlunoIds() != null) todosIdsConvidados.addAll(dto.getAlunoIds());
-            todosIdsConvidados.remove(autor.getId());
+            todosIdsConvidados.remove(autor.getId()); // Remove o próprio autor da contagem
 
+            // 4. Cria a mensagem de sistema no chat
             if (todosIdsConvidados.isEmpty()) {
                 mensagemGrupoService.criarMensagemDeSistema(salvo,
                         "Bem-vindo ao chat do seu novo projeto! Adicione participantes ao projeto para começar a conversar.");
             } else {
                 mensagemGrupoService.criarMensagemDeSistema(salvo,
-                        "Chat do projeto '" + salvo.getTitulo() + "' criado. Convites enviados para " + todosIdsConvidados.size() + " membro(s).");
+                        "Chat do projeto '" + salvo.getTitulo() + "' criado. " + todosIdsConvidados.size() + " membro(s) foram adicionados.");
             }
         }
 
         return converterParaDTO(salvo);
     }
 
-    private void deletarFotoAntiga(String nomeArquivo) {
-        if (nomeArquivo == null || nomeArquivo.isBlank()) return;
-        try {
-            Path filePath = Paths.get(UPLOAD_DIR).resolve(nomeArquivo).normalize();
-            Files.deleteIfExists(filePath);
-            System.out.println("[DEBUG] Foto antiga deletada: " + nomeArquivo);
-        } catch (IOException e) {
-            System.err.println("[WARN] Não foi possível deletar a foto antiga " + nomeArquivo + ": " + e.getMessage());
+    // ❌ MÉTODO DELETADO (salvava em disco)
+    // private void deletarFotoAntiga(String nomeArquivo) { ... }
+
+    // ✅✅✅ MÉTODO NOVO (Substitui enviarConvitesAutomaticos) ✅✅✅
+    // Adiciona usuários diretamente como membros
+    private void adicionarMembrosIniciais(Projeto projeto, List<Long> professorIds, List<Long> alunoIds, Usuario autor) {
+        List<Long> idsParaAdicionar = new ArrayList<>();
+        if (professorIds != null) idsParaAdicionar.addAll(professorIds);
+        if (alunoIds != null) idsParaAdicionar.addAll(alunoIds);
+
+        for (Long usuarioId : idsParaAdicionar) {
+            // Pula o autor (ele já é admin)
+            if (usuarioId.equals(autor.getId())) {
+                continue;
+            }
+
+            try {
+                // Verifica se já não é membro (segurança)
+                if (projetoMembroRepository.existsByProjetoIdAndUsuarioId(projeto.getId(), usuarioId)) {
+                    continue;
+                }
+
+                Usuario usuario = usuarioRepository.findById(usuarioId)
+                        .orElseThrow(() -> new EntityNotFoundException("Usuário " + usuarioId + " não encontrado."));
+
+                // Cria a entidade de MEMBRO direto
+                ProjetoMembro membro = new ProjetoMembro();
+                membro.setProjeto(projeto);
+                membro.setUsuario(usuario);
+                membro.setRole(ProjetoMembro.RoleMembro.MEMBRO); // Entra como membro normal
+                membro.setDataEntrada(LocalDateTime.now());
+                membro.setConvidadoPor(autor); // Guarda quem adicionou
+                projetoMembroRepository.save(membro);
+
+                // Notifica o usuário que ele foi ADICIONADO (não convidado)
+                String mensagemNotificacao = String.format("adicionou você ao projeto '%s'.", projeto.getTitulo());
+                notificacaoService.criarNotificacao(
+                        usuario,        // 1. Para quem é a notificação
+                        autor,          // 2. Quem adicionou
+                        mensagemNotificacao,
+                        "PROJETO_ADICIONADO", // Tipo da notificação
+                        projeto.getId() // ID do Projeto
+                );
+
+            } catch (Exception e) {
+                System.err.println("[WARN] Erro ao adicionar membro automático " + usuarioId + ": " + e.getMessage());
+            }
         }
     }
 
+    // ❌ MÉTODO ANTIGO (Não é mais usado no 'salvar')
+    // private void enviarConvitesAutomaticos(Projeto projeto, List<Long> professorIds, List<Long> alunoIds, Long autorId) { ... }
 
-    private void enviarConvitesAutomaticos(Projeto projeto, List<Long> professorIds, List<Long> alunoIds, Long autorId) {
-        if (professorIds != null) {
-            for (Long professorId : professorIds) {
-                try {
-                    if (!professorId.equals(autorId)) {
-                        enviarConvite(projeto.getId(), professorId, autorId);
-                    }
-                } catch (Exception e) {
-                    System.err.println("[WARN] Erro ao enviar convite automático para professor " + professorId + ": " + e.getMessage());
-                }
-            }
-        }
-
-        if (alunoIds != null) {
-            for (Long alunoId : alunoIds) {
-                try {
-                    if (!alunoId.equals(autorId)) {
-                        enviarConvite(projeto.getId(), alunoId, autorId);
-                    }
-                } catch (Exception e) {
-                    System.err.println("[WARN] Erro ao enviar convite automático para aluno " + alunoId + ": " + e.getMessage());
-                }
-            }
-        }
-    }
+    // ... (Os métodos enviarConvite, aceitarConvite, recusarConvite ainda existem para o Modal de Detalhes) ...
+    // ... (Lógica de enviarConvite, aceitarConvite, recusarConvite, expulsarMembro, alterarPermissao, atualizarInfoGrupo não mudam) ...
 
     @Transactional
     public void enviarConvite(Long projetoId, Long usuarioConvidadoId, Long usuarioConvidadorId) {
@@ -222,6 +266,7 @@ public class ProjetoService {
         // --- FIM ---
     }
 
+    // ... (aceitarConvite, recusarConvite, expulsarMembro, alterarPermissao, atualizarInfoGrupo não mudam) ...
     @Transactional
     public void aceitarConvite(Long conviteId, Long usuarioId) {
         ConviteProjeto convite = conviteProjetoRepository.findById(conviteId)
@@ -416,13 +461,22 @@ public class ProjetoService {
         if (!projeto.getAutor().getId().equals(adminId)) {
             throw new IllegalArgumentException("Apenas o criador pode deletar o projeto.");
         }
-        // Notificar membros antes de deletar?
+
+        // ✅ DELETA A FOTO DO CLOUDINARY ANTES DE DELETAR O PROJETO
+        if (projeto.getImagemUrl() != null && projeto.getImagemUrl().startsWith("http")) {
+            try {
+                arquivoMidiaService.deletar(projeto.getImagemUrl());
+            } catch (Exception e) {
+                System.err.println("[WARN] Falha ao deletar foto do projeto do Cloudinary: " + e.getMessage());
+            }
+        }
+
         projetoRepository.delete(projeto); // Cascade deve cuidar do resto (membros, convites, mensagens?)
         System.out.println("[DEBUG] Projeto deletado com sucesso: " + id);
     }
 
 
-    // Converte Entidade Projeto para ProjetoDTO (ajustado para usar URL de foto correta)
+    // ✅ ATUALIZADO: converterParaDTO (para fotos de membros)
     private ProjetoDTO converterParaDTO(Projeto projeto) {
         ProjetoDTO dto = new ProjetoDTO();
         dto.setId(projeto.getId());
@@ -432,7 +486,10 @@ public class ProjetoService {
         dto.setDataEntrega(projeto.getDataEntrega());
         dto.setStatus(projeto.getStatus());
         dto.setLinksUteis(projeto.getLinksUteis());
-        dto.setImagemUrl(projeto.getImagemUrl()); // Passa só o nome do arquivo
+
+        // ✅ A imagemUrl agora é a URL completa do Cloudinary (ou null)
+        dto.setImagemUrl(projeto.getImagemUrl());
+
         dto.setDataCriacao(projeto.getDataCriacao());
         dto.setMaxMembros(projeto.getMaxMembros());
         dto.setGrupoPrivado(projeto.getGrupoPrivado());
@@ -453,9 +510,20 @@ public class ProjetoService {
             membroDTO.setUsuarioId(membro.getUsuario().getId());
             membroDTO.setUsuarioNome(membro.getUsuario().getNome());
             membroDTO.setUsuarioEmail(membro.getUsuario().getEmail());
-            // CORRIGIDO: Monta a URL da foto do membro
-            membroDTO.setUsuarioFotoUrl(membro.getUsuario().getFotoPerfil() != null ?
-                    "/api/arquivos/" + membro.getUsuario().getFotoPerfil() : null); // null se não tiver foto
+
+            // ✅ CORRIGIDO: Monta a URL da foto do membro (lógica do UsuarioService)
+            String fotoMembro = membro.getUsuario().getFotoPerfil();
+            String urlFotoCorrigida = null;
+            if (fotoMembro != null && !fotoMembro.isBlank()) {
+                if (fotoMembro.startsWith("http")) {
+                    urlFotoCorrigida = fotoMembro; // Cloudinary/Google
+                } else {
+                    urlFotoCorrigida = "/api/arquivos/" + fotoMembro; // Local
+                }
+            }
+            // Se for nulo, o DTO frontend vai usar o fallback
+            membroDTO.setUsuarioFotoUrl(urlFotoCorrigida);
+
             membroDTO.setRole(membro.getRole());
             membroDTO.setDataEntrada(membro.getDataEntrada());
             membroDTO.setConvidadoPorNome(membro.getConvidadoPor() != null ?
@@ -484,32 +552,10 @@ public class ProjetoService {
         return dto;
     }
 
-    // Salva a foto do projeto (sem alterações)
-    private String salvarFoto(MultipartFile foto) throws IOException {
-        if (foto.isEmpty()) { throw new IOException("Arquivo de imagem está vazio"); }
-        String contentType = foto.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) { throw new IOException("Arquivo deve ser uma imagem válida (ex: PNG, JPG, WEBP)"); }
-        String originalFilename = foto.getOriginalFilename();
-        if (originalFilename == null) { originalFilename = "image"; }
-        String cleanFilename = StringUtils.cleanPath(originalFilename.replaceAll("[^a-zA-Z0-9.\\-]", "_"));
-        String fileExtension = StringUtils.getFilenameExtension(cleanFilename);
-        String baseName = cleanFilename.replace("." + fileExtension, "");
-        fileExtension = (fileExtension != null && !fileExtension.isEmpty()) ? "." + fileExtension : ".png";
-        String fileName = baseName + "_" + System.currentTimeMillis() + fileExtension;
+    // ❌ MÉTODO DELETADO (salvava em disco)
+    // private String salvarFoto(MultipartFile foto) throws IOException { ... }
 
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        Files.createDirectories(uploadPath);
-        Path filePath = uploadPath.resolve(fileName);
-        try {
-            Files.copy(foto.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            System.err.println("[ERROR] Falha ao copiar arquivo para o destino: " + filePath + " - " + e.getMessage());
-            throw new IOException("Erro ao salvar arquivo no servidor", e);
-        }
-        return fileName;
-    }
-
-    // Verifica se é ADMIN (incluindo o criador)
+    // ... (isAdmin, isAdminOuModerador, adicionarMembroComoAdmin não mudam) ...
     protected boolean isAdmin(Long projetoId, Long usuarioId) {
         Projeto projeto = projetoRepository.findById(projetoId).orElse(null);
         if (projeto != null && projeto.getAutor() != null && projeto.getAutor().getId().equals(usuarioId)) {
@@ -519,7 +565,6 @@ public class ProjetoService {
         return membro != null && membro.getRole() == ProjetoMembro.RoleMembro.ADMIN;
     }
 
-    // Verifica se é ADMIN ou MODERADOR (incluindo o criador)
     protected boolean isAdminOuModerador(Long projetoId, Long usuarioId) {
         Projeto projeto = projetoRepository.findById(projetoId).orElse(null);
         if (projeto != null && projeto.getAutor() != null && projeto.getAutor().getId().equals(usuarioId)) {
@@ -530,7 +575,6 @@ public class ProjetoService {
                 membro.getRole() == ProjetoMembro.RoleMembro.MODERADOR);
     }
 
-    // Adiciona o criador como membro ADMIN do projeto (sem alterações)
     private void adicionarMembroComoAdmin(Projeto projeto, Usuario usuario) {
         if (!projetoMembroRepository.existsByProjetoIdAndUsuarioId(projeto.getId(), usuario.getId())) {
             ProjetoMembro membro = new ProjetoMembro();

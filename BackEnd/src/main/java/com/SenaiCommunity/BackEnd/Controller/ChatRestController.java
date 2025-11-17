@@ -11,13 +11,16 @@ import com.SenaiCommunity.BackEnd.Service.MensagemPrivadaService;
 import com.SenaiCommunity.BackEnd.Service.PostagemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+// ✅ 1. Importar a anotação de segurança
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/chat")
-//Essa controller serve buscar os históricos de conversa dos chats
+// ✅ 2. Adicionar a anotação para proteger todos os endpoints do controller
+@PreAuthorize("hasRole('ALUNO') or hasRole('PROFESSOR')")
 public class ChatRestController {
 
     @Autowired
@@ -40,7 +43,8 @@ public class ChatRestController {
     //  Histórico de mensagens de grupo
     @GetMapping("/grupo/{projetoId}")
     public ResponseEntity<List<MensagemGrupoSaidaDTO>> getMensagensDoGrupo(@PathVariable Long projetoId) {
-        List<MensagemGrupoSaidaDTO> mensagens = mensagemGrupoService.buscarMensagensPorProjeto(projetoId);
+        // ✅ 3. CORREÇÃO: O nome do método foi corrigido
+        List<MensagemGrupoSaidaDTO> mensagens = mensagemGrupoService.buscarMensagensPorGrupo(projetoId);
         return ResponseEntity.ok(mensagens);
     }
 

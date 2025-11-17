@@ -1,44 +1,40 @@
-// src/pages/Projetos/Projetos.tsx (CORRIGIDO E TIPADO)
+// src/pages/Projetos/Projetos.tsx (CORRIGIDO E ATUALIZADO)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import Topbar from '../../components/Layout/Topbar';
-import Sidebar from '../../components/Layout/Sidebar';
-import RightSidebar from '../../pages/Principal/RightSidebar';
+import Topbar from '../../components/Layout/Topbar.tsx'; 
+import Sidebar from '../../components/Layout/Sidebar.jsx';
+import RightSidebar from '../../pages/Principal/RightSidebar.jsx';
 import './Projetos.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faPlus, faSearch, faLink, faTimes, faSpinner, faUserPlus,
     faUserFriends, faExternalLinkAlt, faCalendarAlt, faInfoCircle,
-    faCommentDots, faTrash, faUserShield
+    faCommentDots, faTrash, faUserShield, faImage 
 } from '@fortawesome/free-solid-svg-icons';
-// Corrigindo a importação do lodash
 import debounce from 'lodash/debounce'; 
 import { useNavigate } from 'react-router-dom';
 
-// =================================================================
-// === DEFINIÇÃO DOS TIPOS ===
-// =================================================================
+// ... (Interfaces de Tipos: Membro, Projeto, Usuario, etc. - Sem alterações) ...
 interface Membro {
     id: any;
     usuarioId: any;
     usuarioNome: string;
     usuarioEmail: string;
-    usuarioFotoUrl: string;
+    usuarioFotoUrl: string; 
     role: 'ADMIN' | 'MODERADOR' | 'MEMBRO';
     dataEntrada: string;
     convidadoPorNome?: string;
 }
-
 interface Projeto {
     id: any;
     titulo: string;
     descricao: string;
-    imagemUrl: string;
+    imagemUrl: string; 
     dataCriacao: string;
-    dataInicio: string; // ou Date
-    dataEntrega?: string; // ou Date
+    dataInicio: string; 
+    dataEntrega?: string; 
     status: string;
     linksUteis: string[];
     maxMembros: number;
@@ -47,32 +43,24 @@ interface Projeto {
     autorNome: string;
     totalMembros: number;
     membros: Membro[];
-    // convitesPendentes: any[]; // Adicione se necessário
 }
-
-// Usuário (simplificado)
 interface Usuario {
     id: any;
     nome: string;
     email: string;
     tipoUsuario: 'ALUNO' | 'PROFESSOR';
-    fotoPerfil: string;
-    urlFotoPerfil?: string; // Adicionado para currentUser
+    fotoPerfil: string; 
+    urlFotoPerfil?: string; 
 }
-// =================================================================
-
-// === Props dos Componentes ===
 interface ProjetoCardProps {
     projeto: Projeto;
     onVerDetalhes: (projeto: Projeto) => void;
 }
-
 interface NovoProjetoModalProps {
     isOpen: boolean;
     onClose: () => void;
     onProjectCreated: (novoProjeto: Projeto) => void;
 }
-
 interface ProjetoDetalheModalProps {
     projeto: Projeto | null;
     currentUser: Usuario | null;
@@ -81,16 +69,25 @@ interface ProjetoDetalheModalProps {
     onProjetoAtualizado: (projetoId: any) => void;
     onProjetoExcluido: (projetoId: any) => void;
 }
-
 interface ProjetosPageProps {
     onLogout: () => void;
 }
+// ... (Função getCorrectUserImageUrl - Sem alterações) ...
+const getCorrectUserImageUrl = (url: string | null | undefined, fallbackId: any): string => {
+    const defaultAvatar = `https://i.pravatar.cc/40?u=${fallbackId || 'default'}`;
+    if (!url) { return defaultAvatar; }
+    if (url.startsWith('http')) { return url; }
+    if (url.startsWith('/api/arquivos/') || url.startsWith('/images/')) {
+        return `http://localhost:8080${url}`;
+    }
+    return `http://localhost:8080/api/arquivos/${url}`;
+};
 
 // --- COMPONENTE ProjetoCard ---
 const ProjetoCard: React.FC<ProjetoCardProps> = ({ projeto, onVerDetalhes }) => {
-    // ... (Código do ProjetoCard não muda) ...
+    // ... (Sem alterações aqui) ...
     const imageUrl = projeto.imagemUrl
-        ? `http://localhost:8080/projetos/imagens/${projeto.imagemUrl}`
+        ? projeto.imagemUrl 
         : 'https://placehold.co/600x400/161b22/8b949e?text=Projeto';
 
     return (
@@ -105,7 +102,7 @@ const ProjetoCard: React.FC<ProjetoCardProps> = ({ projeto, onVerDetalhes }) => 
                             <img
                                 key={membro.usuarioId}
                                 className="membro-avatar"
-                                src={membro.usuarioFotoUrl ? `http://localhost:8080${membro.usuarioFotoUrl}` : `https://i.pravatar.cc/40?u=${membro.usuarioId}`}
+                                src={getCorrectUserImageUrl(membro.usuarioFotoUrl, membro.usuarioId)}
                                 title={membro.usuarioNome}
                                 alt={membro.usuarioNome}
                             />
@@ -125,17 +122,18 @@ const ProjetoCard: React.FC<ProjetoCardProps> = ({ projeto, onVerDetalhes }) => 
 
 // --- COMPONENTE MODAL DE NOVO PROJETO ---
 const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, onProjectCreated }) => {
-    // ... (Código do NovoProjetoModal não muda) ...
+    // ... (Sem alterações aqui, continua usando a lógica de preview e getCorrectUserImageUrl) ...
     const [titulo, setTitulo] = useState('');
     const [descricao, setDescricao] = useState('');
-    const [foto, setFoto] = useState<File | null>(null); // Tipado
+    const [foto, setFoto] = useState<File | null>(null); 
     const [loading, setLoading] = useState(false);
-    const [currentUser, setCurrentUser] = useState<Usuario | null>(null); // Tipado
+    const [currentUser, setCurrentUser] = useState<Usuario | null>(null); 
     const [links, setLinks] = useState(['']);
-    const [participantes, setParticipantes] = useState<Usuario[]>([]); // Tipado
+    const [participantes, setParticipantes] = useState<Usuario[]>([]); 
     const [searchTermParticipante, setSearchTermParticipante] = useState('');
-    const [buscaResultados, setBuscaResultados] = useState<Usuario[]>([]); // Tipado
+    const [buscaResultados, setBuscaResultados] = useState<Usuario[]>([]); 
     const [isSearching, setIsSearching] = useState(false);
+    const [preview, setPreview] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -149,10 +147,37 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
                 } catch (error) { console.error("Erro ao buscar usuário atual:", error); }
             };
             fetchCurrentUser();
-            setTitulo(''); setDescricao(''); setFoto(null);
+            setTitulo(''); setDescricao(''); setFoto(null); setPreview(null);
             setLinks(['']); setParticipantes([]); setSearchTermParticipante(''); setBuscaResultados([]);
         }
     }, [isOpen]);
+
+    useEffect(() => {
+        return () => {
+            if (preview && preview.startsWith('blob:')) {
+                URL.revokeObjectURL(preview);
+            }
+        };
+    }, [preview]);
+
+    const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files ? e.target.files[0] : null;
+        if (file) {
+            setFoto(file);
+            if (preview && preview.startsWith('blob:')) {
+                URL.revokeObjectURL(preview);
+            }
+            setPreview(URL.createObjectURL(file));
+        }
+    };
+    
+    const removerPreview = () => {
+        setFoto(null);
+        if (preview && preview.startsWith('blob:')) {
+            URL.revokeObjectURL(preview);
+        }
+        setPreview(null);
+    };
 
     const handleLinkChange = (index: number, value: string) => {
         const novosLinks = [...links]; novosLinks[index] = value; setLinks(novosLinks);
@@ -167,9 +192,7 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
 
     const debouncedSearch = useCallback(debounce(async (query: string) => {
         if (!currentUser || query.length < 3) {
-            setBuscaResultados([]);
-            setIsSearching(false);
-            return;
+            setBuscaResultados([]); setIsSearching(false); return;
         }
         try {
             const response = await axios.get(`http://localhost:8080/usuarios/buscar?nome=${query}`);
@@ -201,21 +224,18 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
         const formData = new FormData();
         formData.append('titulo', titulo);
         formData.append('descricao', descricao);
-        formData.append('autorId', currentUser.id.toString()); // Converte para string
-        formData.append('maxMembros', "50"); // Converte para string
-        formData.append('grupoPrivado', "false"); // Converte para string
+        formData.append('autorId', currentUser.id.toString()); 
+        formData.append('maxMembros', "50"); 
+        formData.append('grupoPrivado', "false"); 
         links.filter(link => link.trim() !== '').forEach(link => formData.append('linksUteis', link));
-        
         participantes.forEach(p => {
-            if (p.tipoUsuario === 'ALUNO') { formData.append('alunoIds', p.id.toString()); } // Converte para string
-            else if (p.tipoUsuario === 'PROFESSOR') { formData.append('professorIds', p.id.toString()); } // Converte para string
+            if (p.tipoUsuario === 'ALUNO') { formData.append('alunoIds', p.id.toString()); } 
+            else if (p.tipoUsuario === 'PROFESSOR') { formData.append('professorIds', p.id.toString()); } 
         });
-        
         if (foto) { formData.append('foto', foto); }
-        
         try {
             const response = await axios.post('http://localhost:8080/projetos', formData);
-            Swal.fire('Sucesso!', 'Projeto publicado e chat criado!', 'success');
+            Swal.fire('Sucesso!', 'Projeto publicado e membros adicionados!', 'success');
             onProjectCreated(response.data); onClose();
         } catch (error) {
             console.error("Erro ao criar projeto:", error);
@@ -234,7 +254,7 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
                 </div>
                 <form onSubmit={handleSubmit}>
                     <div className="modal-body">
-                        {/* ... (Form groups de Título, Descrição, Foto, Links) ... */}
+                        {/* ... (form groups: titulo, descricao) ... */}
                         <div className="form-group">
                             <label htmlFor="proj-titulo">Título do Projeto</label>
                             <input type="text" id="proj-titulo" value={titulo} onChange={e => setTitulo(e.target.value)} required />
@@ -243,11 +263,21 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
                             <label htmlFor="proj-descricao">Descrição</label>
                             <textarea id="proj-descricao" rows={3} value={descricao} onChange={e => setDescricao(e.target.value)} required></textarea>
                         </div>
+                        {/* ... (form group: foto preview) ... */}
                         <div className="form-group">
                             <label htmlFor="proj-foto">Foto de Capa (Opcional)</label>
-                            <input type="file" id="proj-foto" accept="image/*" onChange={(e) => setFoto(e.target.files ? e.target.files[0] : null)} />
-                            {foto && <span className="file-name-preview">{foto.name}</span>}
+                            {preview ? (
+                                <div className="foto-preview-container">
+                                    <img src={preview} alt="Pré-visualização" className="foto-preview-img" />
+                                    <button type="button" className="btn-remove-link" onClick={removerPreview}>
+                                        <FontAwesomeIcon icon={faTimes} /> Remover Imagem
+                                    </button>
+                                </div>
+                            ) : (
+                                <input type="file" id="proj-foto" accept="image/*" onChange={handleFotoChange} />
+                            )}
                         </div>
+                        {/* ... (form group: links) ... */}
                         <div className="form-group">
                             <label>Links Úteis (Opcional, máx 3)</label>
                             {links.map((link, index) => (
@@ -259,6 +289,7 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
                             ))}
                             {links.length < 3 && (<button type="button" className="btn-add-link" onClick={addLinkInput}><FontAwesomeIcon icon={faPlus} /> Adicionar outro link</button>)}
                         </div>
+                        {/* ... (form group: participantes) ... */}
                         <div className="form-group">
                             <label htmlFor="proj-participantes">Adicionar Participantes (Opcional)</label>
                             <div className="participantes-pills-container">
@@ -276,7 +307,7 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
                                     <div className="search-results-dropdown">
                                         {buscaResultados.map(user => (
                                             <div key={user.id} className="search-result-item" onClick={() => addParticipante(user)}>
-                                                <img src={user.fotoPerfil ? `http://localhost:8080${user.fotoPerfil}` : `https://i.pravatar.cc/40?u=${user.id}`} alt={user.nome} />
+                                                <img src={getCorrectUserImageUrl(user.fotoPerfil, user.id)} alt={user.nome} />
                                                 <div className="search-result-info">
                                                     <span>{user.nome}</span><small>{user.email} ({user.tipoUsuario})</small>
                                                 </div>
@@ -301,9 +332,9 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
 
 // --- COMPONENTE MODAL DE DETALHES DO PROJETO ---
 const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, currentUser, onClose, onGoToChat, onProjetoAtualizado, onProjetoExcluido }) => {
-    // ... (Código do ProjetoDetalheModal não muda) ...
+    // ... (Sem alterações aqui, continua usando a lógica de preview e getCorrectUserImageUrl) ...
     const [searchTermParticipante, setSearchTermParticipante] = useState('');
-    const [buscaResultados, setBuscaResultados] = useState<Usuario[]>([]); // Tipado
+    const [buscaResultados, setBuscaResultados] = useState<Usuario[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
 
@@ -315,9 +346,7 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
 
     const debouncedSearch = useCallback(debounce(async (query: string) => {
         if (!currentUser || !projeto || query.length < 3) {
-            setBuscaResultados([]);
-            setIsSearching(false);
-            return;
+            setBuscaResultados([]); setIsSearching(false); return;
         }
         try {
             const response = await axios.get(`http://localhost:8080/usuarios/buscar?nome=${query}`);
@@ -339,21 +368,17 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
         if (!projeto) return;
         setIsAdding(true);
         try {
-            const params = {
-                usuarioConvidadoId: usuario.id
-            };
+            const params = { usuarioConvidadoId: usuario.id };
             await axios.post(`http://localhost:8080/projetos/${projeto.id}/convites`, null, { params: params });
             Swal.fire('Sucesso!', `Convite enviado para ${usuario.nome}.`, 'success');
-            // onProjetoAtualizado(projeto.id); // Não precisa mais
+            onProjetoAtualizado(projeto.id); 
             setSearchTermParticipante('');
             setBuscaResultados([]);
         } catch (error) {
             console.error("Erro ao enviar convite:", error);
             const errorMsg = (error as any).response?.data?.message || 'Não foi possível enviar o convite.';
             Swal.fire('Erro', errorMsg, 'error');
-        } finally {
-            setIsAdding(false);
-        }
+        } finally { setIsAdding(false); }
     };
 
     const handleExcluirProjeto = async () => {
@@ -368,7 +393,6 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
             confirmButtonText: 'Sim, excluir!',
             cancelButtonText: 'Cancelar'
         });
-
         if (result.isConfirmed) {
             try {
                 await axios.delete(`http://localhost:8080/projetos/${projeto.id}`);
@@ -383,22 +407,20 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
 
     useEffect(() => {
         if (!projeto) {
-            setSearchTermParticipante('');
-            setBuscaResultados([]);
-            setIsSearching(false);
+            setSearchTermParticipante(''); setBuscaResultados([]); setIsSearching(false);
         }
     }, [projeto]);
-
 
     if (!projeto) return null;
 
     const imageUrl = projeto.imagemUrl
-        ? `http://localhost:8080/projetos/imagens/${projeto.imagemUrl}`
+        ? projeto.imagemUrl 
         : 'https://placehold.co/600x400/161b22/8b949e?text=Projeto';
 
     return (
         <div className="modal-overlay visible" onClick={onClose}>
             <div className="modal-content modal-detalhe" onClick={e => e.stopPropagation()}>
+                {/* ... (header, body, lista de membros, etc. - Sem alterações) ... */}
                 <div className="modal-header detalhe-header" style={{ backgroundImage: `url('${imageUrl}')` }}>
                     <div className="header-overlay">
                         <h2>{projeto.titulo}</h2>
@@ -406,38 +428,31 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
                     </div>
                 </div>
                 <div className="modal-body detalhe-body">
+                    {/* ... (info grid) ... */}
                     <div className="detalhe-info-grid">
                         <div className="detalhe-info-item">
                             <FontAwesomeIcon icon={faInfoCircle} />
-                            <div>
-                                <strong>Descrição</strong>
-                                <p>{projeto.descricao}</p>
-                            </div>
+                            <div> <strong>Descrição</strong> <p>{projeto.descricao}</p> </div>
                         </div>
                         <div className="detalhe-info-item">
                             <FontAwesomeIcon icon={faCalendarAlt} />
-                            <div>
-                                <strong>Criado em</strong>
-                                <p>{new Date(projeto.dataCriacao).toLocaleDateString('pt-BR')}</p>
-                            </div>
+                            <div> <strong>Criado em</strong> <p>{new Date(projeto.dataCriacao).toLocaleDateString('pt-BR')}</p> </div>
                         </div>
                     </div>
-
-                    {/* Seção de Membros */}
+                    {/* ... (membros lista) ... */}
                     <h3><FontAwesomeIcon icon={faUserFriends} /> Membros ({projeto.membros?.length || 0})</h3>
                     <div className="detalhe-membros-lista">
                         {projeto.membros?.map(membro => (
                             <div key={membro.usuarioId} className="detalhe-membro-item" title={`${membro.usuarioNome} (${membro.role})`}>
                                 <img
-                                    src={membro.usuarioFotoUrl ? `http://localhost:8080${membro.usuarioFotoUrl}` : `https://i.pravatar.cc/40?u=${membro.usuarioId}`}
+                                    src={getCorrectUserImageUrl(membro.usuarioFotoUrl, membro.usuarioId)}
                                     alt={membro.usuarioNome}
                                 />
                                 <span className={`role-badge ${membro.role.toLowerCase()}`}>{membro.role}</span>
                             </div>
                         ))}
                     </div>
-
-                    {/* Seção de Links */}
+                    {/* ... (links lista) ... */}
                     {projeto.linksUteis && projeto.linksUteis.length > 0 && (
                         <>
                             <h3><FontAwesomeIcon icon={faLink} /> Links Úteis</h3>
@@ -451,8 +466,7 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
                             </div>
                         </>
                     )}
-
-                    {/* Seção de Adicionar Membros (SÓ PARA O AUTOR/ADMIN) */}
+                    {/* ... (admin section) ... */}
                     {isAutor && (
                         <>
                             <h3 className="admin-section-title"><FontAwesomeIcon icon={faUserShield} /> Gerenciamento (Admin)</h3>
@@ -476,7 +490,7 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
                                         <div className="search-results-dropdown">
                                             {buscaResultados.map(user => (
                                                 <div key={user.id} className="search-result-item" onClick={() => handleAddParticipante(user)}>
-                                                    <img src={user.fotoPerfil ? `http://localhost:8080${user.fotoPerfil}` : `https://i.pravatar.cc/40?u=${user.id}`} alt={user.nome} />
+                                                    <img src={getCorrectUserImageUrl(user.fotoPerfil, user.id)} alt={user.nome} />
                                                     <div className="search-result-info">
                                                         <span>{user.nome}</span><small>{user.email} ({user.tipoUsuario})</small>
                                                     </div>
@@ -489,10 +503,8 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
                             </div>
                         </>
                     )}
-
                 </div>
                 <div className="modal-footer">
-                    {/* Botão de Excluir (SÓ PARA O AUTOR/ADMIN) */}
                     {isAutor && (
                         <button
                             type="button"
@@ -517,18 +529,16 @@ const ProjetoDetalheModal: React.FC<ProjetoDetalheModalProps> = ({ projeto, curr
 
 // --- COMPONENTE PRINCIPAL DA PÁGINA ---
 const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
-    const [projetos, setProjetos] = useState<Projeto[]>([]); // Tipado
+    const [projetos, setProjetos] = useState<Projeto[]>([]); 
     const [loading, setLoading] = useState(true);
-    const [currentUser, setCurrentUser] = useState<Usuario | null>(null); // Tipado
+    const [currentUser, setCurrentUser] = useState<Usuario | null>(null); 
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-    // ✅ 1. Adiciona o estado do menu mobile
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    const [projetoSelecionado, setProjetoSelecionado] = useState<Projeto | null>(null); // Tipado
+    const [projetoSelecionado, setProjetoSelecionado] = useState<Projeto | null>(null); 
     const navigate = useNavigate();
 
+    // ✅✅✅ INÍCIO DA CORREÇÃO (Request 2 - Privacidade) ✅✅✅
     const fetchAllData = useCallback(async () => {
         setLoading(true);
         const token = localStorage.getItem('authToken');
@@ -537,10 +547,10 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             const [userRes, projetosRes] = await Promise.all([
                  axios.get('http://localhost:8080/usuarios/me'),
-                 axios.get('http://localhost:8080/projetos')
+                 // Busca apenas os projetos do usuário logado
+                 axios.get('http://localhost:8080/projetos/meus-projetos') //
             ]);
             setCurrentUser(userRes.data);
-            // Garante que a resposta é um array antes de ordenar
             if (Array.isArray(projetosRes.data)) {
                  setProjetos(projetosRes.data.sort((a: Projeto, b: Projeto) => new Date(b.dataCriacao).getTime() - new Date(a.dataCriacao).getTime()));
             } else {
@@ -551,36 +561,37 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
              if ((error as any).response?.status === 401 || (error as any).response?.status === 403) { onLogout(); }
         } finally { setLoading(false); }
     }, [onLogout]);
+    // ✅✅✅ FIM DA CORREÇÃO ✅✅✅
 
     useEffect(() => {
         document.title = 'Senai Community | Projetos';
         fetchAllData();
     }, [fetchAllData]);
 
+    // ... (handlers handleProjectCreated, GoToChat, Excluido, Atualizado - Sem alterações) ...
     const handleProjectCreated = (novoProjeto: Projeto) => {
         setProjetos(prevProjetos => [novoProjeto, ...prevProjetos]);
     };
-
     const handleGoToChat = (projetoId: any) => {
         setProjetoSelecionado(null);
         navigate(`/mensagens?grupo=${projetoId}`);
     };
-
     const handleProjetoExcluido = (projetoId: any) => {
         setProjetos(prev => prev.filter(p => p.id !== projetoId));
         setProjetoSelecionado(null);
     };
-
     const handleProjetoAtualizado = async (projetoId: any) => {
         try {
-            const response = await axios.get(`http://localhost:8080/projetos/${projetoId}`);
-            const projetoAtualizado = response.data;
-
-            setProjetos(prev => prev.map(p =>
-                p.id === projetoId ? projetoAtualizado : p
-            ));
-
-            setProjetoSelecionado(projetoAtualizado);
+            // Re-busca os /meus-projetos para garantir que a lista está 100% correta
+            // (embora buscar por ID também funcione, isso é mais seguro se o status de membro mudou)
+            const projetosRes = await axios.get('http://localhost:8080/projetos/meus-projetos');
+            if (Array.isArray(projetosRes.data)) {
+                 setProjetos(projetosRes.data.sort((a: Projeto, b: Projeto) => new Date(b.dataCriacao).getTime() - new Date(a.dataCriacao).getTime()));
+            }
+            // Atualiza o modal de detalhes
+            const projetoAtualizado = projetosRes.data.find((p: Projeto) => p.id === projetoId);
+            setProjetoSelecionado(projetoAtualizado || null);
+            
         } catch (error) {
             console.error("Erro ao atualizar projeto:", error);
             setProjetoSelecionado(null);
@@ -597,23 +608,19 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
 
     return (
         <div>
-            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
+            {/* ... (Renderização - Sem alterações) ... */}
             <Topbar 
                 onLogout={onLogout} 
                 currentUser={currentUser} 
                 onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             />
-
-            {/* ✅ 3. Adiciona o overlay */}
             {isSidebarOpen && (
                 <div 
                     className="sidebar-overlay"
                     onClick={() => setIsSidebarOpen(false)}
                 ></div>
             )}
-
             <div className="container">
-                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
                 <Sidebar 
                     currentUser={currentUser} 
                     isOpen={isSidebarOpen}
@@ -654,7 +661,7 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
                             ) : (
                                 <div className="empty-state">
                                     <h3>Nenhum projeto encontrado</h3>
-                                    <p>Seja o primeiro a publicar ou ajuste sua busca!</p>
+                                    <p>Você ainda não participa de nenhum projeto. Crie um!</p>
                                 </div>
                             )
                         }
@@ -663,14 +670,12 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
                 <RightSidebar />
             </div>
 
-            {/* Modal de Criação (existente) */}
             <NovoProjetoModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onProjectCreated={handleProjectCreated}
             />
 
-            {/* MODAL DE DETALHES ATUALIZADO com novas props */}
             <ProjetoDetalheModal
                 projeto={projetoSelecionado}
                 currentUser={currentUser}
@@ -683,4 +688,4 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
     );
 };
 
-export default Projetos;
+export default Projetos;    
