@@ -1,6 +1,6 @@
 /* src/pages/Mensagens/Mensagens.css (COMPLETO E FINAL) */
-
 /* --- Layout Principal da Página de Mensagens --- */
+
 .layout-mensagens {
     display: flex;
     flex-direction: column;
@@ -9,13 +9,17 @@
 }
 
 /* Container do Grid Principal */
+
 .container-chat {
+
     display: grid;
     grid-template-columns: 280px 340px 1fr;
-    grid-template-rows: 1fr; /* Garante que a linha ocupe a altura */
+    grid-template-rows: 1fr;
+    /* Garante que a linha ocupe a altura */
     gap: 0;
     flex-grow: 1;
-    height: calc(100vh - 70px); /* Altura do Topbar é 70px */
+    height: calc(100vh - 70px);
+    /* Altura do Topbar é 70px */
     max-height: calc(100vh - 70px);
     overflow: hidden;
     width: 100%;
@@ -23,180 +27,514 @@
 }
 
 /* Sidebar Principal (da Esquerda) - Controlada pelo .container-chat */
-.container-chat > .sidebar {
-    height: 100%; max-height: 100%; overflow-y: auto;
+
+.container-chat>.sidebar {
+
+    height: 100%;
+    max-height: 100%;
+    overflow-y: auto;
     border-right: 1px solid var(--border-color);
     box-sizing: border-box;
     padding-top: 1rem;
 }
 
 /* Sidebar de Conversas (do Meio) */
+
 .chat-conversations-sidebar {
-    background: var(--bg-secondary); display: flex; flex-direction: column;
+
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
     border-right: 1px solid var(--border-color);
-    height: 100%; max-height: 100%; overflow: hidden;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
     box-sizing: border-box;
 }
-.conv-sidebar-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
-.conv-sidebar-header h2 { font-size: 1.25rem; margin: 0; color: var(--text-primary); }
-.conv-search { padding: 1rem 1.5rem; position: relative; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
-.conv-search svg { position: absolute; left: 2.25rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
-.conv-search input { width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); font-size: 0.9rem; }
-.conv-search input:focus { outline: none; border-color: var(--accent-primary); background: var(--bg-primary); }
 
-.conversations-list { flex-grow: 1; overflow-y: auto; padding: 0.5rem; min-height: 0; }
-.convo-list-item { display: flex; align-items: center; gap: 1rem; border-radius: 8px; padding: 0.9rem 1rem; cursor: pointer; transition: background-color 0.2s ease; }
-.convo-list-item:hover { background: var(--bg-tertiary); }
-.convo-list-item.selected { background: var(--accent-primary); color: white; }
-.convo-list-item.selected .convo-snippet, .convo-list-item.selected .convo-meta { color: rgba(255, 255, 255, 0.8); }
-.convo-list-item .avatar { width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0; object-fit: cover; }
-.convo-info { flex-grow: 1; overflow: hidden; }
-.convo-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); }
-.convo-list-item.selected .convo-title { color: white; } /* Garante cor no selecionado */
-.convo-snippet { font-size: 0.85rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.convo-list-item.selected .convo-snippet { color: rgba(255, 255, 255, 0.8); }
+.conv-sidebar-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.conv-sidebar-header h2 {
+    font-size: 1.25rem;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.conv-search {
+    padding: 1rem 1.5rem;
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.conv-search svg {
+    position: absolute;
+    left: 2.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+}
+
+.conv-search input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.conv-search input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: var(--bg-primary);
+}
+
+.conversations-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+    min-height: 0;
+}
+
+.convo-list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.convo-list-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.convo-list-item.selected {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.convo-list-item.selected .convo-snippet, .convo-list-item.selected .convo-meta {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.convo-list-item .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.convo-info {
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.convo-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-primary);
+}
+
+.convo-list-item.selected .convo-title {
+    color: white;
+}
+
+/* Garante cor no selecionado */
+
+.convo-snippet {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.convo-list-item.selected .convo-snippet {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+
 
 /* --- Área Principal do Chat (Direita) --- */
-.chat-main-area { display: flex; height: 100%; max-height: 100%; overflow: hidden; box-sizing: border-box; }
-.chat-active-card { display: flex; flex-direction: column; width: 100%; height: 100%; background-color: var(--bg-primary); position: relative; /* Para o input */ }
+
+.chat-main-area {
+    display: flex;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.chat-active-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    position: relative;
+    /* Para o input */
+}
 
 .chat-header-area {
-    display: flex; justify-content: space-between; align-items: center;
-    background: var(--bg-secondary); padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border-color); flex-shrink: 0; z-index: 10;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    z-index: 10;
+
 }
-.chat-header-info { display: flex; align-items: center; gap: 1rem; overflow: hidden; }
-.chat-header-info .avatar { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
-.chat-header-info h3 { margin: 0; font-size: 1.1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.chat-options-btn { background: none; border: none; color: var(--text-secondary); font-size: 1.1rem; cursor: pointer; padding: 0.5rem; border-radius: 50%; }
-.chat-options-btn:hover { background-color: var(--bg-tertiary); }
+
+.chat-header-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    overflow: hidden;
+}
+
+.chat-header-info .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.chat-header-info h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-options-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+
+.chat-options-btn:hover {
+    background-color: var(--bg-tertiary);
+}
+
 /* Botão de voltar (escondido por padrão) */
-.chat-back-btn { display: none; }
+
+.chat-back-btn {
+    display: none;
+}
 
 .chat-messages-area {
-    flex-grow: 1; padding: 1.5rem; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 0.5rem;
-    padding-bottom: 6rem; /* Espaço para o input não sobrepor a última msg */
+
+    flex-grow: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-bottom: 6rem;
+    /* Espaço para o input não sobrepor a última msg */
+
 }
 
 /* Bolha de Mensagem */
-.message-bubble-wrapper { 
-    display: flex; 
-    max-width: 70%; 
-    word-wrap: break-word; 
-    flex-direction: column;
-}
-.message-bubble-wrapper.me { justify-content: flex-end; margin-left: auto; align-items: flex-end; }
-.message-bubble-wrapper.other { justify-content: flex-start; margin-right: auto; align-items: flex-start; }
+.message-bubble-wrapper {
 
-.message-bubble { 
-    padding: 0.75rem 1rem; 
-    border-radius: 18px; 
-    line-height: 1.4; 
-    position: relative; 
-    /* ✅ Adiciona espaço para os 3 pontos */
+    display: flex;
+    /* * 🚀 MUDANÇA 1: Aumenta a largura máxima */
+    max-width: 85%;
+    /* Era 70% */
+    flex-direction: column;
+
+}
+
+.message-bubble-wrapper.me {
+    justify-content: flex-end;
+    margin-left: auto;
+    align-items: flex-end;
+}
+
+.message-bubble-wrapper.other {
+    justify-content: flex-start;
+    margin-right: auto;
+    align-items: flex-start;
+}
+
+.message-bubble {
+
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    line-height: 1.4;
+    position: relative;
     padding-left: 2.5rem;
     padding-right: 2.5rem;
 }
-.message-bubble-wrapper.me .message-bubble { background: var(--accent-primary); color: #fff; border-bottom-right-radius: 4px; }
-.message-bubble-wrapper.other .message-bubble { background: var(--bg-tertiary); color: var(--text-primary); border-bottom-left-radius: 4px; }
-.message-text { margin: 0; }
-.message-time { font-size: 0.7rem; color: rgba(255, 255, 255, 0.7); margin-top: 0.25rem; display: block; text-align: right; }
-.message-bubble-wrapper.other .message-time { color: var(--text-tertiary); }
+
+.message-bubble-wrapper.me .message-bubble {
+    background: var(--accent-primary);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.message-bubble-wrapper.other .message-bubble {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+}
+
+/* * 🚀 MUDANÇA 2: Correção da quebra de linha APLICADA AQUI */
+
+.message-text {
+
+    margin: 0;
+    /* Força a quebra de palavras longas */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-all;
+    /* Quebra agressiva para casos como o seu */
+
+}
+
+.message-time {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.25rem;
+    display: block;
+    text-align: right;
+}
+
+.message-bubble-wrapper.other .message-time {
+    color: var(--text-tertiary);
+}
 
 /* Nome do autor em chats de grupo */
+
 .message-bubble .message-author {
-    font-size: 0.8rem; font-weight: 600;
-    color: var(--accent-primary); margin-bottom: 0.25rem; display: block;
+
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 0.25rem;
+    display: block;
+
 }
-.message-bubble-wrapper.other .message-author { color: var(--highlight); }
-.message-bubble-wrapper.me .message-author { display: none; } /* Não mostra meu nome nas minhas msgs */
+
+.message-bubble-wrapper.other .message-author {
+    color: var(--highlight);
+}
+
+.message-bubble-wrapper.me .message-author {
+    display: none;
+}
+
+/* Não mostra meu nome nas minhas msgs */
 
 /* Input de Chat */
+
 .chat-input-area {
-    display: flex; gap: 0.8rem; background: var(--bg-secondary);
-    border-top: 1px solid var(--border-color); padding: 1rem 1.5rem;
+
+    display: flex;
+    gap: 0.8rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
     flex-shrink: 0;
-    /* Fixa o input no fundo da coluna */
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
     box-sizing: border-box;
     z-index: 20;
+
 }
-.chat-input-area input { flex-grow: 1; padding: 0.9rem 1.2rem; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-tertiary); color: var(--text-primary); font-size: 1rem; }
-.chat-input-area input:focus { outline: none; border-color: var(--accent-primary); background: var(--bg-primary); }
-.chat-input-area button { background: var(--accent-primary); border: none; color: #fff; border-radius: 50%; width: 48px; height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: var(--transition); flex-shrink: 0; }
-.chat-input-area button:hover { background-color: var(--accent-secondary); }
-.chat-input-area button:disabled { background-color: var(--button-disabled); cursor: not-allowed; }
+
+.chat-input-area input {
+    flex-grow: 1;
+    padding: 0.9rem 1.2rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.chat-input-area input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: var(--bg-primary);
+}
+
+.chat-input-area button {
+    background: var(--accent-primary);
+    border: none;
+    color: #fff;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.chat-input-area button:hover {
+    background-color: var(--accent-secondary);
+}
+
+.chat-input-area button:disabled {
+    background-color: var(--button-disabled);
+    cursor: not-allowed;
+}
 
 /* View de Chat Vazio */
-.empty-chat-view { margin: auto; text-align: center; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; padding: 2rem; }
-.empty-chat-view svg { opacity: 0.3; margin-bottom: 1.5rem; color: var(--text-tertiary);}
-.empty-chat-view h3 { color: var(--text-primary); font-size: 1.25rem; margin-bottom: 0.5rem; }
-.loading-state, .empty-state { padding: 1rem; text-align: center; color: var(--text-secondary); }
-.empty-state { font-style: italic; }
 
-/* --- RESPONSIVIDADE --- */
-@media (max-width: 1200px) {
-    .container-chat { grid-template-columns: 340px 1fr; }
-     .container-chat > .sidebar { display: none; }
-     .chat-input-area {
-        /* Ajusta o 'left' para começar depois da sidebar de conversas */
-        left: 340px;
-        width: calc(100% - 340px);
-     }
+.empty-chat-view {
+    margin: auto;
+    text-align: center;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
 }
 
-@media (max-width: 768px) {
-    .container-chat { grid-template-columns: 1fr; }
+.empty-chat-view svg {
+    opacity: 0.3;
+    margin-bottom: 1.5rem;
+    color: var(--text-tertiary);
+}
 
-    /* Esconde a lista se o chat estiver ativo */
+.empty-chat-view h3 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.loading-state, .empty-state {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-state {
+    font-style: italic;
+}
+
+
+/* --- RESPONSIVIDADE --- */
+
+@media (max-width: 1200px) {
+
+    .container-chat {
+        grid-template-columns: 340px 1fr;
+    }
+
+    .container-chat>.sidebar {
+        display: none;
+    }
+
+    .chat-input-area {
+
+        left: 340px;
+        width: calc(100% - 340px);
+
+    }
+
+}
+
+
+@media (max-width: 768px) {
+
+    .container-chat {
+        grid-template-columns: 1fr;
+    }
+
     .chat-conversations-sidebar.hidden-mobile {
         display: none;
     }
-    /* Esconde o chat se a lista estiver ativa */
+
     .chat-main-area.hidden-mobile {
         display: none;
     }
-    /* Garante que apareçam por padrão se a classe não estiver lá */
-    .chat-conversations-sidebar:not(.hidden-mobile) { display: flex; }
-    .chat-main-area:not(.hidden-mobile) { display: flex; }
 
-    /* Mostra o botão de voltar no mobile */
+    .chat-conversations-sidebar:not(.hidden-mobile) {
+        display: flex;
+    }
+
+    .chat-main-area:not(.hidden-mobile) {
+        display: flex;
+    }
+
+
+
     .chat-back-btn {
+
         display: block;
-        background: none; border: none;
+        background: none;
+        border: none;
         color: var(--text-primary);
         font-size: 1.2rem;
         padding: 0.5rem;
         margin-right: 0.5rem;
         cursor: pointer;
+
     }
+
     .chat-header-area {
-        padding: 0.75rem 1rem; /* Ajusta padding */
+        padding: 0.75rem 1rem;
     }
+
     .chat-input-area {
-        left: 0; /* Ocupa 100% da largura */
+
+        left: 0;
         width: 100%;
-        padding-bottom: 1rem; /* Garante espaço em iPhones com barra inferior */
+        padding-bottom: 1rem;
+
     }
+
     .chat-messages-area {
-        /* Aumenta o padding inferior para compensar o input */
         padding-bottom: 8rem;
     }
+
 }
 
-
 /*
+
 =================================================
+
   CSS PARA AÇÕES DE MENSAGEM (EDITAR, EXCLUIR, REAGIR)
+
 =================================================
+
 */
 
+
+
 /* --- 1. Gatilho de 3 pontos --- */
+
 .message-menu-trigger {
+
     position: absolute;
     top: 6px;
     padding: 4px 8px;
@@ -204,13 +542,13 @@
     cursor: pointer;
     border-radius: 6px;
     z-index: 5;
-    
-    /* Oculta por padrão e mostra ao passar o mouse */
     opacity: 0;
     transition: opacity 0.2s ease, background-color 0.2s ease;
+
 }
 
-/* Mostra o gatilho quando o mouse está sobre o balão */
+
+
 .message-bubble:hover .message-menu-trigger {
     opacity: 1;
 }
@@ -218,24 +556,27 @@
 .message-menu-trigger:hover {
     background-color: var(--bg-elevation-hover);
     color: var(--text-primary);
+
 }
 
-/* ✅ CORREÇÃO: Posição dos 3 pontos para NOSSAS mensagens (direita) */
 .message-bubble-wrapper.me .message-menu-trigger {
-    left: 8px; /* Posiciona à esquerda DENTRO do balão */
+    left: 8px;
     right: auto;
+
 }
 
-/* ✅ CORREÇÃO: Posição dos 3 pontos para mensagens DOS OUTROS (esquerda) */
 .message-bubble-wrapper.other .message-menu-trigger {
-    right: 8px; /* Posiciona à direita DENTRO do balão */
+    right: 8px;
     left: auto;
+
 }
 
 /* --- 2. Menu Dropdown (Contêiner) --- */
+
 .message-menu-dropdown {
+
     position: absolute;
-    top: 32px; /* Logo abaixo do gatilho */
+    top: 32px;
     min-width: 140px;
     background-color: var(--bg-elevation-3);
     border: 1px solid var(--border-color-light);
@@ -245,19 +586,18 @@
     z-index: 10;
 }
 
-/* Posição do dropdown para NOSSAS mensagens */
 .message-bubble-wrapper.me .message-menu-dropdown {
-    left: 4px; /* Alinha com o gatilho */
+    left: 4px;
     right: auto;
+
 }
 
-/* Posição do dropdown para mensagens DOS OUTROS */
 .message-bubble-wrapper.other .message-menu-dropdown {
-    right: 4px; /* Alinha com o gatilho */
+    right: 4px;
     left: auto;
+
 }
 
-/* Botões dentro do menu (Editar, Excluir) */
 .message-menu-dropdown button {
     display: flex;
     align-items: center;
@@ -272,55 +612,70 @@
     cursor: pointer;
     font-size: 0.95rem;
     transition: background-color 0.2s ease;
+
 }
 
 .message-menu-dropdown button:hover {
     background-color: var(--bg-elevation-hover);
 }
 
-/* Estilo específico para o botão de perigo (Excluir) */
 .message-menu-dropdown button.danger {
     color: var(--danger-color);
 }
 
 .message-menu-dropdown button.danger:hover {
+
     background-color: var(--danger-color-hover);
     color: #fff;
+
 }
+
 
 
 /* --- 3. ✅ NOVO: Lista de Emojis de Reação (Dentro do Dropdown) --- */
+
 .emoji-react-list {
+
     display: flex;
     justify-content: space-around;
     padding: 4px 8px;
+
 }
 
 .emoji-react-item {
+
     font-size: 1.5rem;
     cursor: pointer;
     padding: 4px;
     border-radius: 6px;
     transition: transform 0.1s ease, background-color 0.2s ease;
+
 }
 
 .emoji-react-item:hover {
+
     transform: scale(1.2);
     background-color: var(--bg-elevation-hover);
+
 }
+
 
 
 /* --- 4. Reações Renderizadas (Abaixo da Bolha) --- */
+
 .message-reactions {
+
     display: flex;
     gap: 4px;
-    margin-top: 4px; /* Espaço entre a bolha e as reações */
+    margin-top: 4px;
     padding: 0 10px;
     z-index: 2;
     position: relative;
+
 }
 
 .reaction-pill {
+
     background-color: var(--bg-elevation-3);
     border: 1px solid var(--border-color);
     border-radius: 10px;
@@ -328,7 +683,7 @@
     font-size: 0.8rem;
     display: flex;
     align-items: center;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .reaction-count {
@@ -336,45 +691,49 @@
     font-weight: 600;
     color: var(--text-secondary);
     margin-left: 4px;
+
 }
+
 
 
 /* --- 5. Outros --- */
 
-/* Indicador de mensagem editada */
 .edited-indicator {
+
     font-style: italic;
     font-size: 0.65rem;
     opacity: 0.8;
+
 }
 
 .message-bubble-wrapper.other {
+
     display: flex;
-    align-items: flex-start; /* Alinha a foto no topo da bolha */
-    gap: 0.75rem; /* 12px de espaço entre a foto e a bolha */
+    align-items: flex-start;
+    gap: 0.75rem;
+
 }
 
-/* Estilo para a foto do autor da mensagem (Goal 3) */
 .message-author-avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
     object-fit: cover;
-    margin-top: 4px; /* Pequeno ajuste para alinhar com o topo da bolha */
-    flex-shrink: 0; /* Impede que a foto encolha */
-    background-color: var(--bg-tertiary); /* Cor de fundo caso a imagem falhe */
+    margin-top: 4px;
+    flex-shrink: 0;
+    background-color: var(--bg-tertiary);
 }
 
-/* Estilo para o nome do autor (Goal 2) */
 .message-author {
+
     display: block;
-    font-size: 0.8rem; /* Pequeno, como pedido */
+    font-size: 0.8rem;
     font-weight: 700;
-    color: var(--text-tertiary); /* Cor mais suave */
+    color: var(--text-tertiary);
     margin-bottom: 4px;
+
 }
 
-/* Ajusta a cor do nome do autor (pode customizar) */
 .message-bubble-wrapper.other .message-author {
-    color: var(--primary); /* Exemplo: cor primária */
+    color: var(--primary);
 }
