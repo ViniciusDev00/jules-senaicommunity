@@ -1,5 +1,3 @@
-// src/components/Layout/Topbar.tsx (COMPLETO E ATUALIZADO)
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useWebSocket } from '../../contexts/WebSocketContext.tsx'; 
@@ -7,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faHome, faCommentDots, faBell, faChevronDown, faUserEdit,
     faSignOutAlt, faSearch, faMoon, faSun, faCog,
-    faBars // 1. Importa o ícone 'faBars'
+    faBars 
 } from '@fortawesome/free-solid-svg-icons';
 import './Topbar.css';
 import axios from 'axios';
@@ -137,7 +135,7 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
             setUnreadCount(0);
             axios.post('http://localhost:8080/api/notificacoes/ler-todas')
                  .then(() => {
-                    setNotifications(prev => prev.map(n => ({ ...n, lida: true })));
+                     setNotifications(prev => prev.map(n => ({ ...n, lida: true })));
                  })
                  .catch(err => {
                      console.error("Erro ao marcar notificações como lidas:", err);
@@ -149,10 +147,10 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
     const handleNotificationClick = (notif: Notificacao) => {
         if (!notif.lida) {
             axios.post(`http://localhost:8080/api/notificacoes/${notif.id}/ler`)
-                .then(() => {
-                    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, lida: true } : n));
-                })
-                .catch(err => console.error("Erro ao marcar notificação como lida:", err));
+                 .then(() => {
+                     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, lida: true } : n));
+                 })
+                 .catch(err => console.error("Erro ao marcar notificação como lida:", err));
         }
 
         if (notif.tipo === 'CONVITE_PROJETO' && notif.idReferencia) {
@@ -166,7 +164,11 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
             setIsConviteModalOpen(true); 
             setIsNotificationsOpen(false); 
         } else {
-            console.log("Notificação clicada (tipo " + notif.tipo + "):", notif);
+            // Se for mensagem, idealmente deveria redirecionar para o chat
+            if (notif.tipo === 'MENSAGEM_PRIVADA') {
+                 // history.push(`/mensagens/${notif.remetenteId}`); // Exemplo
+                 console.log("Clicou em notificação de mensagem");
+            }
             setIsNotificationsOpen(false); 
         }
     };
@@ -194,12 +196,18 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
         ? `http://localhost:8080${currentUser.urlFotoPerfil}`
         : "https://via.placeholder.com/40";
 
+    // Função de foto (está correta)
     const getNotificationSenderPhoto = (notif: Notificacao) => { 
         if (notif.remetenteFotoUrl) {
+            // Se for URL externa (ex: Cloudinary), usa direto
             if (notif.remetenteFotoUrl.startsWith('http')) {
                 return notif.remetenteFotoUrl;
             }
-            return `http://localhost:8080${notif.remetenteFotoUrl}`;
+            // Garante que a URL sempre tenha uma barra entre o host e o caminho
+            const path = notif.remetenteFotoUrl.startsWith('/') 
+                ? notif.remetenteFotoUrl 
+                : `/${notif.remetenteFotoUrl}`;
+            return `http://localhost:8080${path}`;
         }
         return `https://i.pravatar.cc/40?u=${notif.remetenteId || 'sistema'}`;
     };
@@ -208,7 +216,6 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
         <> 
             <header className="topbar">
                  <div className="header-left">
-                    {/* 4. ADICIONA O BOTÃO HAMBURGER */}
                     <button 
                         className="nav-icon hamburger-btn" 
                         onClick={onToggleSidebar}
@@ -227,19 +234,15 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
                     <input type="text" id="search-input" placeholder="Pesquisar..." />
                 </div>
 
-                {/* Agrupa os ícones da direita e o menu de usuário */}
                 <div className="header-right">
                     <nav className="nav-icons">
-                        {/* Adiciona a classe 'hide-on-mobile' */}
                         <Link to="/principal" className="nav-icon hide-on-mobile" data-tooltip="Início">
                             <FontAwesomeIcon icon={faHome} />
                         </Link>
-                        {/* Adiciona a classe 'hide-on-mobile' */}
                         <Link to="/mensagens" className="nav-icon hide-on-mobile" data-tooltip="Mensagens">
                             <FontAwesomeIcon icon={faCommentDots} />
                         </Link>
 
-                        {/* Área de Notificação (permanece visível) */}
                         <div className="nav-icon notifications-container" data-tooltip="Notificações">
                             <div onClick={handleOpenNotifications}>
                                 <FontAwesomeIcon icon={faBell} />
@@ -261,15 +264,36 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
                                                         alt={notif.remetenteNome || 'Remetente'}
                                                         className="notification-sender-photo"
                                                     />
+                                                    
+                                                    {/* ************************************************** */}
+                                                    {/* 🚀 INÍCIO DA ALTERAÇÃO - LÓGICA DO TIPO           */}
+                                                    {/* ************************************************** */}
                                                     <div className="notification-content">
-                                                        <p className="notification-text">
-                                                            <strong>{notif.remetenteNome || 'Notificação'}</strong>
-                                                            &nbsp;{notif.mensagem}
-                                                        </p>
+                                                        {notif.tipo === 'MENSAGEM_PRIVADA' ? (
+                                                            // Se for mensagem, mostre "enviou:" e uma prévia
+                                                            <p className="notification-text">
+                                                                <strong>{notif.remetenteNome}</strong>
+                                                                &nbsp;enviou uma mensagem:
+                                                                <em className="notification-message-preview">
+                                                                   
+                                                                </em>
+                                                            </p>
+                                                        ) : (
+                                                            // Para qualquer outra notificação (Curtida, Convite, etc.)
+                                                            <p className="notification-text">
+                                                                <strong>{notif.remetenteNome || 'Notificação'}</strong>
+                                                                &nbsp;{notif.mensagem}
+                                                            </p>
+                                                        )}
+
                                                         <span className="notification-time">
                                                             {new Date(notif.dataCriacao).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     </div>
+                                                    {/* ************************************************** */}
+                                                    {/* 🚀 FIM DA ALTERAÇÃO                               */}
+                                                    {/* ************************************************** */}
+                                                    
                                                     {!notif.lida && <div className="unread-indicator"></div>}
                                                 </div>
                                             ))
@@ -281,13 +305,11 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
                             )}
                         </div>
 
-                        {/* Botão de Tema (permanece visível) */}
                         <div className="nav-icon theme-toggle-button" data-tooltip="Alternar tema" onClick={handleThemeToggle}>
                             <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} />
                         </div>
                     </nav>
 
-                    {/* Menu do Usuário (permanece visível) */}
                     <div className="user-dropdown">
                         <div className="user" onClick={handleToggleMenu}>
                             <div className="profile-pic">
