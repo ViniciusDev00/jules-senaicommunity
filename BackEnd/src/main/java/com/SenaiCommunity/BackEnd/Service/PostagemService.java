@@ -122,11 +122,18 @@ public class PostagemService {
     public void excluirPostagem(Long id, String username) {
         Postagem postagem = buscarPorId(id);
 
-        // Verificar se o usuário é o autor ou tem role ADMIN
-        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication().getAuthorities()
-                .stream().anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+        // Obter roles do usuário logado
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
 
-        if (!postagem.getAutor().getEmail().equals(username) && !isAdmin) {
+        boolean isAdmin = authorities.stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+
+        // ✅ Verificar se é Supervisor
+        boolean isSupervisor = authorities.stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_SUPERVISOR"));
+
+        // ✅ Permitir se for dono, admin OU supervisor
+        if (!postagem.getAutor().getEmail().equals(username) && !isAdmin && !isSupervisor) {
             throw new SecurityException("Você não pode excluir esta postagem.");
         }
 
@@ -135,7 +142,7 @@ public class PostagemService {
                 try {
                     midiaService.deletar(midia.getUrl());
                 } catch (Exception e) {
-                    System.err.println("AVISO: Falha ao deletar arquivo no Cloudinary: " + midia.getUrl() + ". Erro: " + e.getMessage());
+                    System.err.println("AVISO: Falha ao deletar arquivo no Cloudinary: " + midia.getUrl());
                 }
             }
         }

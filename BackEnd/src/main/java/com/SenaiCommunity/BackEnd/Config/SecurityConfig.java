@@ -1,5 +1,3 @@
-// Arquivo: BackEnd/src/main/java/com/SenaiCommunity/BackEnd/Config/SecurityConfig.java
-
 package com.SenaiCommunity.BackEnd.Config;
 
 import com.SenaiCommunity.BackEnd.Security.JWTFilter;
@@ -8,7 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // ✅ IMPORTANTE: VERIFIQUE SE ESTE IMPORT ESTÁ AQUI
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -47,32 +45,49 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // ==========================================================
-                        // ✅ ✅ ✅ A CORREÇÃO DEFINITIVA ESTÁ AQUI ✅ ✅ ✅
-                        // Permite todas as requisições "pre-flight" OPTIONS
+                        // ✅ Permite todas as requisições "pre-flight" OPTIONS (CORS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // ==========================================================
 
                         .requestMatchers("/error").permitAll()
+
+                        // Autenticação e Cadastro (inclui o novo endpoint de supervisor)
                         .requestMatchers(HttpMethod.POST, "/autenticacao/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/autenticacao/login/google").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/cadastro/**").permitAll()
+                        .requestMatchers("/cadastro/**").permitAll()
+                        .requestMatchers("/auth/**", "/login**", "/oauth2/**").permitAll()
+
+                        // Projetos (Mantendo público conforme original, ajuste se necessário)
                         .requestMatchers(HttpMethod.POST, "/projetos/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/curtidas/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/eventos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/projetos/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/vagas/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/projetos/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/projetos/**").permitAll()
+
+                        // Vagas - GET é público, POST agora exige autenticação (verificado no Controller)
+                        .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()
+                        // REMOVIDO: .requestMatchers(HttpMethod.POST, "/api/vagas/**").permitAll()
+
+                        // Eventos - GET é público, POST agora exige autenticação (verificado no Controller)
+                        .requestMatchers(HttpMethod.GET, "/api/eventos/**").permitAll()
+                        // REMOVIDO: .requestMatchers(HttpMethod.POST, "/api/eventos/**").permitAll()
+
+                        // Outros endpoints públicos
+                        .requestMatchers(HttpMethod.POST, "/curtidas/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/alunos/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/professores/**").permitAll()
-                        .requestMatchers("/auth/**", "/cadastro/**", "/ws/**", "/login**", "/oauth2/**").permitAll()
+
+                        // WebSockets e Arquivos
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/images/**", "/api/arquivos/**").permitAll()
+
+                        // Swagger UI
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
+
+                        // Qualquer outra requisição deve ser autenticada
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(
@@ -94,7 +109,7 @@ public class SecurityConfig {
                 "http://localhost:5173"
         ));
 
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // OPTIONS ESTÁ AQUI
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
