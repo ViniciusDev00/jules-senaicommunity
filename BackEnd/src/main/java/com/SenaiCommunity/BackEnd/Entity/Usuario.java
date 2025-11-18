@@ -29,8 +29,6 @@ public abstract class Usuario {
 
     private LocalDateTime dataCadastro;
 
-    private String tipoUsuario; // ALUNO ou PROFESSOR
-
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Telefone> telefones;
 

@@ -86,7 +86,6 @@ public class AlunoService {
     public AlunoSaidaDTO criarAlunoComFoto(AlunoEntradaDTO dto, MultipartFile foto) {
         Aluno aluno = toEntity(dto);
         aluno.setDataCadastro(LocalDateTime.now());
-        aluno.setTipoUsuario("ALUNO");
 
         Role roleAluno = roleRepository.findByNome("ALUNO")
                 .orElseThrow(() -> new RuntimeException("Role ALUNO não encontrada"));

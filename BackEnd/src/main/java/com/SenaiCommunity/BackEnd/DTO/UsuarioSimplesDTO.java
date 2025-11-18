@@ -14,12 +14,10 @@ public class UsuarioSimplesDTO {
     private Long id;
     private String nome;
     private String urlFotoPerfil; // ✅ ADICIONAR (Necessário para DTO de Comentário)
-    private String tipoUsuario;
 
     public UsuarioSimplesDTO(Usuario usuario) {
         this.id = usuario.getId();
         this.nome = usuario.getNome();
         this.urlFotoPerfil = usuario.getFotoPerfil(); // ✅ ADICIONAR
-        this.tipoUsuario = usuario.getTipoUsuario();
     }
 }

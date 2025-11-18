@@ -14,7 +14,6 @@ public class UsuarioSaidaDTO {
     private Long id;
     private String nome;
     private String email;
-    private String tipoUsuario;
     private String urlFotoPerfil;
     private String bio;
     private LocalDate dataNascimento;
@@ -26,7 +25,6 @@ public class UsuarioSaidaDTO {
         this.id = usuario.getId();
         this.nome = usuario.getNome();
         this.email = usuario.getEmail();
-        this.tipoUsuario = usuario.getTipoUsuario();
         this.bio = usuario.getBio();
         this.dataNascimento = usuario.getDataNascimento();
         this.dataCadastro = usuario.getDataCadastro();
