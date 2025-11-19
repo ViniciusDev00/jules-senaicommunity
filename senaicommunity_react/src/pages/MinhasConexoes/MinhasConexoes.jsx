@@ -1,5 +1,3 @@
-// src/pages/MinhasConexoes/MinhasConexoes.jsx (COM CONFIRMAÇÃO DE EXCLUSÃO)
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Topbar from '../../components/Layout/Topbar';
@@ -12,7 +10,6 @@ import { faCheck, faTimes, faPaperPlane, faUserMinus, faClockRotateLeft } from '
 import { Link, useNavigate } from 'react-router-dom'; 
 
 // --- COMPONENTE ConexaoCard ---
-// (Este componente não precisa de alterações)
 const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
     
     let idUsuario, nome, foto;
@@ -25,23 +22,24 @@ const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
         idUsuario = item.idSolicitante; 
         nome = item.nomeSolicitante;
         foto = item.fotoPerfilSolicitante;
-    } else { // type === 'amigo'
+    } else { 
         idUsuario = item.idUsuario; 
         nome = item.nome;
         foto = item.fotoPerfil; 
     }
 
-    let fotoUrl;
-    const fallbackAvatar = `https://i.pravatar.cc/80?u=${idUsuario || item.idAmizade}`;
+    // MUDANÇA AQUI: Aponta para a imagem estática do seu servidor Java
+    const fallbackAvatar = "http://localhost:8080/images/default-avatar.png";
     
+    let fotoUrl;
     if (!foto) {
         fotoUrl = fallbackAvatar;
     } else if (foto.startsWith('http')) {
-        fotoUrl = foto; // URL completa (ex: Cloudinary)
+        fotoUrl = foto; 
     } else if (foto.startsWith('/api/arquivos/') || foto.startsWith('/images/')) {
         fotoUrl = `http://localhost:8080${foto}`;
     } else {
-        fotoUrl = `http://localhost:8080/api/arquivos/${foto}`; //
+        fotoUrl = `http://localhost:8080/api/arquivos/${foto}`;
     }
 
     const handleActionClick = (action) => {
@@ -55,7 +53,11 @@ const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
                     src={fotoUrl} 
                     alt={`Foto de ${nome}`} 
                     className="conexao-avatar"
-                    onError={(e) => { e.target.onerror = null; e.target.src = fallbackAvatar; }} // Fallback
+                    // SE FALHAR, PEGA A IMAGEM DO SERVIDOR JAVA
+                    onError={(e) => { 
+                        e.target.onerror = null; 
+                        e.target.src = fallbackAvatar; 
+                    }} 
                 />
                 <h4 className="conexao-nome">{nome}</h4>
             </Link>
@@ -84,7 +86,7 @@ const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
     );
 };
 
-// --- COMPONENTE PRINCIPAL DA PÁGINA ---
+// ... (O RESTO DO ARQUIVO CONTINUA IGUAL AO ANTERIOR, SÓ COPIE O INÍCIO E O ConexaoCard SE PREFERIR, OU O ARQUIVO TODO SE QUISER GARANTIR)
 const MinhasConexoes = ({ onLogout }) => {
     const [recebidos, setRecebidos] = useState([]);
     const [enviados, setEnviados] = useState([]);
@@ -96,7 +98,6 @@ const MinhasConexoes = ({ onLogout }) => {
     const navigate = useNavigate();
 
     const fetchData = async () => {
-        // ... (fetchData não precisa de alterações) ...
         const token = localStorage.getItem('authToken');
         if (!token) {
             onLogout();
@@ -130,13 +131,10 @@ const MinhasConexoes = ({ onLogout }) => {
         fetchData();
     }, [onLogout]);
 
-    // ✅✅✅ INÍCIO DA ATUALIZAÇÃO ✅✅✅
-    // A função handleAction foi modificada
     const handleAction = async (amizadeId, action) => {
         let url = '';
         let method = 'post';
 
-        // 1. Define a URL e o método baseado na ação
         switch(action) {
             case 'aceitar':
                 url = `http://localhost:8080/api/amizades/aceitar/${amizadeId}`;
@@ -145,38 +143,29 @@ const MinhasConexoes = ({ onLogout }) => {
             case 'recusar':
             case 'cancelar':
             case 'remover': 
-                 url = `http://localhost:8080/api/amizades/recusar/${amizadeId}`; //
+                 url = `http://localhost:8080/api/amizades/recusar/${amizadeId}`; 
                  method = 'delete';
                  break;
             default:
-                return; // Ação desconhecida
+                return; 
         }
 
-        // 2. SE A AÇÃO FOR 'REMOVER', MOSTRA O POP-UP DE CONFIRMAÇÃO
         if (action === 'remover') {
             Swal.fire({
                 title: 'Você tem certeza?',
                 text: "A amizade será desfeita e você não poderá reverter isso!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33', // Vermelho
-                cancelButtonColor: 'var(--bg-quaternary)', // Cinza do tema
+                confirmButtonColor: '#d33', 
+                cancelButtonColor: 'var(--bg-quaternary)', 
                 confirmButtonText: 'Sim, remover!',
                 cancelButtonText: 'Cancelar'
             }).then(async (result) => {
-                // 3. Se o usuário confirmar...
                 if (result.isConfirmed) {
                     try {
-                        // Executa a requisição de remoção
                         await axios({ method, url });
-                        // Atualiza o estado local
                         setAmigos(prev => prev.filter(a => a.idAmizade !== amizadeId));
-                        
-                        Swal.fire(
-                            'Removido!',
-                            'A conexão foi desfeita.',
-                            'success'
-                        );
+                        Swal.fire('Removido!', 'A conexão foi desfeita.', 'success');
                     } catch (error) {
                         console.error(`Erro ao ${action} amizade:`, error);
                         Swal.fire('Erro', `Não foi possível executar a ação '${action}'. Tente novamente.`, 'error');
@@ -184,11 +173,8 @@ const MinhasConexoes = ({ onLogout }) => {
                 }
             });
         } else {
-            // 4. PARA AS OUTRAS AÇÕES (aceitar, recusar, cancelar), executa direto
             try {
                 await axios({ method, url });
-
-                // Atualização otimista do estado
                 if (action === 'aceitar') {
                      const aceito = recebidos.find(r => r.idAmizade === amizadeId);
                      if (aceito) {
@@ -214,7 +200,6 @@ const MinhasConexoes = ({ onLogout }) => {
             }
         }
     };
-    // ✅✅✅ FIM DA ATUALIZAÇÃO ✅✅✅
 
     const handleGoToChat = (userId) => {
         navigate(`/mensagens?dm=${userId}`);
@@ -222,78 +207,45 @@ const MinhasConexoes = ({ onLogout }) => {
 
     return (
         <div>
-            {/* ... (Restante do JSX sem alterações) ... */}
             <Topbar 
                 onLogout={onLogout} 
                 currentUser={currentUser} 
                 onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             />
-
             {isSidebarOpen && (
-                <div 
-                    className="sidebar-overlay"
-                    onClick={() => setIsSidebarOpen(false)}
-                ></div>
+                <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>
             )}
-
             <div className="container">
-                <Sidebar 
-                    currentUser={currentUser} 
-                    isOpen={isSidebarOpen}
-                />
+                <Sidebar currentUser={currentUser} isOpen={isSidebarOpen} />
                 <main className="main-content">
                     <section className="widget-card connections-page-card">
                         <h2 className="widget-title">Gerenciar Conexões</h2>
-
-                        {/* --- Seção Pedidos Recebidos --- */}
                         <div className="connections-section">
                             <h3>Pedidos Recebidos ({loading ? '...' : recebidos.length})</h3>
                              {loading ? <p className="loading-state">Carregando...</p> : recebidos.length > 0 ? (
                                 <div className="conexao-grid">
                                     {recebidos.map(item => 
-                                        <ConexaoCard 
-                                            key={item.idAmizade} 
-                                            item={item} 
-                                            type="recebido" 
-                                            onAction={handleAction} 
-                                            onGoToChat={handleGoToChat} 
-                                        />
+                                        <ConexaoCard key={item.idAmizade} item={item} type="recebido" onAction={handleAction} onGoToChat={handleGoToChat} />
                                     )}
                                 </div>
                             ) : <p className="empty-state">Nenhum pedido de conexão pendente.</p>}
                         </div>
-
-                        {/* --- Seção Pedidos Enviados --- */}
                         <div className="connections-section">
                             <h3>Pedidos Enviados ({loading ? '...' : enviados.length})</h3>
                              {loading ? <p className="loading-state">Carregando...</p> : enviados.length > 0 ? (
                                  <div className="conexao-grid">
                                     {enviados.map(item => 
-                                        <ConexaoCard 
-                                            key={item.idAmizade} 
-                                            item={item} 
-                                            type="enviado" 
-                                            onAction={handleAction} 
-                                            onGoToChat={handleGoToChat} 
-                                        />
+                                        <ConexaoCard key={item.idAmizade} item={item} type="enviado" onAction={handleAction} onGoToChat={handleGoToChat} />
                                     )}
                                  </div>
                             ) : <p className="empty-state">Você não enviou nenhum pedido recentemente.</p>}
                         </div>
-
-                        {/* --- Seção Meus Amigos --- */}
                         <div className="connections-section">
                             <h3>Minhas Conexões ({loading ? '...' : amigos.length})</h3>
                              {loading ? <p className="loading-state">Carregando...</p> : amigos.length > 0 ? (
                                 <div className="conexao-grid">
                                     {amigos.map(item => 
-                                        <ConexaoCard 
-                                            key={item.idAmizade} 
-                                            item={item} 
-                                            type="amigo" 
-                                            onAction={handleAction} 
-                                            onGoToChat={handleGoToChat} 
-                                        />
+                                        <ConexaoCard key={item.idAmizade} item={item} type="amigo" onAction={handleAction} onGoToChat={handleGoToChat} />
                                     )}
                                 </div>
                             ) : <p className="empty-state">Você ainda não tem conexões. Que tal <Link to="/encontrar-pessoas">encontrar pessoas</Link>?</p>}

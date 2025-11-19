@@ -9,27 +9,27 @@ const RightSidebar = () => {
     const [amigos, setAmigos] = useState([]);
     const { stompClient, isConnected } = useWebSocket(); 
 
-    // Função para garantir que a URL da imagem esteja certa
+    // URL da imagem padrão no seu Back-End Spring Boot
+    const DEFAULT_AVATAR_URL = "http://localhost:8080/images/default-avatar.png";
+
     const getProfileImageUrl = (fotoPerfil) => {
-        if (!fotoPerfil) return "/default-avatar.png";
+        // 1. Se não tiver foto, busca do Back-end
+        if (!fotoPerfil || fotoPerfil === "") return DEFAULT_AVATAR_URL;
         
-        // Se já for um link completo (ex: Google, Cloudinary)
+        // 2. Se já for link completo
         if (fotoPerfil.startsWith("http")) return fotoPerfil;
         
-        // Se começar com barra (ex: /api/arquivos/foto.jpg), adiciona o domínio
+        // 3. Se começar com barra
         if (fotoPerfil.startsWith("/")) return `http://localhost:8080${fotoPerfil}`;
         
-        // Se for só o nome do arquivo (ex: "perfil_123.jpg"), usa o endpoint do seu Controller
-        // Baseado no seu AmizadeService, o caminho correto parece ser /api/arquivos/
+        // 4. Padrão para arquivos de upload
         return `http://localhost:8080/api/arquivos/${fotoPerfil}`;
     };
 
-    // 1. Carrega a lista de amigos
     useEffect(() => {
         const fetchAmigos = async () => {
             try {
                 const token = localStorage.getItem('authToken');
-                // Endpoint correto conforme seu AmizadeController
                 const response = await axios.get('http://localhost:8080/api/amizades/', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -41,7 +41,6 @@ const RightSidebar = () => {
         fetchAmigos();
     }, []);
 
-    // 2. WebSocket para Status Online
     useEffect(() => {
         if (isConnected && stompClient) {
             const subscription = stompClient.subscribe('/topic/status', (message) => {
@@ -57,7 +56,6 @@ const RightSidebar = () => {
 
     return (
         <aside className="right-sidebar">
-            {/* ÚNICO WIDGET: Contatos (Amigos Online) */}
             <div className="widget-card">
                 <div className="widget-header">
                     <h3><FontAwesomeIcon icon={faUserFriends} /> Contatos</h3>
@@ -74,9 +72,12 @@ const RightSidebar = () => {
                                         src={getProfileImageUrl(amigo.fotoPerfil)}
                                         alt={amigo.nome} 
                                         className="avatar-mini"
-                                        onError={(e) => {e.target.src = "/default-avatar.png"}}
+                                        // Se der erro (404), força a imagem do Back-End
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = DEFAULT_AVATAR_URL;
+                                        }}
                                     />
-                                    {/* Bolinha Verde */}
                                     {amigo.online && <span className="status-dot online"></span>}
                                 </div>
                                 <div className="amigo-info">
