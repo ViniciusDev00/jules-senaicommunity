@@ -346,3 +346,23 @@
         top: 60px; 
     }
 }
+.notification-message-preview {
+  font-style: italic;
+  color: var(--text-color-secondary);
+  margin-left: 4px;
+  /* Garante que a prévia quebre a linha corretamente */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Limita a 2 linhas */
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+/* Ajusta o texto da notificação de mensagem para ficar em coluna */
+.notification-item:has(.notification-message-preview) .notification-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}

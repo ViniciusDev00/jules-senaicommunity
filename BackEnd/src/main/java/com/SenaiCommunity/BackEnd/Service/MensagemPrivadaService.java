@@ -9,7 +9,7 @@ import com.SenaiCommunity.BackEnd.Repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Importe esta anotação
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,7 +42,6 @@ public class MensagemPrivadaService {
                 .destinatarioId(mensagem.getDestinatario().getId())
                 .nomeDestinatario(mensagem.getDestinatario().getNome())
                 .destinatarioEmail(mensagem.getDestinatario().getEmail())
-                // ✅ Adicionado campo de data de edição para o frontend
                 .dataEdicao(mensagem.getDataEdicao())
                 .build();
     }
@@ -66,11 +65,19 @@ public class MensagemPrivadaService {
         MensagemPrivada novaMensagem = toEntity(dto, remetente, destinatario);
         MensagemPrivada mensagemSalva = mensagemPrivadaRepository.save(novaMensagem);
 
-        // Adiciona a notificação
+        // **********************************
+        // 🚀 CORREÇÃO APLICADA AQUI
+        // **********************************
+        String conteudoMensagem = mensagemSalva.getConteudo(); // Pega o texto real
+
         notificacaoService.criarNotificacao(
-                destinatario,
-                "Você recebeu uma nova mensagem de " + remetente.getNome()
+                destinatario,       // Usuario destinatario
+                remetente,          // Usuario remetente (ISSO CORRIGE A FOTO)
+                conteudoMensagem,   // String mensagem (ISSO CORRIGE O TEXTO)
+                "MENSAGEM_PRIVADA", // String tipo
+                remetente.getId()   // Long idReferencia (ID do remetente, para o frontend agrupar)
         );
+        // **********************************
 
         return toDTO(mensagemSalva);
     }

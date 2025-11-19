@@ -2,10 +2,8 @@ package com.SenaiCommunity.BackEnd.Entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.Getter; // Adicionado para garantir
-import lombok.Setter; // Adicionado para garantir
 
-@Data // @Data já inclui @Getter, @Setter, @ToString, etc.
+@Data
 @Entity
 @Table(name = "tb_roles")
 public class Role {
@@ -17,12 +15,12 @@ public class Role {
 
     private String nome;
 
-
     public enum Values {
 
         ADMIN(1L),
         PROFESSOR(2L),
-        ALUNO( 3L);
+        ALUNO(3L),
+        SUPERVISOR(4L); // ✅ Adicionado
 
         long roleId;
 
@@ -30,5 +28,8 @@ public class Role {
             this.roleId = roleID;
         }
 
+        public long getRoleId() {
+            return roleId;
+        }
     }
 }

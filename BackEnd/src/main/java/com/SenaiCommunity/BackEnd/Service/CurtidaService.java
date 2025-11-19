@@ -54,10 +54,16 @@ public class CurtidaService {
                 curtidaRepository.save(novaCurtida);
 
                 if (!comentario.getAutor().getId().equals(usuario.getId())) {
+                    // --- MUDANÇA AQUI ---
+                    // Passa o 'usuario' (remetente), o tipo e o ID da postagem
                     notificacaoService.criarNotificacao(
                             comentario.getAutor(),
-                            usuario.getNome() + " curtiu seu comentário."
+                            usuario, // <-- O remetente que fez a ação
+                            usuario.getNome() + " curtiu seu comentário.",
+                            "CURTIDA_COMENTARIO", // <-- Tipo específico
+                            comentario.getPostagem().getId() // <-- ID de referência
                     );
+                    // --- FIM DA MUDANÇA ---
                 }
             }
             return comentario.getPostagem().getId(); // Retorna o ID da postagem pai para notificação
@@ -78,10 +84,16 @@ public class CurtidaService {
 
                 // NOTIFICAR o autor da postagem (se não for ele mesmo)
                 if (!postagem.getAutor().getId().equals(usuario.getId())) {
+                    // --- MUDANÇA AQUI ---
+                    // Passa o 'usuario' (remetente), o tipo e o ID da postagem
                     notificacaoService.criarNotificacao(
                             postagem.getAutor(),
-                            usuario.getNome() + " curtiu sua postagem."
+                            usuario, // <-- O remetente que fez a ação
+                            usuario.getNome() + " curtiu sua postagem.",
+                            "CURTIDA_POSTAGEM", // <-- Tipo específico
+                            postagemId // <-- ID de referência
                     );
+                    // --- FIM DA MUDANÇA ---
                 }
             }
             return postagemId;
