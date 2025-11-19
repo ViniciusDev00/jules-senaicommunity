@@ -87,17 +87,28 @@
 }
 
 .evento-data {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    background-color: rgba(13, 17, 23, 0.8);
-    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
     border-radius: 8px;
-    text-align: center;
-    padding: 0.5rem 0.75rem;
-    line-height: 1.1;
+    
+    /* --- MUDANÇA AQUI --- */
+    /* Em vez de uma cor fixa (ex: #202024), use a variável: */
+    background-color: var(--bg-secondary); 
+    
+    /* Para o texto mudar de cor junto (preto no claro, branco no escuro): */
+    color: var(--text-primary);
+    
+    /* Opcional: Adicionar uma borda sutil para destacar no modo claro */
     border: 1px solid var(--border-color);
-    backdrop-filter: blur(4px);
+    /* -------------------- */
+    
+    font-weight: bold;
+    margin-right: 15px;
+    flex-shrink: 0; /* Garante que o quadrado não amasse */
 }
 .evento-data span:first-child {
     font-size: 1.5rem;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { useParams, Link, useNavigate } // ✅ 1. useNavigate importado
-from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     // Ícones do Perfil
@@ -20,7 +19,7 @@ import {
     faTimes,
     faTrash,
     faImage,
-    // ✅ 2. ÍCONES DOS NOVOS BOTÕES
+    // ÍCONES DOS BOTÕES
     faUserPlus,
     faCommentDots,
     faClockRotateLeft,
@@ -41,10 +40,9 @@ import './Perfil.css';
 import './EditarPerfilModal.css';
 
 // =================================================================
-// FUNÇÕES HELPER (Sem alterações)
+// FUNÇÕES HELPER
 // =================================================================
 const getCorrectImageUrl = (url) => {
-    // ... (mesma função getCorrectImageUrl que você já tem) ...
     const placeholder = "https://via.placeholder.com/40";
     if (!url) return placeholder;
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -54,39 +52,25 @@ const getCorrectImageUrl = (url) => {
 };
 
 const formatarData = (dateString) => {
-  // ... (mesma função formatarData que você já tem) ...
   if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) {
-    return seconds + "s";
-  }
+  if (seconds < 60) return seconds + "s";
   let interval = seconds / 31536000;
-  if (interval > 1) {
-    return Math.floor(interval) + "a";
-  }
+  if (interval > 1) return Math.floor(interval) + "a";
   interval = seconds / 2592000;
-  if (interval > 1) {
-    return Math.floor(interval) + "m";
-  }
+  if (interval > 1) return Math.floor(interval) + "m";
   interval = seconds / 86400;
-  if (interval > 1) {
-    return Math.floor(interval) + "d";
-  }
+  if (interval > 1) return Math.floor(interval) + "d";
   interval = seconds / 3600;
-  if (interval > 1) {
-    return Math.floor(interval) + "h";
-  }
+  if (interval > 1) return Math.floor(interval) + "h";
   interval = seconds / 60;
-  if (interval > 1) {
-    return Math.floor(interval) + "min";
-  }
+  if (interval > 1) return Math.floor(interval) + "min";
   return Math.floor(seconds) + "s";
 };
 
 const buildCommentTree = (comments) => {
-  // ... (mesma função buildCommentTree que você já tem) ...
   if (!comments || comments.length === 0) return [];
   const commentsMap = {};
   const tree = [];
@@ -109,10 +93,9 @@ const buildCommentTree = (comments) => {
 };
 
 // =================================================================
-// SUB-COMPONENTE: POSTEDITOR (Sem alterações)
+// SUB-COMPONENTE: POSTEDITOR
 // =================================================================
 const PostEditor = ({ post, onCancel, onSave }) => {
-  // ... (componente PostEditor sem alterações) ...
   const [editedText, setEditedText] = useState(post.conteudo);
   const [keptMediaUrls, setKeptMediaUrls] = useState(post.urlsMidia || []);
   const [newMediaFiles, setNewMediaFiles] = useState([]);
@@ -255,7 +238,7 @@ const PostEditor = ({ post, onCancel, onSave }) => {
 };
 
 // =================================================================
-// SUB-COMPONENTE: Comment (Sem alterações)
+// SUB-COMPONENTE: Comment
 // =================================================================
 const Comment = ({
   comment,
@@ -265,7 +248,6 @@ const Comment = ({
   postId,
   depth = 1, 
 }) => {
-  // ... (componente Comment sem alterações) ...
   const [repliesVisible, setRepliesVisible] = useState(false);
   const hasReplies = comment.replies && comment.replies.length > 0;
   const showViewRepliesButton = hasReplies && depth === 1;
@@ -353,7 +335,7 @@ const Comment = ({
 };
 
 // =================================================================
-// SUB-COMPONENTE: CommentSection (Sem alterações)
+// SUB-COMPONENTE: CommentSection
 // =================================================================
 const CommentSection = ({
   postId,
@@ -363,7 +345,6 @@ const CommentSection = ({
   isConnected,
   onLikeComment,
 }) => {
-  // ... (componente CommentSection sem alterações) ...
   const [commentText, setCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const userImage = getCorrectImageUrl(currentUser?.urlFotoPerfil);
@@ -461,14 +442,7 @@ const CommentSection = ({
             />
           ))
         ) : (
-          <p
-            style={{
-              textAlign: "center",
-              fontSize: "0.9em",
-              color: "#888",
-              paddingTop: "10px",
-            }}
-          >
+          <p style={{ textAlign: "center", fontSize: "0.9em", color: "#888", paddingTop: "10px" }}>
             Nenhum comentário ainda.
           </p>
         )}
@@ -478,7 +452,7 @@ const CommentSection = ({
 };
 
 // =========================================================================
-// SUB-COMPONENTE: PostagemItem (Sem alterações)
+// SUB-COMPONENTE: PostagemItem
 // =========================================================================
 const PostagemItem = ({
     post,
@@ -495,7 +469,6 @@ const PostagemItem = ({
     stompClient,
     isConnected
 }) => {
-    // ... (componente PostagemItem sem alterações) ...
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const scrollerRef = useRef(null);
 
@@ -616,7 +589,7 @@ const PostagemItem = ({
 };
 
 // =========================================================================
-// ✅ COMPONENTE PRINCIPAL: Perfil (COM NOVOS ESTADOS E HANDLERS)
+// ✅ COMPONENTE PRINCIPAL: Perfil (CORRIGIDO: BOTÃO DE CHAT SEMPRE VISÍVEL)
 // =========================================================================
 const Perfil = ({ onLogout }) => {
     const [profileData, setProfileData] = useState(null);
@@ -626,26 +599,20 @@ const Perfil = ({ onLogout }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // ✅ 3. NOVO ESTADO PARA STATUS DE AMIZADE
     const [friendshipStatus, setFriendshipStatus] = useState(null);
 
     const { userId } = useParams();
-    const navigate = useNavigate(); // ✅ 4. Hook de navegação
+    const navigate = useNavigate(); 
     
-
-    // --- Lógica de Comentários e Likes ---
     const { stompClient, isConnected } = useWebSocket();
     const [activeCommentBox, setActiveCommentBox] = useState(null);
     const [activePostMenu, setActivePostMenu] = useState(null);
     const [editingPost, setEditingPost] = useState(null);
 
-
    const handleToggleComments = (postId) => {
         setActiveCommentBox((prev) => (prev === postId ? null : postId));
     };
 
-    // ... (useEffect do WebSocket - sem alterações) ...
     useEffect(() => {
         const handleFeedUpdate = (message) => {
             try {
@@ -671,17 +638,10 @@ const Perfil = ({ onLogout }) => {
                         const oldPost = currentPostagens[postIndex];
                         const mergedComentarios = (updatedPost.comentarios || []).map(newComment => {
                             const oldComment = (oldPost.comentarios || []).find(c => c.id === newComment.id);
-                            
                             if (oldComment) {
-                                return {
-                                    ...newComment,
-                                    curtidoPeloUsuario: oldComment.curtidoPeloUsuario
-                                };
+                                return { ...newComment, curtidoPeloUsuario: oldComment.curtidoPeloUsuario };
                             }
-                            return {
-                                ...newComment,
-                                curtidoPeloUsuario: false
-                            }; 
+                            return { ...newComment, curtidoPeloUsuario: false }; 
                         });
                         const mergedPost = {
                             ...updatedPost,
@@ -690,7 +650,6 @@ const Perfil = ({ onLogout }) => {
                         };
                         newPosts[postIndex] = mergedPost;
                         return newPosts;
-                    
                     } else if (payload.tipo !== "remocao") {
                          if (updatedPost.autorId === profileData?.id) {
                             return [updatedPost, ...currentPostagens];
@@ -704,19 +663,13 @@ const Perfil = ({ onLogout }) => {
         };
 
         if (isConnected && stompClient && profileData) { 
-            const subscription = stompClient.subscribe(
-                "/topic/publico",
-                handleFeedUpdate
-            );
+            const subscription = stompClient.subscribe("/topic/publico", handleFeedUpdate);
             return () => {
-                if (subscription) {
-                    subscription.unsubscribe();
-                }
+                if (subscription) subscription.unsubscribe();
             };
         }
     }, [isConnected, stompClient, profileData]);
 
-    // --- Função para buscar os dados ---
     const fetchPageData = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) {
@@ -726,7 +679,7 @@ const Perfil = ({ onLogout }) => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         setIsLoading(true);
         setPostagens([]);
-        setFriendshipStatus(null); // Reseta o status ao recarregar
+        setFriendshipStatus(null);
 
         let meResponse;
         try {
@@ -740,9 +693,7 @@ const Perfil = ({ onLogout }) => {
             return;
         }
 
-        // Determina se estamos vendo nosso próprio perfil
         const isMyProfile = !userId || (meResponse.data.id.toString() === userId);
-
         const apiUrl = isMyProfile
             ? 'http://localhost:8080/usuarios/me'
             : `http://localhost:8080/usuarios/${userId}`;
@@ -755,21 +706,18 @@ const Perfil = ({ onLogout }) => {
             perfilId = profileResponse.data.id;
             document.title = `Senai Community | ${profileResponse.data.nome}`;
 
-             // ✅ 5. SE NÃO FOR MEU PERFIL, BUSCA O STATUS DE AMIZADE
              if (!isMyProfile) {
                  try {
-                    // Usamos o endpoint de busca (que retorna o DTO com status)
                     const statusResponse = await axios.get(`http://localhost:8080/usuarios/buscar?nome=${profileResponse.data.nome}`);
-                    // Encontra o usuário exato na lista de busca
                     const foundUser = statusResponse.data.find(user => user.id === profileResponse.data.id);
                     if (foundUser) {
                         setFriendshipStatus(foundUser.statusAmizade);
                     } else {
-                        setFriendshipStatus('NENHUMA'); // Fallback
+                        setFriendshipStatus('NENHUMA');
                     }
                  } catch (statusError) {
                      console.error("Erro ao buscar status de amizade:", statusError);
-                     setFriendshipStatus('NENHUMA'); // Fallback em caso de erro
+                     setFriendshipStatus('NENHUMA'); 
                  }
              }
 
@@ -799,11 +747,9 @@ const Perfil = ({ onLogout }) => {
 
     useEffect(() => {
         fetchPageData();
-    }, [onLogout, userId]); // Re-executa se a ID da URL (userId) mudar
+    }, [onLogout, userId]);
 
-    // --- Handlers de Like (Sem alterações) ---
     const handleLike = async (postId) => {
-        // ... (mesmo handler handleLike da última vez) ...
         const likeEndpoint = `http://localhost:8080/curtidas/toggle`;
         const payload = { postagemId: postId, comentarioId: null };
         const token = localStorage.getItem("authToken");
@@ -830,11 +776,7 @@ const Perfil = ({ onLogout }) => {
     };
     
     const handleLikeComment = async (postId, commentId) => {
-        // ... (mesmo handler handleLikeComment da última vez) ...
-        if (!postId) {
-            console.error("Não foi possível encontrar o postID para este comentário");
-            return;
-        }
+        if (!postId) return;
         const likeEndpoint = `http://localhost:8080/curtidas/toggle`;
         const payload = { postagemId: null, comentarioId: commentId };
         const token = localStorage.getItem("authToken");
@@ -845,18 +787,11 @@ const Perfil = ({ onLogout }) => {
             return {
               ...p,
               comentarios: p.comentarios.map(c => {
-                const findAndToggle = (comment) => {
-                    if (comment.id === commentId) {
-                         const curtidas = Number.isInteger(comment.totalCurtidas) ? comment.totalCurtidas : 0;
-                         return {
-                            ...comment,
-                            curtidoPeloUsuario: !comment.curtidoPeloUsuario,
-                            totalCurtidas: comment.curtidoPeloUsuario ? curtidas - 1 : curtidas + 1
-                         };
-                    }
-                    return comment;
-                };
-                return findAndToggle(c);
+                 if (c.id === commentId) {
+                      const curtidas = Number.isInteger(c.totalCurtidas) ? c.totalCurtidas : 0;
+                      return { ...c, curtidoPeloUsuario: !c.curtidoPeloUsuario, totalCurtidas: c.curtidoPeloUsuario ? curtidas - 1 : curtidas + 1 };
+                 }
+                 return c;
               })
             };
           }
@@ -870,7 +805,6 @@ const Perfil = ({ onLogout }) => {
         }
     };
 
-    // --- Handlers de Edição/Exclusão (Sem alterações) ---
     const handleTogglePostMenu = (postId) => {
         setActivePostMenu((prevId) => (prevId === postId ? null : postId));
     };
@@ -879,7 +813,6 @@ const Perfil = ({ onLogout }) => {
         setActivePostMenu(null); 
     };
     const handleDeletePost = async (postId) => {
-        // ... (mesmo handler handleDeletePost da última vez) ...
         setActivePostMenu(null); 
         const result = await Swal.fire({
           title: "Você tem certeza?",
@@ -894,10 +827,6 @@ const Perfil = ({ onLogout }) => {
         if (result.isConfirmed) {
           const deleteEndpoint = `http://localhost:8080/postagem/${postId}`;
           const token = localStorage.getItem("authToken");
-          if (!token) {
-            alert("Sessão expirada.");
-            return;
-          }
           const headers = { Authorization: `Bearer ${token}` };
           try {
             await axios.delete(deleteEndpoint, { headers });
@@ -910,13 +839,8 @@ const Perfil = ({ onLogout }) => {
         }
     };
     const handleSaveEdit = async (formData, postId) => {
-        // ... (mesmo handler handleSaveEdit da última vez) ...
         const updateEndpoint = `http://localhost:8080/postagem/${postId}`;
         const token = localStorage.getItem("authToken");
-        if (!token) {
-          alert("Sessão expirada.");
-          return; 
-        }
         const headers = { Authorization: `Bearer ${token}` };
         try {
           await axios.put(updateEndpoint, formData, { headers });
@@ -927,9 +851,7 @@ const Perfil = ({ onLogout }) => {
         }
     };
 
-    // --- Função para Salvar Perfil (Sem alterações) ---
     const handleSaveProfile = async (novosDados) => {
-        // ... (mesmo handler handleSaveProfile da última vez) ...
         const { nome, bio, arquivoFoto } = novosDados;
         const token = localStorage.getItem('authToken');
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -944,7 +866,6 @@ const Perfil = ({ onLogout }) => {
             await fetchPageData(); 
             const meResponse = await axios.get('http://localhost:8080/usuarios/me');
             setLoggedInUser(meResponse.data);
-            
             setIsModalOpen(false);
         } catch (error) {
             console.error("Erro ao salvar perfil:", error);
@@ -953,12 +874,9 @@ const Perfil = ({ onLogout }) => {
         }
     };
 
-    // ✅ 6. NOVOS HANDLERS PARA BOTÕES DE CONEXÃO
     const handleConnect = async () => {
         try {
-            // Endpoint de 'solicitar'
             await axios.post(`http://localhost:8080/api/amizades/solicitar/${profileData.id}`);
-            // Atualiza o estado do botão localmente
             setFriendshipStatus('SOLICITACAO_ENVIADA'); 
             Swal.fire('Sucesso!', 'Solicitação de amizade enviada.', 'success');
         } catch (error) {
@@ -969,18 +887,13 @@ const Perfil = ({ onLogout }) => {
     };
 
     const handleChat = () => {
-        // Navega para a página de mensagens com o ID do usuário do perfil
         navigate(`/mensagens?dm=${profileData.id}`);
     };
-    // --- Fim dos novos Handlers ---
 
-
-    // --- Renderização ---
     if (isLoading || !profileData || !loggedInUser) {
         return <div>Carregando perfil...</div>;
     }
 
-    // ... (lógica de userImage, userDob - sem alterações) ...
     let userImage;
     if (profileData.urlFotoPerfil && profileData.urlFotoPerfil.startsWith('http')) {
         userImage = profileData.urlFotoPerfil;
@@ -993,12 +906,10 @@ const Perfil = ({ onLogout }) => {
         ? new Date(profileData.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
         : 'Não informado';
 
-    // ✅ ATUALIZADO: a variável isMyProfile agora é calculada com segurança
     const isMyProfile = loggedInUser.id === profileData.id;
 
     return (
         <>
-            {/* ... (Topbar, Overlay, Sidebar - sem alterações) ... */}
             <Topbar
                 onLogout={onLogout}
                 currentUser={loggedInUser}
@@ -1030,10 +941,8 @@ const Perfil = ({ onLogout }) => {
                                         <p id="profile-title">{profileData.tipoUsuario}</p>
                                     </div>
 
-                                    {/* ✅ 7. LÓGICA DE RENDERIZAÇÃO DOS BOTÕES ATUALIZADA */}
                                     <div className="profile-actions">
                                         {isMyProfile ? (
-                                            // Se for MEU perfil, mostra "Editar"
                                             <button
                                                 className="btn btn-primary"
                                                 id="edit-profile-btn-page"
@@ -1045,10 +954,14 @@ const Perfil = ({ onLogout }) => {
                                                 )}
                                             </button>
                                         ) : (
-                                            // Se for perfil de OUTRA pessoa, mostra os botões de ação
                                             <div className="profile-actions-other">
                                                 
-                                                {/* --- Botão de Conexão (com base no status) --- */}
+                                                {/* ✅ MUDANÇA PRINCIPAL: Botão de Chat SEMPRE visível aqui */}
+                                                <button className="btn btn-secondary" onClick={handleChat}>
+                                                    <FontAwesomeIcon icon={faCommentDots} /> Conversar
+                                                </button>
+
+                                                {/* Botão de Conexão Condicional */}
                                                 {friendshipStatus === 'NENHUMA' && (
                                                     <button className="btn btn-primary" onClick={handleConnect}>
                                                         <FontAwesomeIcon icon={faUserPlus} /> Conectar
@@ -1060,7 +973,6 @@ const Perfil = ({ onLogout }) => {
                                                     </button>
                                                 )}
                                                 {friendshipStatus === 'SOLICITACAO_RECEBIDA' && (
-                                                    // Leva para a página de conexões para aceitar
                                                     <Link to="/conexoes" className="btn btn-primary">
                                                         Responder
                                                     </Link>
@@ -1070,24 +982,14 @@ const Perfil = ({ onLogout }) => {
                                                         <FontAwesomeIcon icon={faCheck} /> Amigos
                                                     </button>
                                                 )}
-
-                                                {/* --- Botão de Conversar --- */}
-                                                {/* (Aparece se já são amigos) */}
-                                                {friendshipStatus === 'AMIGOS' && (
-                                                    <button className="btn btn-secondary" onClick={handleChat}>
-                                                        <FontAwesomeIcon icon={faCommentDots} /> Conversar
-                                                    </button>
-                                                )}
+                                                {/* O botão de chat antigo que ficava aqui embaixo foi removido pois já está lá em cima */}
                                             </div>
                                         )}
                                     </div>
-                                    {/* ✅ FIM DA LÓGICA DOS BOTÕES */}
-                                    
                                 </div>
                             </div>
                         </div>
 
-                        {/* ... (Corpo do Perfil - Widget "Sobre" - sem alterações) ... */}
                         <div className="profile-body">
                             <div className="widget-card">
                                 <h3>Sobre</h3>
@@ -1098,28 +1000,22 @@ const Perfil = ({ onLogout }) => {
                                 </ul>
                             </div>
 
-                            {/* ... (Container de Postagens - sem alterações) ... */}
                             <div className="profile-posts-container">
                                 <h3>Postagens de {profileData.nome.split(' ')[0]}</h3>
-                                
                                 {isLoading && postagens.length === 0 && <p>Carregando postagens...</p>}
-                                
                                 {!isLoading && postagens.length > 0 ? (
                                     <div className="feed-lista">
-                                        
                                         {postagens.map(post => {
-                                            // Se o post está sendo editado, renderiza o Editor
                                             if (editingPost && editingPost.id === post.id) {
-                                              return (
-                                                <PostEditor
-                                                  key={post.id}
-                                                  post={editingPost}
-                                                  onCancel={() => setEditingPost(null)}
-                                                  onSave={handleSaveEdit}
-                                                />
-                                              );
+                                                return (
+                                                    <PostEditor
+                                                        key={post.id}
+                                                        post={editingPost}
+                                                        onCancel={() => setEditingPost(null)}
+                                                        onSave={handleSaveEdit}
+                                                    />
+                                                );
                                             }
-                                            // Se não, renderiza o item normal
                                             return (
                                                 <PostagemItem
                                                     key={post.id}
@@ -1154,7 +1050,6 @@ const Perfil = ({ onLogout }) => {
                 <RightSidebar />
             </div>
 
-            {/* ... (Modal de Editar Perfil - sem alterações) ... */}
             {isModalOpen && isMyProfile && (
                 <EditarPerfilModal
                     user={profileData}

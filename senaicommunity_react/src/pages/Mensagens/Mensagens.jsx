@@ -1,6 +1,6 @@
 // src/pages/Mensagens/Mensagens.jsx (CORRIGIDO)
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import axios from 'axios';
 // ✅ Importação corrigida para .jsx
 import Topbar from '../../components/Layout/Topbar.jsx'; 
@@ -379,7 +379,7 @@ const Mensagens = ({ onLogout }) => {
 
     const mentionData = useMemo(() => {
         return conversaAtiva?.membros?.map(membro => ({
-            id: membro.id,
+            id: String(membro.id), // ✅ Converte ID para string para evitar erros
             display: membro.nome,
         })) || [];
     }, [conversaAtiva]);
@@ -1109,14 +1109,15 @@ const Mensagens = ({ onLogout }) => {
                                     <FontAwesomeIcon icon={faCalendarAlt} />
                                 </button>
                                 <MentionsInput
-                                    value={novaMensagem}
-                                    onChange={(e) => setNovaMensagem(e.target.value)}
+                                    value={novaMensagem || ''} // ✅ Garante que nunca seja undefined
+                                    onChange={(event, newValue) => setNovaMensagem(newValue)} // ✅ Usa o newValue direto
                                     placeholder="Digite uma mensagem..."
                                     disabled={!isConnected}
                                     className="mentions-input"
                                 >
                                     <Mention
                                         trigger="@"
+                                        markup="@[__display__](__id__)" // ✅ Define o padrão explicitamente
                                         data={mentionData}
                                         className="mention"
                                     />
