@@ -56,7 +56,7 @@ const RightSidebar = () => {
         <aside className="right-sidebar">
             <div className="widget-card">
                 <div className="widget-header">
-                    <h3><FontAwesomeIcon icon={faUserFriends} /> Contatos</h3>
+                    <h3><FontAwesomeIcon icon={faUserFriends} /> Conexões</h3>
                 </div>
                 
                 <ul className="lista-amigos-online">
