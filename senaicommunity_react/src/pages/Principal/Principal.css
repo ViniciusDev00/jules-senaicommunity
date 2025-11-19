@@ -1165,12 +1165,22 @@ button:focus-visible,
 }
 
 .amigo-nome {
-    font-size: 0.9rem;
     font-weight: 600;
-    color: #e6edf3;
+    font-size: 0.9rem;
+    /* MUDANÇA AQUI: Força a cor principal do tema */
+    color: var(--text-primary) !important; 
+    line-height: 1.2;
+    margin-bottom: 2px;
+    display: block; /* Garante que ocupe a linha */
 }
 
 .amigo-status-texto {
     font-size: 0.75rem;
-    color: #8b949e;
+    /* Texto secundário mais claro para o status */
+    color: var(--text-secondary); 
+}
+
+/* Opcional: Se estiver online, pinta o texto "Online" de verde */
+.amigo-item:has(.status-dot.online) .amigo-status-texto {
+    color: var(--online, #3fb950);
 }
