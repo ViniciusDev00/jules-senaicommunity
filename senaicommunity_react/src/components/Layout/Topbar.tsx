@@ -199,17 +199,19 @@ const Topbar: React.FC<TopbarProps> = ({ onLogout, currentUser, onToggleSidebar 
     // Função de foto (está correta)
     const getNotificationSenderPhoto = (notif: Notificacao) => { 
         if (notif.remetenteFotoUrl) {
-            // Se for URL externa (ex: Cloudinary), usa direto
             if (notif.remetenteFotoUrl.startsWith('http')) {
                 return notif.remetenteFotoUrl;
             }
-            // Garante que a URL sempre tenha uma barra entre o host e o caminho
+            // Garante que a URL sempre tenha uma barra
             const path = notif.remetenteFotoUrl.startsWith('/') 
                 ? notif.remetenteFotoUrl 
                 : `/${notif.remetenteFotoUrl}`;
             return `http://localhost:8080${path}`;
         }
-        return `https://i.pravatar.cc/40?u=${notif.remetenteId || 'sistema'}`;
+        
+        // CORREÇÃO: Aponta para a imagem estática padrão do seu Backend (ou Frontend)
+        // Certifique-se que esta imagem existe no caminho estático do seu servidor
+        return `http://localhost:8080/images/default-avatar.png`; 
     };
 
     return (
