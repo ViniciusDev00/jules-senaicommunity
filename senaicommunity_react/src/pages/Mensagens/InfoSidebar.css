@@ -1,23 +1,28 @@
+/* src/pages/Mensagens/InfoSidebar.css */
+
 .info-sidebar {
-    width: 300px;
-    background-color: var(--background-secondary);
+    width: 320px;
+    flex-shrink: 0;
     border-left: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
     display: flex;
     flex-direction: column;
     height: 100%;
-    position: absolute;
-    right: 0;
-    top: 0;
-    z-index: 100;
-    transition: transform 0.3s ease-in-out;
+    overflow-y: auto;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
 }
 
 .info-sidebar-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .info-sidebar-header h3 {
@@ -25,98 +30,119 @@
     font-size: 1.1rem;
 }
 
-.close-sidebar-btn {
+.info-close-btn {
     background: none;
     border: none;
-    font-size: 1.25rem;
     color: var(--text-secondary);
-    cursor: pointer;
-}
-
-.info-sidebar-body {
-    padding: 1.5rem;
-    overflow-y: auto;
-    flex-grow: 1;
-}
-
-.convo-details {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.convo-avatar-large {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    margin-bottom: 1rem;
-}
-
-.convo-details h4 {
-    margin: 0.5rem 0;
     font-size: 1.2rem;
-    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+.info-close-btn:hover {
+    background-color: var(--bg-tertiary);
 }
 
-.convo-details p {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+.info-sidebar-content {
+    padding: 1.5rem;
 }
 
-.sidebar-section {
+.info-profile-section {
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
     margin-bottom: 1.5rem;
 }
 
-.sidebar-section h4 {
-    font-size: 1rem;
+.info-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 4px solid var(--bg-primary);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.info-profile-section h2 {
+    font-size: 1.4rem;
+    margin: 0 0 0.25rem 0;
+}
+
+.info-profile-section p.info-description {
     color: var(--text-primary);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
+    margin: 0.5rem 0 0 0;
+    font-style: italic;
+}
+
+.info-members-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
     margin-bottom: 1rem;
 }
 
-.member-list {
+.info-members-list {
     list-style: none;
     padding: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.8rem;
 }
 
-.member-item {
+.info-members-list li {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.8rem;
+    padding: 0.5rem 0;
 }
 
-.member-avatar {
-    width: 35px;
-    height: 35px;
+.info-members-list li:not(:last-child) {
+    border-bottom: 1px solid var(--border-color-light);
+}
+
+.info-members-list img {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
+    object-fit: cover;
 }
 
-.empty-state-sidebar {
-    font-size: 0.9rem;
-    color: var(--text-tertiary);
-    text-align: center;
-    padding: 1rem;
+.info-actions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 2rem;
 }
 
-.info-sidebar-footer {
-    padding: 1.5rem;
-    border-top: 1px solid var(--border-color);
-}
-
-.sidebar-action-btn {
+.info-action-btn {
     width: 100%;
-    padding: 0.75rem;
-    border: none;
+    padding: 0.8rem 1rem;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    font-weight: bold;
+    color: var(--text-primary);
     cursor: pointer;
+    font-size: 0.95rem;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
 }
 
-.sidebar-action-btn.danger {
-    background-color: var(--danger-color-light);
+.info-action-btn:hover {
+    background-color: var(--bg-elevation-hover);
+}
+
+.info-action-btn.danger {
     color: var(--danger-color);
+}
+
+.info-action-btn.danger:hover {
+    background-color: var(--danger-color-hover);
+    color: #fff;
 }

@@ -1,64 +1,54 @@
+// src/pages/Mensagens/InfoSidebar.jsx
 import React from 'react';
 import './InfoSidebar.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faUsers, faFileAlt, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faUserFriends, faBell, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 
 const InfoSidebar = ({ conversa, onClose }) => {
+    if (!conversa) return null;
+
     const isGrupo = conversa.tipo === 'grupo';
-
-    const renderMembros = () => (
-        <div className="sidebar-section">
-            <h4><FontAwesomeIcon icon={faUsers} /> Membros do Grupo</h4>
-            <ul className="member-list">
-                {conversa.membros?.map(membro => (
-                    <li key={membro.id} className="member-item">
-                        <img
-                            src={membro.fotoPerfil || 'http://localhost:8080/images/default-avatar.png'}
-                            alt={membro.nome}
-                            className="member-avatar"
-                        />
-                        <span>{membro.nome}</span>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-
-    const renderArquivos = () => (
-        <div className="sidebar-section">
-            <h4><FontAwesomeIcon icon={faFileAlt} /> Arquivos Compartilhados</h4>
-            <p className="empty-state-sidebar">Nenhum arquivo recente.</p>
-            {/* Lógica para listar arquivos viria aqui */}
-        </div>
-    );
 
     return (
         <aside className="info-sidebar">
             <header className="info-sidebar-header">
-                <h3>Detalhes da Conversa</h3>
-                <button onClick={onClose} className="close-sidebar-btn">
+                <h3>{isGrupo ? 'Dados do Grupo' : 'Detalhes do Contato'}</h3>
+                <button onClick={onClose} className="info-close-btn">
                     <FontAwesomeIcon icon={faTimes} />
                 </button>
             </header>
-            <div className="info-sidebar-body">
-                <div className="convo-details">
-                    <img
-                        src={conversa.avatar}
-                        alt={conversa.nome}
-                        className="convo-avatar-large"
-                    />
-                    <h4>{conversa.nome}</h4>
-                    {isGrupo && <p>{conversa.descricao || 'Sem descrição.'}</p>}
+
+            <div className="info-sidebar-content">
+                <div className="info-profile-section">
+                    <img src={conversa.avatar} alt={`Avatar de ${conversa.nome}`} className="info-avatar" />
+                    <h2>{conversa.nome}</h2>
+                    {isGrupo && <p className="info-description">{conversa.descricao}</p>}
                 </div>
-                {isGrupo && renderMembros()}
-                {renderArquivos()}
+
+                {isGrupo && (
+                    <div className="info-members-section">
+                        <h4><FontAwesomeIcon icon={faUserFriends} /> Membros ({conversa.membros ? conversa.membros.length : 0})</h4>
+                        <ul className="info-members-list">
+                            {conversa.membros && conversa.membros.map(membro => (
+                                <li key={membro.id}>
+                                    {/* Supondo que o objeto 'membro' tenha 'fotoPerfil' e 'nome' */}
+                                    <img src={membro.fotoPerfil ? `http://localhost:8080${membro.fotoPerfil}` : `https://i.pravatar.cc/32?u=${membro.id}`} alt={membro.nome} />
+                                    <span>{membro.nome}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                <div className="info-actions-section">
+                    <button className="info-action-btn">
+                        <FontAwesomeIcon icon={faBell} /> Notificações
+                    </button>
+                    <button className="info-action-btn danger">
+                        <FontAwesomeIcon icon={faTrashAlt} /> {isGrupo ? 'Sair do Grupo' : 'Bloquear'}
+                    </button>
+                </div>
             </div>
-            <footer className="info-sidebar-footer">
-                <button className="sidebar-action-btn danger">
-                    <FontAwesomeIcon icon={faSignOutAlt} />
-                    {isGrupo ? 'Sair do Grupo' : 'Bloquear Contato'}
-                </button>
-            </footer>
         </aside>
     );
 };
