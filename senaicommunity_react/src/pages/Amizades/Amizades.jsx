@@ -1,156 +1,115 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCommentDots, faUserMinus } from '@fortawesome/free-solid-svg-icons';
 import Topbar from '../../components/Layout/Topbar';
 import Sidebar from '../../components/Layout/Sidebar';
-import '../../pages/Principal/Principal.css';
+import RightSidebar from '../../pages/Principal/RightSidebar'; 
+import { Link, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch, faPaperPlane, faUserMinus } from '@fortawesome/free-solid-svg-icons';
+import './Amizades.css'; // Vamos criar este CSS abaixo
 
 const Amizades = ({ onLogout }) => {
+    const [amigos, setAmigos] = useState([]);
+    const [busca, setBusca] = useState("");
     const [currentUser, setCurrentUser] = useState(null);
-    const [receivedRequests, setReceivedRequests] = useState([]);
-    const [sentRequests, setSentRequests] = useState([]);
-    const [friends, setFriends] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    // ✅ 1. Adiciona o estado do menu mobile
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    const backendUrl = 'http://localhost:8080';
-
-    const fetchData = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            onLogout();
-            return;
-        }
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-        try {
-            const [userRes, receivedRes, sentRes, friendsRes] = await Promise.all([
-                axios.get(`${backendUrl}/usuarios/me`),
-                axios.get(`${backendUrl}/api/amizades/pendentes`),
-                axios.get(`${backendUrl}/api/amizades/enviadas`),
-                axios.get(`${backendUrl}/api/amizades/`)
-            ]);
-            setCurrentUser(userRes.data);
-            setReceivedRequests(receivedRes.data);
-            setSentRequests(sentRes.data);
-            setFriends(friendsRes.data);
-        } catch (error) {
-            console.error("Erro ao buscar dados de amizades:", error);
-            if (error.response?.status === 401) onLogout();
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const navigate = useNavigate();
+    const DEFAULT_AVATAR_URL = "http://localhost:8080/images/default-avatar.png";
 
     useEffect(() => {
-        document.title = 'Senai Community | Conexões';
+        const fetchData = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) return onLogout && onLogout();
+
+            try {
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                const [userRes, amigosRes] = await Promise.all([
+                    axios.get('http://localhost:8080/usuarios/me'),
+                    axios.get('http://localhost:8080/api/amizades/')
+                ]);
+                setCurrentUser(userRes.data);
+                setAmigos(amigosRes.data);
+            } catch (error) {
+                console.error("Erro ao carregar amizades:", error);
+            }
+        };
         fetchData();
-    }, []);
+    }, [onLogout]);
 
-    const handleAccept = async (amizadeId) => {
-        try {
-            await axios.post(`${backendUrl}/api/amizades/aceitar/${amizadeId}`);
-            fetchData(); // Recarrega todos os dados
-        } catch (error) { console.error("Erro ao aceitar pedido:", error); }
+    const getProfileImageUrl = (fotoPerfil) => {
+        if (!fotoPerfil) return DEFAULT_AVATAR_URL;
+        if (fotoPerfil.startsWith("http")) return fotoPerfil;
+        if (fotoPerfil.startsWith("/")) return `http://localhost:8080${fotoPerfil}`;
+        return `http://localhost:8080/api/arquivos/${fotoPerfil}`;
     };
 
-    const handleDecline = async (amizadeId) => {
-        try {
-            await axios.delete(`${backendUrl}/api/amizades/recusar/${amizadeId}`);
-            fetchData(); // Recarrega todos os dados
-        } catch (error) { console.error("Erro ao recusar pedido:", error); }
-    };
-
-    if (isLoading) {
-        return <div>Carregando...</div>;
-    }
+    // Filtra amigos baseado na busca
+    const amigosFiltrados = amigos.filter(amigo => 
+        amigo.nome.toLowerCase().includes(busca.toLowerCase())
+    );
 
     return (
-        <>
-            {/* ✅ 2. Passa a prop 'onToggleSidebar' para o Topbar */}
-            <Topbar 
-                onLogout={onLogout} 
-                currentUser={currentUser} 
-                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-            />
-
-            {/* ✅ 3. Adiciona o overlay */}
-            {isSidebarOpen && (
-                <div 
-                    className="sidebar-overlay"
-                    onClick={() => setIsSidebarOpen(false)}
-                ></div>
-            )}
-
+        <div className="amizades-page">
+            <Topbar onLogout={onLogout} currentUser={currentUser} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+            
             <div className="container">
-                {/* ✅ 4. Passa a prop 'isOpen' para o Sidebar */}
-                <Sidebar 
-                    currentUser={currentUser} 
-                    isOpen={isSidebarOpen}
-                />
+                <Sidebar currentUser={currentUser} isOpen={isSidebarOpen} />
+                
                 <main className="main-content">
                     <div className="widget-card">
-                        <h2 className="widget-title">Gerenciar Conexões</h2>
-
-                        <div className="connections-section">
-                            <h3>Pedidos de Amizade Recebidos</h3>
-                            <div className="request-list" id="received-requests-list">
-                                {receivedRequests.length > 0 ? receivedRequests.map(req => (
-                                    <div key={req.idAmizade} className="request-card">
-                                        <img src={req.fotoPerfilSolicitante || 'https://via.placeholder.com/80'} alt={`Foto de ${req.nomeSolicitante}`} />
-                                        <h4>{req.nomeSolicitante}</h4>
-                                        <div className="request-card-actions">
-                                            <button className="btn btn-primary" onClick={() => handleAccept(req.idAmizade)}>Aceitar</button>
-                                            <button className="btn btn-secondary" onClick={() => handleDecline(req.idAmizade)}>Recusar</button>
-                                        </div>
-                                    </div>
-                                )) : <p className="empty-state">Nenhum pedido recebido.</p>}
+                        <div className="amizades-header">
+                            <h2>Todos os meus Amigos</h2>
+                            <div className="search-bar-container">
+                                <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Pesquisar amigo..." 
+                                    value={busca}
+                                    onChange={(e) => setBusca(e.target.value)}
+                                    className="search-input"
+                                />
                             </div>
                         </div>
 
-                        <div className="connections-section">
-                            <h3>Pedidos de Amizade Enviados</h3>
-                            <div className="request-list" id="sent-requests-list">
-                                {sentRequests.length > 0 ? sentRequests.map(req => (
-                                     <div key={req.idAmizade} className="request-card">
-                                         <img src={req.fotoPerfilSolicitado || 'https://via.placeholder.com/80'} alt={`Foto de ${req.nomeSolicitado}`} />
-                                         <h4>{req.nomeSolicitado}</h4>
-                                         <div className="request-card-actions">
-                                             <button className="btn btn-danger" onClick={() => handleDecline(req.idAmizade)}>Cancelar Pedido</button>
-                                         </div>
-                                     </div>
-                                )) : <p className="empty-state">Nenhum pedido enviado.</p>}
-                            </div>
-                        </div>
-
-                        <div className="connections-section">
-                            <h3>Meus Amigos</h3>
-                            <div className="user-list" id="friends-list">
-                                {friends.length > 0 ? friends.map(friend => (
-                                    <div key={friend.idAmizade} className="user-card">
-                                        <div className="user-card-avatar">
-                                            <img src={friend.fotoPerfil || 'https://via.placeholder.com/60'} alt={`Foto de ${friend.nome}`} />
-                                            <div className={`status ${friend.online ? 'online' : 'offline'}`}></div>
+                        <div className="amizades-list-container">
+                            {amigosFiltrados.length === 0 ? (
+                                <p className="empty-search">Nenhum amigo encontrado.</p>
+                            ) : (
+                                <div className="amizades-grid">
+                                    {amigosFiltrados.map(amigo => (
+                                        <div key={amigo.idAmizade} className="amigo-card-full">
+                                            <div className="amigo-card-img-wrapper">
+                                                <img 
+                                                    src={getProfileImageUrl(amigo.fotoPerfil)} 
+                                                    alt={amigo.nome} 
+                                                    onError={(e) => {e.target.src=DEFAULT_AVATAR_URL}}
+                                                />
+                                            </div>
+                                            <div className="amigo-card-info">
+                                                <h3>{amigo.nome}</h3>
+                                                <span className={amigo.online ? "status-badge online" : "status-badge offline"}>
+                                                    {amigo.online ? "Online" : "Offline"}
+                                                </span>
+                                            </div>
+                                            <div className="amigo-card-actions">
+                                                <button onClick={() => navigate(`/mensagens?dm=${amigo.idUsuario}`)} className="btn-msg">
+                                                    <FontAwesomeIcon icon={faPaperPlane} />
+                                                </button>
+                                                <Link to={`/perfil/${amigo.idUsuario}`} className="btn-perfil">
+                                                    Ver Perfil
+                                                </Link>
+                                            </div>
                                         </div>
-                                        <div className="user-card-info">
-                                            <h4>{friend.nome}</h4>
-                                            <p>{friend.email}</p>
-                                        </div>
-                                        <div className="user-card-action">
-                                             <button className="btn btn-primary"><FontAwesomeIcon icon={faCommentDots} /> Mensagem</button>
-                                             <button className="btn btn-danger" onClick={() => handleDecline(friend.idAmizade)}><FontAwesomeIcon icon={faUserMinus} /> Remover</button>
-                                        </div>
-                                    </div>
-                                )) : <p className="empty-state">Você ainda não tem conexões.</p>}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </main>
+                
+                <RightSidebar />
             </div>
-        </>
+        </div>
     );
 };
 

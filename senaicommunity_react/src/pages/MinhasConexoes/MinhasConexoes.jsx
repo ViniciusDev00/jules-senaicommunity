@@ -6,10 +6,10 @@ import RightSidebar from '../../pages/Principal/RightSidebar';
 import Swal from 'sweetalert2';
 import './MinhasConexoes.css'; 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faTimes, faPaperPlane, faUserMinus, faClockRotateLeft } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faTimes, faPaperPlane, faUserMinus, faClockRotateLeft, faUsers } from '@fortawesome/free-solid-svg-icons';
 import { Link, useNavigate } from 'react-router-dom'; 
 
-// --- COMPONENTE ConexaoCard ---
+// --- COMPONENTE ConexaoCard CORRIGIDO (SEM PRAVATAR.CC) ---
 const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
     
     let idUsuario, nome, foto;
@@ -22,13 +22,13 @@ const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
         idUsuario = item.idSolicitante; 
         nome = item.nomeSolicitante;
         foto = item.fotoPerfilSolicitante;
-    } else { 
+    } else { // type === 'amigo'
         idUsuario = item.idUsuario; 
         nome = item.nome;
         foto = item.fotoPerfil; 
     }
 
-    // MUDANÇA AQUI: Aponta para a imagem estática do seu servidor Java
+    // ✅ CORREÇÃO: Usa a imagem local do seu BackEnd, não site externo
     const fallbackAvatar = "http://localhost:8080/images/default-avatar.png";
     
     let fotoUrl;
@@ -53,7 +53,7 @@ const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
                     src={fotoUrl} 
                     alt={`Foto de ${nome}`} 
                     className="conexao-avatar"
-                    // SE FALHAR, PEGA A IMAGEM DO SERVIDOR JAVA
+                    // Se der erro, usa o fallback local
                     onError={(e) => { 
                         e.target.onerror = null; 
                         e.target.src = fallbackAvatar; 
@@ -86,7 +86,6 @@ const ConexaoCard = ({ item, type, onAction, onGoToChat }) => {
     );
 };
 
-// ... (O RESTO DO ARQUIVO CONTINUA IGUAL AO ANTERIOR, SÓ COPIE O INÍCIO E O ConexaoCard SE PREFERIR, OU O ARQUIVO TODO SE QUISER GARANTIR)
 const MinhasConexoes = ({ onLogout }) => {
     const [recebidos, setRecebidos] = useState([]);
     const [enviados, setEnviados] = useState([]);
@@ -97,35 +96,35 @@ const MinhasConexoes = ({ onLogout }) => {
     
     const navigate = useNavigate();
 
-    const fetchData = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            onLogout();
-            return;
-        }
-        try {
-             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            const [userRes, resRecebidos, resEnviados, resAmigos] = await Promise.all([
-                 axios.get('http://localhost:8080/usuarios/me'),
-                axios.get('http://localhost:8080/api/amizades/pendentes'),
-                axios.get('http://localhost:8080/api/amizades/enviadas'),
-                axios.get('http://localhost:8080/api/amizades/') 
-            ]);
-            setCurrentUser(userRes.data);
-            setRecebidos(resRecebidos.data); 
-            setEnviados(resEnviados.data); 
-            setAmigos(resAmigos.data); 
-        } catch (error) {
-            console.error("Erro ao buscar conexões:", error);
-            if (error.response?.status === 401 || error.response?.status === 403) {
-                 onLogout(); 
-            }
-        } finally {
-            setLoading(false); 
-        }
-    };
-
     useEffect(() => {
+        const fetchData = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                onLogout();
+                return;
+            }
+            try {
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                const [userRes, resRecebidos, resEnviados, resAmigos] = await Promise.all([
+                    axios.get('http://localhost:8080/usuarios/me'),
+                    axios.get('http://localhost:8080/api/amizades/pendentes'),
+                    axios.get('http://localhost:8080/api/amizades/enviadas'),
+                    axios.get('http://localhost:8080/api/amizades/') 
+                ]);
+                setCurrentUser(userRes.data);
+                setRecebidos(resRecebidos.data); 
+                setEnviados(resEnviados.data); 
+                setAmigos(resAmigos.data); 
+            } catch (error) {
+                console.error("Erro ao buscar conexões:", error);
+                if (error.response?.status === 401 || error.response?.status === 403) {
+                    onLogout(); 
+                }
+            } finally {
+                setLoading(false); 
+            }
+        };
+
         document.title = 'Senai Community | Conexões';
         setLoading(true); 
         fetchData();
@@ -146,8 +145,7 @@ const MinhasConexoes = ({ onLogout }) => {
                  url = `http://localhost:8080/api/amizades/recusar/${amizadeId}`; 
                  method = 'delete';
                  break;
-            default:
-                return; 
+            default: return; 
         }
 
         if (action === 'remover') {
@@ -205,6 +203,10 @@ const MinhasConexoes = ({ onLogout }) => {
         navigate(`/mensagens?dm=${userId}`);
     };
 
+    // ✅ LÓGICA DO LIMITE DE 3 AMIGOS
+    const amigosExibidos = amigos.slice(0, 3);
+    const temMaisAmigos = amigos.length > 3;
+
     return (
         <div>
             <Topbar 
@@ -220,6 +222,8 @@ const MinhasConexoes = ({ onLogout }) => {
                 <main className="main-content">
                     <section className="widget-card connections-page-card">
                         <h2 className="widget-title">Gerenciar Conexões</h2>
+
+                        {/* Pedidos Recebidos */}
                         <div className="connections-section">
                             <h3>Pedidos Recebidos ({loading ? '...' : recebidos.length})</h3>
                              {loading ? <p className="loading-state">Carregando...</p> : recebidos.length > 0 ? (
@@ -230,6 +234,8 @@ const MinhasConexoes = ({ onLogout }) => {
                                 </div>
                             ) : <p className="empty-state">Nenhum pedido de conexão pendente.</p>}
                         </div>
+
+                        {/* Pedidos Enviados */}
                         <div className="connections-section">
                             <h3>Pedidos Enviados ({loading ? '...' : enviados.length})</h3>
                              {loading ? <p className="loading-state">Carregando...</p> : enviados.length > 0 ? (
@@ -240,14 +246,35 @@ const MinhasConexoes = ({ onLogout }) => {
                                  </div>
                             ) : <p className="empty-state">Você não enviou nenhum pedido recentemente.</p>}
                         </div>
+
+                        {/* ✅ SEÇÃO MEUS AMIGOS (COM LIMITE E BOTÃO VER TODOS) */}
                         <div className="connections-section">
-                            <h3>Minhas Conexões ({loading ? '...' : amigos.length})</h3>
+                            <div className="section-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+                                <h3>Minhas Conexões ({loading ? '...' : amigos.length})</h3>
+                                {temMaisAmigos && (
+                                    <Link to="/amizades" className="btn-ver-todos-link" style={{color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: '600'}}>
+                                        Ver lista completa <FontAwesomeIcon icon={faUsers} />
+                                    </Link>
+                                )}
+                            </div>
+
                              {loading ? <p className="loading-state">Carregando...</p> : amigos.length > 0 ? (
-                                <div className="conexao-grid">
-                                    {amigos.map(item => 
-                                        <ConexaoCard key={item.idAmizade} item={item} type="amigo" onAction={handleAction} onGoToChat={handleGoToChat} />
+                                <>
+                                    <div className="conexao-grid">
+                                        {amigosExibidos.map(item => 
+                                            <ConexaoCard key={item.idAmizade} item={item} type="amigo" onAction={handleAction} onGoToChat={handleGoToChat} />
+                                        )}
+                                    </div>
+                                    
+                                    {/* Botão extra no final da lista se preferir */}
+                                    {temMaisAmigos && (
+                                        <div style={{textAlign: 'center', marginTop: '20px'}}>
+                                            <Link to="/amizades" className="btn btn-secondary">
+                                                Mostrar mais {amigos.length - 3} conexões
+                                            </Link>
+                                        </div>
                                     )}
-                                </div>
+                                </>
                             ) : <p className="empty-state">Você ainda não tem conexões. Que tal <Link to="/encontrar-pessoas">encontrar pessoas</Link>?</p>}
                         </div>
                     </section>

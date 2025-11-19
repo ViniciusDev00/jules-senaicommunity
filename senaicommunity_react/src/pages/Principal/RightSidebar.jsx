@@ -2,27 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserFriends } from '@fortawesome/free-solid-svg-icons';
 import { useWebSocket } from '../../contexts/WebSocketContext'; 
+import { Link } from 'react-router-dom'; // <--- Importante para o link
 import axios from 'axios';
 import './Principal.css';
 
 const RightSidebar = () => {
     const [amigos, setAmigos] = useState([]);
     const { stompClient, isConnected } = useWebSocket(); 
-
-    // URL da imagem padrão no seu Back-End Spring Boot
     const DEFAULT_AVATAR_URL = "http://localhost:8080/images/default-avatar.png";
 
     const getProfileImageUrl = (fotoPerfil) => {
-        // 1. Se não tiver foto, busca do Back-end
         if (!fotoPerfil || fotoPerfil === "") return DEFAULT_AVATAR_URL;
-        
-        // 2. Se já for link completo
         if (fotoPerfil.startsWith("http")) return fotoPerfil;
-        
-        // 3. Se começar com barra
         if (fotoPerfil.startsWith("/")) return `http://localhost:8080${fotoPerfil}`;
-        
-        // 4. Padrão para arquivos de upload
         return `http://localhost:8080/api/arquivos/${fotoPerfil}`;
     };
 
@@ -30,10 +22,12 @@ const RightSidebar = () => {
         const fetchAmigos = async () => {
             try {
                 const token = localStorage.getItem('authToken');
-                const response = await axios.get('http://localhost:8080/api/amizades/', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                setAmigos(response.data);
+                if(token){
+                     const response = await axios.get('http://localhost:8080/api/amizades/', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    setAmigos(response.data);
+                }
             } catch (error) {
                 console.error("Erro ao buscar amigos:", error);
             }
@@ -54,6 +48,10 @@ const RightSidebar = () => {
         }
     }, [isConnected, stompClient]);
 
+    // Lógica para exibir apenas 3
+    const amigosParaMostrar = amigos.slice(0, 3);
+    const temMaisAmigos = amigos.length > 3;
+
     return (
         <aside className="right-sidebar">
             <div className="widget-card">
@@ -65,29 +63,36 @@ const RightSidebar = () => {
                     {amigos.length === 0 ? (
                         <p className="no-friends">Nenhum amigo adicionado.</p>
                     ) : (
-                        amigos.map((amigo) => (
-                            <li key={amigo.idAmizade || amigo.idUsuario} className="amigo-item">
-                                <div className="avatar-wrapper">
-                                    <img 
-                                        src={getProfileImageUrl(amigo.fotoPerfil)}
-                                        alt={amigo.nome} 
-                                        className="avatar-mini"
-                                        // Se der erro (404), força a imagem do Back-End
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = DEFAULT_AVATAR_URL;
-                                        }}
-                                    />
-                                    {amigo.online && <span className="status-dot online"></span>}
-                                </div>
-                                <div className="amigo-info">
-                                    <span className="amigo-nome">{amigo.nome}</span>
-                                    <span className="amigo-status-texto">
-                                        {amigo.online ? "Online" : "Offline"}
-                                    </span>
-                                </div>
-                            </li>
-                        ))
+                        <>
+                            {amigosParaMostrar.map((amigo) => (
+                                <li key={amigo.idAmizade || amigo.idUsuario} className="amigo-item">
+                                    <div className="avatar-wrapper">
+                                        <img 
+                                            src={getProfileImageUrl(amigo.fotoPerfil)}
+                                            alt={amigo.nome} 
+                                            className="avatar-mini"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR_URL; }}
+                                        />
+                                        {amigo.online && <span className="status-dot online"></span>}
+                                    </div>
+                                    <div className="amigo-info">
+                                        <span className="amigo-nome">{amigo.nome}</span>
+                                        <span className="amigo-status-texto">
+                                            {amigo.online ? "Online" : "Offline"}
+                                        </span>
+                                    </div>
+                                </li>
+                            ))}
+                            
+                            {/* BOTÃO DE VER MAIS */}
+                            {temMaisAmigos && (
+                                <li className="ver-mais-container">
+                                    <Link to="/amizades" className="btn-ver-todos">
+                                        Ver todos ({amigos.length})
+                                    </Link>
+                                </li>
+                            )}
+                        </>
                     )}
                 </ul>
             </div>

@@ -6,18 +6,19 @@ import { useWebSocket } from './contexts/WebSocketContext.jsx';
 import Login from './pages/Login/Login.jsx';
 import Cadastro from './pages/Cadastro/Cadastro.jsx';
 
-// ✅ IMPORTANDO TODAS AS SUAS PÁGINAS NOVAS
+// ✅ IMPORTANDO TODAS AS SUAS PÁGINAS
 import Principal from './pages/Principal/Principal.jsx';
 import Perfil from './pages/Perfil/Perfil.jsx';
 import Projetos from './pages/Projetos/Projetos.jsx';
 import Vagas from './pages/Vagas/Vagas.jsx';
 import Eventos from './pages/Eventos/Eventos.jsx';
 import Mensagens from './pages/Mensagens/Mensagens.jsx';
-import EncontrarPessoas from './pages/EncontrarPessoas/EncontrarPessoas.jsx'; // Usando o componente mais novo
-import MinhasConexoes from './pages/MinhasConexoes/MinhasConexoes.jsx'; // Usando o componente mais novo
-
-// ✅ 1. IMPORTAÇÃO DA NOVA PÁGINA
+import EncontrarPessoas from './pages/EncontrarPessoas/EncontrarPessoas.jsx';
+import MinhasConexoes from './pages/MinhasConexoes/MinhasConexoes.jsx';
 import Configuracoes from './pages/Configuracoes/Configuracoes.jsx';
+
+// ✅ 1. ADICIONE A IMPORTAÇÃO DA PÁGINA AMIZADES AQUI
+import Amizades from './pages/Amizades/Amizades.jsx'; 
 
 // Componente para proteger rotas
 const PrivateRoute = ({ children }) => {
@@ -55,7 +56,7 @@ function App() {
                 <Route path="/login" element={<Login onLogin={handleLogin} />} />
                 <Route path="/cadastro" element={<Cadastro />} />
 
-                {/* Rotas Privadas (dentro do PrivateRoute) */}
+                {/* Rotas Privadas */}
                 <Route
                     path="/principal"
                     element={
@@ -72,9 +73,6 @@ function App() {
                         </PrivateRoute>
                     }
                 />
-
-                {/* ✅ NOVAS ROTAS ADICIONADAS */}
-
                 <Route
                     path="/perfil/:userId"
                     element={
@@ -131,8 +129,6 @@ function App() {
                         </PrivateRoute>
                     }
                 />
-
-                {/* ✅ 2. NOVA ROTA DE CONFIGURAÇÕES ADICIONADA */}
                 <Route
                     path="/configuracoes"
                     element={
@@ -141,9 +137,18 @@ function App() {
                         </PrivateRoute>
                     }
                 />
-                {/* ✅ FIM DAS NOVAS ROTAS */}
 
-                {/* Rota Padrão: Redireciona para /principal se logado, senão para /login */}
+                {/* ✅ 2. ADICIONE A ROTA PARA /amizades AQUI */}
+                <Route
+                    path="/amizades"
+                    element={
+                        <PrivateRoute>
+                            <Amizades onLogout={handleLogout} />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Rota Padrão */}
                 <Route path="/" element={<Navigate to={token ? "/principal" : "/login"} />} />
             </Routes>
         </Router>
