@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 // ✅ 1. Importar a anotação de segurança
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -76,5 +78,18 @@ public class AmizadeController {
         Usuario usuarioLogado = usuarioService.buscarPorEmail(principal.getName());
         List<AmigoDTO> amigosOnline = amizadeService.listarAmigosOnline(usuarioLogado);
         return ResponseEntity.ok(amigosOnline);
+    }
+
+    @GetMapping("/meus-amigos")
+    public ResponseEntity<List<AmigoDTO>> listarMeusAmigos(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(403).build();
+
+        // Busca o usuário logado pelo email do token
+        Usuario usuarioLogado = usuarioService.buscarPorEmail(userDetails.getUsername());
+
+        // Busca os amigos (já com o status online/offline preenchido pelo Service)
+        List<AmigoDTO> amigos = amizadeService.listarAmigos(usuarioLogado);
+
+        return ResponseEntity.ok(amigos);
     }
 }

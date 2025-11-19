@@ -1,63 +1,95 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Ícones importados para uso no componente
-import { faUserPlus, faPlus, faBullhorn } from '@fortawesome/free-solid-svg-icons';
-import './Principal.css'; // Supondo que os estilos relevantes estão aqui
+import { faUserFriends } from '@fortawesome/free-solid-svg-icons';
+import { useWebSocket } from '../../contexts/WebSocketContext'; 
+import axios from 'axios';
+import './Principal.css';
 
 const RightSidebar = () => {
+    const [amigos, setAmigos] = useState([]);
+    const { stompClient, isConnected } = useWebSocket(); 
+
+    // Função para garantir que a URL da imagem esteja certa
+    const getProfileImageUrl = (fotoPerfil) => {
+        if (!fotoPerfil) return "/default-avatar.png";
+        
+        // Se já for um link completo (ex: Google, Cloudinary)
+        if (fotoPerfil.startsWith("http")) return fotoPerfil;
+        
+        // Se começar com barra (ex: /api/arquivos/foto.jpg), adiciona o domínio
+        if (fotoPerfil.startsWith("/")) return `http://localhost:8080${fotoPerfil}`;
+        
+        // Se for só o nome do arquivo (ex: "perfil_123.jpg"), usa o endpoint do seu Controller
+        // Baseado no seu AmizadeService, o caminho correto parece ser /api/arquivos/
+        return `http://localhost:8080/api/arquivos/${fotoPerfil}`;
+    };
+
+    // 1. Carrega a lista de amigos
+    useEffect(() => {
+        const fetchAmigos = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                // Endpoint correto conforme seu AmizadeController
+                const response = await axios.get('http://localhost:8080/api/amizades/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                setAmigos(response.data);
+            } catch (error) {
+                console.error("Erro ao buscar amigos:", error);
+            }
+        };
+        fetchAmigos();
+    }, []);
+
+    // 2. WebSocket para Status Online
+    useEffect(() => {
+        if (isConnected && stompClient) {
+            const subscription = stompClient.subscribe('/topic/status', (message) => {
+                const usuariosOnline = JSON.parse(message.body); 
+                setAmigos(prevAmigos => prevAmigos.map(amigo => ({
+                    ...amigo,
+                    online: usuariosOnline.includes(amigo.email)
+                })));
+            });
+            return () => subscription.unsubscribe();
+        }
+    }, [isConnected, stompClient]);
+
     return (
         <aside className="right-sidebar">
-            {/* Widget: Buscando Colaboradores */}
+            {/* ÚNICO WIDGET: Contatos (Amigos Online) */}
             <div className="widget-card">
                 <div className="widget-header">
-                    <h3><FontAwesomeIcon icon={faBullhorn} /> Buscando Colaboradores</h3>
+                    <h3><FontAwesomeIcon icon={faUserFriends} /> Contatos</h3>
                 </div>
-                {/* Você pode preencher esta lista dinamicamente da API se quiser */}
-                <ul className="lista-colaboracao" style={{listStyle: 'none', padding: 0}}>
-                    <li>
-                        {/* Use <Link> do react-router-dom se for link interno */}
-                        <a href="#">
-                            <strong>App de Gestão Financeira</strong>
-                            <span>UX/UI Designer</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#">
-                            <strong>Sistema de Irrigação Automatizado</strong>
-                            <span>Eng. de Software (C++)</span>
-                        </a>
-                    </li>
+                
+                <ul className="lista-amigos-online">
+                    {amigos.length === 0 ? (
+                        <p className="no-friends">Nenhum amigo adicionado.</p>
+                    ) : (
+                        amigos.map((amigo) => (
+                            <li key={amigo.idAmizade || amigo.idUsuario} className="amigo-item">
+                                <div className="avatar-wrapper">
+                                    <img 
+                                        src={getProfileImageUrl(amigo.fotoPerfil)}
+                                        alt={amigo.nome} 
+                                        className="avatar-mini"
+                                        onError={(e) => {e.target.src = "/default-avatar.png"}}
+                                    />
+                                    {/* Bolinha Verde */}
+                                    {amigo.online && <span className="status-dot online"></span>}
+                                </div>
+                                <div className="amigo-info">
+                                    <span className="amigo-nome">{amigo.nome}</span>
+                                    <span className="amigo-status-texto">
+                                        {amigo.online ? "Online" : "Offline"}
+                                    </span>
+                                </div>
+                            </li>
+                        ))
+                    )}
                 </ul>
             </div>
-
-            {/* Widget: Quem Seguir */}
-            <div className="widget-card">
-                <div className="widget-header">
-                    <h3><FontAwesomeIcon icon={faUserPlus} /> Quem Seguir</h3>
-                    {/* Use <Link> do react-router-dom se for link interno */}
-                    <a href="/encontrar-pessoas" className="see-all">Ver todos</a>
-                </div>
-                <div className="follow-list">
-                    {/* Item de exemplo para seguir */}
-                    {/* Você pode preencher esta lista dinamicamente da API */}
-                    <div className="follow-item">
-                        <div className="follow-item-left" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div className="follow-avatar" style={{ width: '48px', height: '48px', borderRadius: '50%' }}>
-                                <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Ana" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                            </div>
-                            <div className="follow-info">
-                                <h4>Ana Silva</h4>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Engenheira de Software</span>
-                            </div>
-                        </div>
-                        <button className="follow-btn">
-                            <FontAwesomeIcon icon={faPlus} />
-                        </button>
-                    </div>
-                    {/* Adicione mais itens .follow-item aqui */}
-                </div>
-            </div>
-            {/* Você pode adicionar mais widgets aqui */}
         </aside>
     );
 };
