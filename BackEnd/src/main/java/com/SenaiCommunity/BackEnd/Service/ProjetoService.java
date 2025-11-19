@@ -49,6 +49,10 @@ public class ProjetoService {
     @Autowired
     private ArquivoMidiaService arquivoMidiaService;
 
+    public long contarProjetosParticipando(Long userId) {
+        return projetoMembroRepository.countByUsuarioId(userId);
+    }
+
     public List<ProjetoDTO> listarTodos() {
         List<Projeto> projetos = projetoRepository.findAll();
         return projetos.stream().map(this::converterParaDTO).collect(Collectors.toList());

@@ -35,6 +35,10 @@ public class AmizadeService {
     @Autowired
     private UserStatusService userStatusService;
 
+    public long contarAmigos(Long userId) {
+        return amizadeRepository.countAmigos(userId);
+    }
+
     @Transactional
     public void enviarSolicitacao(Usuario solicitante, Long idSolicitado) {
         Usuario solicitado = usuarioRepository.findById(idSolicitado)

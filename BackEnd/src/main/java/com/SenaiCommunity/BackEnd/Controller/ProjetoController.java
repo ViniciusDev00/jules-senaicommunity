@@ -247,5 +247,9 @@ public class ProjetoController {
         }
     }
 
-    // ❌ ENDPOINT /imagens/{filename} REMOVIDO
+    @GetMapping("/participando/contagem/{usuarioId}")
+    public ResponseEntity<Long> contarProjetos(@PathVariable Long usuarioId) {
+        long count = projetoService.contarProjetosParticipando(usuarioId);
+        return ResponseEntity.ok(count);
+    }
 }

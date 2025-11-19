@@ -92,4 +92,10 @@ public class AmizadeController {
 
         return ResponseEntity.ok(amigos);
     }
+
+    @GetMapping("/contagem/{usuarioId}")
+    public ResponseEntity<Long> contarAmigos(@PathVariable Long usuarioId) {
+        long count = amizadeService.contarAmigos(usuarioId);
+        return ResponseEntity.ok(count);
+    }
 }
