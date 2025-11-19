@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserFriends } from '@fortawesome/free-solid-svg-icons';
 import { useWebSocket } from '../../contexts/WebSocketContext'; 
-import { Link } from 'react-router-dom'; // <--- Importante para o link
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Principal.css';
 
@@ -48,8 +48,16 @@ const RightSidebar = () => {
         }
     }, [isConnected, stompClient]);
 
-    // Lógica para exibir apenas 3
-    const amigosParaMostrar = amigos.slice(0, 3);
+    // --- 1. LÓGICA DE ORDENAÇÃO (Online primeiro) ---
+    const amigosOrdenados = [...amigos].sort((a, b) => {
+        // Se b está online e a não, b vem primeiro (retorna positivo)
+        // Se a está online e b não, a vem primeiro (retorna negativo)
+        // Se ambos iguais, mantém a ordem (ou poderia ordenar por nome)
+        return (b.online === true) - (a.online === true);
+    });
+
+    // Exibe os 3 primeiros da lista JÁ ORDENADA
+    const amigosParaMostrar = amigosOrdenados.slice(0, 3);
     const temMaisAmigos = amigos.length > 3;
 
     return (
@@ -65,22 +73,42 @@ const RightSidebar = () => {
                     ) : (
                         <>
                             {amigosParaMostrar.map((amigo) => (
-                                <li key={amigo.idAmizade || amigo.idUsuario} className="amigo-item">
-                                    <div className="avatar-wrapper">
-                                        <img 
-                                            src={getProfileImageUrl(amigo.fotoPerfil)}
-                                            alt={amigo.nome} 
-                                            className="avatar-mini"
-                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR_URL; }}
-                                        />
-                                        {amigo.online && <span className="status-dot online"></span>}
-                                    </div>
-                                    <div className="amigo-info">
-                                        <span className="amigo-nome">{amigo.nome}</span>
-                                        <span className="amigo-status-texto">
-                                            {amigo.online ? "Online" : "Offline"}
-                                        </span>
-                                    </div>
+                                // Removemos a classe 'amigo-item' do li e zeramos o padding dele
+                                <li key={amigo.idAmizade || amigo.idUsuario} style={{ padding: 0, margin: 0, listStyle: 'none' }}>
+                                    
+                                    {/* --- 2. CORREÇÃO DO LINK/PADDING --- */}
+                                    {/* A classe 'amigo-item' vai para o Link para manter o layout flexbox correto */}
+                                    <Link 
+                                        to={`/perfil/${amigo.idUsuario}`} 
+                                        className="amigo-item" 
+                                        style={{ 
+                                            textDecoration: 'none', 
+                                            color: 'inherit', 
+                                            display: 'flex', 
+                                            alignItems: 'center',
+                                            width: '100%',
+                                            // Se o seu CSS original tinha padding no .amigo-item, ele será aplicado aqui.
+                                            // Caso precise forçar um ajuste, descomente abaixo:
+                                            // padding: '10px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <div className="avatar-wrapper">
+                                            <img 
+                                                src={getProfileImageUrl(amigo.fotoPerfil)}
+                                                alt={amigo.nome} 
+                                                className="avatar-mini"
+                                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR_URL; }}
+                                            />
+                                            {amigo.online && <span className="status-dot online"></span>}
+                                        </div>
+                                        <div className="amigo-info">
+                                            <span className="amigo-nome">{amigo.nome}</span>
+                                            <span className="amigo-status-texto">
+                                                {amigo.online ? "Online" : "Offline"}
+                                            </span>
+                                        </div>
+                                    </Link>
                                 </li>
                             ))}
                             
