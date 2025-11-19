@@ -42,7 +42,6 @@ public class SupervisorService {
         supervisor.setSenha(passwordEncoder.encode(dto.getSenha()));
         supervisor.setDataNascimento(dto.getDataNascimento());
         supervisor.setDataCadastro(LocalDateTime.now());
-        supervisor.setTipoUsuario("SUPERVISOR");
 
         // ✅ CORREÇÃO CRÍTICA: Gerar Matrícula (Tabela Supervisor)
         // Isso força o Hibernate a fazer o INSERT na tabela tb_supervisor

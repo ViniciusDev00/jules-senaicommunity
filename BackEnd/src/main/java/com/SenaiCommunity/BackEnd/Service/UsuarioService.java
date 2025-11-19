@@ -203,8 +203,7 @@ public class UsuarioService {
                 usuario.getEmail(),
                 urlFoto, // Este valor NUNCA será 'null'
                 status,
-                userStatusService.isOnline(usuario.getEmail()),
-                usuario.getTipoUsuario()
+                userStatusService.isOnline(usuario.getEmail())
         );
     }
 

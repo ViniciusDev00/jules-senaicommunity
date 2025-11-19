@@ -86,11 +86,12 @@ public class ProfessorService {
     public ProfessorSaidaDTO criarProfessorComFoto(ProfessorEntradaDTO dto, MultipartFile foto) {
         Professor professor = toEntity(dto);
         professor.setDataCadastro(LocalDateTime.now());
-        professor.setTipoUsuario("PROFESSOR");
 
         Role roleProfessor = roleRepository.findByNome("PROFESSOR")
                 .orElseThrow(() -> new RuntimeException("Role PROFESSOR não encontrada"));
-        professor.setRoles(Set.of(roleProfessor));
+        Role roleSupervisor = roleRepository.findByNome("SUPERVISOR")
+                .orElseThrow(() -> new RuntimeException("Role SUPERVISOR não encontrada"));
+        professor.setRoles(Set.of(roleProfessor, roleSupervisor));
 
         if (foto != null && !foto.isEmpty()) {
             try {

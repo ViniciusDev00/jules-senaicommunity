@@ -365,7 +365,6 @@ public class PostagemService {
                 .id(usuario.getId())
                 .nome(usuario.getNome())
                 .urlFotoPerfil(usuario.getFotoPerfil())
-                .tipoUsuario(usuario.getTipoUsuario())
                 .build();
     }
 

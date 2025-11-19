@@ -54,6 +54,7 @@ public class BackEndApplication {
 			createRoleIfNotFound("ADMIN");
 			createRoleIfNotFound("PROFESSOR");
 			createRoleIfNotFound("ALUNO");
+			createRoleIfNotFound("SUPERVISOR"); // Garante que a role exista
 
 			// Cria um usuário Professor para ser o autor
 			Usuario autor = createProfessorUserIfNotFound();
@@ -134,11 +135,12 @@ public class BackEndApplication {
 				prof.setNome("Professor Admin");
 				prof.setEmail("professor@senaicommunity.com");
 				prof.setSenha(passwordEncoder.encode("admin123"));
-				prof.setTipoUsuario("PROFESSOR");
 
 				Role roleProfessor = roleRepository.findByNome("PROFESSOR")
 						.orElseThrow(() -> new RuntimeException("Role PROFESSOR não encontrada"));
-				prof.setRoles(Set.of(roleProfessor));
+				Role roleSupervisor = roleRepository.findByNome("SUPERVISOR")
+						.orElseThrow(() -> new RuntimeException("Role SUPERVISOR não encontrada"));
+				prof.setRoles(Set.of(roleProfessor, roleSupervisor));
 				System.out.println("Usuário Professor criado.");
 				return usuarioRepository.save(prof);
 			}

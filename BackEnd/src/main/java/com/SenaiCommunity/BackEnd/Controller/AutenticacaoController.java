@@ -133,7 +133,6 @@ public class AutenticacaoController {
                 String senhaAleatoria = passwordEncoder.encode(UUID.randomUUID().toString());
                 novoAluno.setSenha(senhaAleatoria);
                 novoAluno.setDataCadastro(LocalDateTime.now());
-                novoAluno.setTipoUsuario("ALUNO");
 
                 Role roleAluno = roleRepository.findByNome("ALUNO")
                         .orElseThrow(() -> new RuntimeException("Role ALUNO não encontrada"));
