@@ -11,8 +11,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faPlus, faSearch, faLink, faTimes, faSpinner, faUserPlus,
     faUserFriends, faExternalLinkAlt, faCalendarAlt, faInfoCircle,
-    faCommentDots, faTrash, faUserShield, faImage 
+    faCommentDots, faTrash, faUserShield, faImage, faList, faTh, faDatabase, faCode
 } from '@fortawesome/free-solid-svg-icons';
+import { faReact, faJava, faPython, faDocker, faJsSquare, faNodeJs } from '@fortawesome/free-brands-svg-icons';
 import debounce from 'lodash/debounce'; 
 import { useNavigate } from 'react-router-dom';
 
@@ -27,16 +28,37 @@ interface Membro {
     dataEntrada: string;
     convidadoPorNome?: string;
 }
+
+// Novas interfaces para suportar as funcionalidades
+interface Tech {
+    name: string;
+    icon: string; // Ex: 'react', 'java', 'docker'
+}
+
+interface Vaga {
+    id: any;
+    titulo: string;
+    descricao: string;
+    status: 'ABERTA' | 'FECHADA';
+}
+
 interface Projeto {
     id: any;
     titulo: string;
     descricao: string;
     imagemUrl: string; 
+    videoUrl?: string; // Para o preview de vídeo
     dataCriacao: string;
     dataInicio: string; 
     dataEntrega?: string; 
-    status: string;
+    status: 'IDEIA' | 'DESENVOLVIMENTO' | 'CONCLUIDO'; // Status tipado
     linksUteis: string[];
+    techStack: Tech[]; // Para as badges de tecnologia
+    vagas: Vaga[]; // Para o sistema de recrutamento
+    proximaReuniao?: { // Para a sincronia com o chat
+        titulo: string;
+        data: string;
+    };
     maxMembros: number;
     grupoPrivado: boolean;
     autorId: any;
@@ -83,19 +105,58 @@ const getCorrectUserImageUrl = (url: string | null | undefined, fallbackId: any)
     return `http://localhost:8080/api/arquivos/${url}`;
 };
 
+// --- COMPONENTE TechBadge (NOVO) ---
+const TechBadge: React.FC<{ tech: Tech }> = ({ tech }) => {
+    const iconMap: { [key: string]: any } = {
+        react: faReact,
+        java: faJava,
+        python: faPython,
+        docker: faDocker,
+        javascript: faJsSquare,
+        typescript: faJsSquare, // Usando o mesmo para TS
+        'node-js': faNodeJs,
+        database: faDatabase,
+        // Adicione outros mapeamentos aqui
+    };
+
+    const icon = iconMap[tech.icon] || faCode; // Fallback para um ícone genérico
+
+    return (
+        <div className="tech-badge" title={tech.name}>
+            <FontAwesomeIcon icon={icon} />
+        </div>
+    );
+};
+
+
 // --- COMPONENTE ProjetoCard ---
 const ProjetoCard: React.FC<ProjetoCardProps> = ({ projeto, onVerDetalhes }) => {
-    // ... (Sem alterações aqui) ...
     const imageUrl = projeto.imagemUrl
-        ? projeto.imagemUrl 
+        ? projeto.imagemUrl
         : 'https://placehold.co/600x400/161b22/8b949e?text=Projeto';
+
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'IDEIA': return 'Ideia';
+            case 'DESENVOLVIMENTO': return 'Em Desenvolvimento';
+            case 'CONCLUIDO': return 'Concluído';
+            default: return 'Indefinido';
+        }
+    };
 
     return (
         <article className="projeto-card">
             <div className="projeto-imagem" style={{ backgroundImage: `url('${imageUrl}')` }}></div>
             <div className="projeto-conteudo">
+                <div className="progress-bar-container">
+                    <div className={`progress-bar ${projeto.status?.toLowerCase()}`} style={{ width: projeto.status === 'IDEIA' ? '10%' : projeto.status === 'DESENVOLVIMENTO' ? '50%' : '100%' }}></div>
+                </div>
+                <span className="status-text">{getStatusText(projeto.status)}</span>
                 <h3 className="projeto-titulo">{projeto.titulo}</h3>
                 <p className="projeto-descricao">{projeto.descricao}</p>
+                <div className="projeto-tech-stack">
+                    {projeto.techStack?.slice(0, 4).map(tech => <TechBadge key={tech.icon} tech={tech} />)}
+                </div>
                 <div className="projeto-footer">
                     <div className="projeto-membros">
                         {projeto.membros?.slice(0, 5).map(membro => (
@@ -120,6 +181,32 @@ const ProjetoCard: React.FC<ProjetoCardProps> = ({ projeto, onVerDetalhes }) => 
     );
 };
 
+// --- COMPONENTE ProjetoListItem (NOVO) ---
+const ProjetoListItem: React.FC<ProjetoCardProps> = ({ projeto, onVerDetalhes }) => {
+    return (
+        <article className="projeto-list-item" onClick={() => onVerDetalhes(projeto)}>
+            <div className="list-item-main">
+                <h3 className="projeto-titulo">{projeto.titulo}</h3>
+                <p className="projeto-descricao">{projeto.descricao}</p>
+            </div>
+            <div className="list-item-status">
+                <span className={`status-badge ${projeto.status?.toLowerCase()}`}>{projeto.status}</span>
+            </div>
+            <div className="list-item-tech">
+                {projeto.techStack?.slice(0, 5).map(tech => <TechBadge key={tech.icon} tech={tech} />)}
+            </div>
+            <div className="list-item-membros">
+                <FontAwesomeIcon icon={faUserFriends} />
+                <span>{projeto.totalMembros}</span>
+            </div>
+            <div className="list-item-actions">
+                <button className="ver-projeto-btn-list">Ver Detalhes</button>
+            </div>
+        </article>
+    );
+};
+
+
 // --- COMPONENTE MODAL DE NOVO PROJETO ---
 const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, onProjectCreated }) => {
     // ... (Sem alterações aqui, continua usando a lógica de preview e getCorrectUserImageUrl) ...
@@ -134,6 +221,30 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
     const [buscaResultados, setBuscaResultados] = useState<Usuario[]>([]); 
     const [isSearching, setIsSearching] = useState(false);
     const [preview, setPreview] = useState<string | null>(null);
+    const [status, setStatus] = useState<'IDEIA' | 'DESENVOLVIMENTO' | 'CONCLUIDO'>('IDEIA');
+    const [techStack, setTechStack] = useState<Tech[]>([]);
+
+    const availableTechs: Tech[] = [
+        { name: 'React', icon: 'react' },
+        { name: 'Java', icon: 'java' },
+        { name: 'Python', icon: 'python' },
+        { name: 'Docker', icon: 'docker' },
+        { name: 'JavaScript', icon: 'javascript' },
+        { name: 'TypeScript', icon: 'typescript' },
+        { name: 'Node.js', icon: 'node-js' },
+        { name: 'SQL', icon: 'database' },
+    ];
+
+    const iconMap: { [key: string]: any } = {
+        react: faReact,
+        java: faJava,
+        python: faPython,
+        docker: faDocker,
+        javascript: faJsSquare,
+        typescript: faJsSquare,
+        'node-js': faNodeJs,
+        database: faDatabase,
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -217,6 +328,13 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
         setParticipantes(participantes.filter(p => p.id !== id));
     };
 
+    const handleTechChange = (e: React.ChangeEvent<HTMLInputElement>, tech: Tech) => {
+        const { checked } = e.target;
+        setTechStack(prev =>
+            checked ? [...prev, tech] : prev.filter(t => t.icon !== tech.icon)
+        );
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentUser) { Swal.fire('Erro', 'Não foi possível identificar o autor.', 'error'); return; }
@@ -224,6 +342,8 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
         const formData = new FormData();
         formData.append('titulo', titulo);
         formData.append('descricao', descricao);
+        formData.append('status', status);
+        formData.append('techStack', JSON.stringify(techStack)); // Serializa o array de objetos
         formData.append('autorId', currentUser.id.toString()); 
         formData.append('maxMembros', "50"); 
         formData.append('grupoPrivado', "false"); 
@@ -262,6 +382,33 @@ const NovoProjetoModal: React.FC<NovoProjetoModalProps> = ({ isOpen, onClose, on
                         <div className="form-group">
                             <label htmlFor="proj-descricao">Descrição</label>
                             <textarea id="proj-descricao" rows={3} value={descricao} onChange={e => setDescricao(e.target.value)} required></textarea>
+                        </div>
+                        <div className="form-group-row">
+                            <div className="form-group">
+                                <label htmlFor="proj-status">Status do Projeto</label>
+                                <select id="proj-status" value={status} onChange={e => setStatus(e.target.value as typeof status)}>
+                                    <option value="IDEIA">⚪ Ideia</option>
+                                    <option value="DESENVOLVIMENTO">🔵 Em Desenvolvimento</option>
+                                    <option value="CONCLUIDO">🟢 Concluído</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>Tecnologias (Selecione as principais)</label>
+                            <div className="tech-stack-selector">
+                                {availableTechs.map(tech => (
+                                    <label key={tech.icon} className={`tech-badge-option ${techStack.some(t => t.icon === tech.icon) ? 'selected' : ''}`}>
+                                        <input
+                                            type="checkbox"
+                                            value={tech.icon}
+                                            checked={techStack.some(t => t.icon === tech.icon)}
+                                            onChange={(e) => handleTechChange(e, tech)}
+                                        />
+                                        <FontAwesomeIcon icon={iconMap[tech.icon] || faCode} />
+                                        {tech.name}
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                         {/* ... (form group: foto preview) ... */}
                         <div className="form-group">
@@ -533,6 +680,8 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<Usuario | null>(null); 
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'TODOS' | 'IDEIA' | 'DESENVOLVIMENTO' | 'CONCLUIDO'>('TODOS');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [projetoSelecionado, setProjetoSelecionado] = useState<Projeto | null>(null); 
@@ -599,11 +748,13 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
     };
 
     const filteredProjetos = useMemo(() => {
-        return projetos.filter(proj =>
-            proj.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            proj.descricao.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [projetos, searchTerm]);
+        return projetos.filter(proj => {
+            const searchMatch = proj.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                proj.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+            const statusMatch = statusFilter === 'TODOS' || proj.status === statusFilter;
+            return searchMatch && statusMatch;
+        });
+    }, [projetos, searchTerm, statusFilter]);
 
 
     return (
@@ -646,17 +797,35 @@ const Projetos: React.FC<ProjetosPageProps> = ({ onLogout }) => {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
+                        <div className="filter-buttons">
+                            <button className={statusFilter === 'TODOS' ? 'active' : ''} onClick={() => setStatusFilter('TODOS')}>Todos</button>
+                            <button className={statusFilter === 'IDEIA' ? 'active' : ''} onClick={() => setStatusFilter('IDEIA')}>💡 Ideias</button>
+                            <button className={statusFilter === 'DESENVOLVIMENTO' ? 'active' : ''} onClick={() => setStatusFilter('DESENVOLVIMENTO')}>💻 Em Desenvolvimento</button>
+                            <button className={statusFilter === 'CONCLUIDO' ? 'active' : ''} onClick={() => setStatusFilter('CONCLUIDO')}>🚀 Concluídos</button>
+                        </div>
+                        <div className="view-mode-toggle">
+                            <button className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')}><FontAwesomeIcon icon={faTh} /> Grid</button>
+                            <button className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')}><FontAwesomeIcon icon={faList} /> Lista</button>
+                        </div>
                     </section>
 
-                    <section className="projetos-grid">
+                    <section className={viewMode === 'grid' ? 'projetos-grid' : 'projetos-list'}>
                         {loading ? <p className="loading-state">Carregando projetos...</p> :
                             filteredProjetos.length > 0 ? (
                                 filteredProjetos.map(proj =>
-                                    <ProjetoCard
-                                        key={proj.id}
-                                        projeto={proj}
-                                        onVerDetalhes={setProjetoSelecionado}
-                                    />
+                                    viewMode === 'grid' ? (
+                                        <ProjetoCard
+                                            key={proj.id}
+                                            projeto={proj}
+                                            onVerDetalhes={setProjetoSelecionado}
+                                        />
+                                    ) : (
+                                        <ProjetoListItem
+                                            key={proj.id}
+                                            projeto={proj}
+                                            onVerDetalhes={setProjetoSelecionado}
+                                        />
+                                    )
                                 )
                             ) : (
                                 <div className="empty-state">
