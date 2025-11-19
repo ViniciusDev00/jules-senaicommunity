@@ -12,6 +12,7 @@ import {
     faTag, faMapMarkerAlt, faSuitcase, faUserShield,
     faInfoCircle, faTimes, faPlus // ✅ Adicionado faPlus
 } from '@fortawesome/free-solid-svg-icons';
+import RightSidebar from '../Principal/RightSidebar';
 
 // --- COMPONENTE VagaDetalheModal (Mantido Original) ---
 const VagaDetalheModal = ({ vaga, onClose }) => {
@@ -287,6 +288,7 @@ const Vagas = ({ onLogout }) => {
                         }
                     </section>
                 </main>
+                <RightSidebar />
             </div>
 
             <VagaDetalheModal vaga={vagaSelecionada} onClose={() => setVagaSelecionada(null)} />
