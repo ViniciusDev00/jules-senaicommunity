@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserFriends } from '@fortawesome/free-solid-svg-icons';
 import { useWebSocket } from '../../contexts/WebSocketContext'; 
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom'; // <--- Importante para o link
 import axios from 'axios';
 import './Principal.css';
 
@@ -48,19 +48,8 @@ const RightSidebar = () => {
         }
     }, [isConnected, stompClient]);
 
-    // --- LÓGICA NOVA: ORDENAÇÃO ---
-    // 1. Ordena: Online primeiro, depois por nome alfabético
-    const amigosOrdenados = [...amigos].sort((a, b) => {
-        // Se status for diferente, quem tá online (true) vem primeiro
-        if (a.online !== b.online) {
-            return a.online ? -1 : 1;
-        }
-        // Se status for igual, ordena por nome
-        return a.nome.localeCompare(b.nome);
-    });
-
-    // 2. Pega os 3 primeiros DA LISTA ORDENADA
-    const amigosParaMostrar = amigosOrdenados.slice(0, 3);
+    // Lógica para exibir apenas 3
+    const amigosParaMostrar = amigos.slice(0, 3);
     const temMaisAmigos = amigos.length > 3;
 
     return (
@@ -87,7 +76,6 @@ const RightSidebar = () => {
                                         {amigo.online && <span className="status-dot online"></span>}
                                     </div>
                                     <div className="amigo-info">
-                                        {/* Classe corrigida no CSS abaixo */}
                                         <span className="amigo-nome">{amigo.nome}</span>
                                         <span className="amigo-status-texto">
                                             {amigo.online ? "Online" : "Offline"}
@@ -96,6 +84,7 @@ const RightSidebar = () => {
                                 </li>
                             ))}
                             
+                            {/* BOTÃO DE VER MAIS */}
                             {temMaisAmigos && (
                                 <li className="ver-mais-container">
                                     <Link to="/amizades" className="btn-ver-todos">
